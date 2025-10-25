@@ -25,30 +25,41 @@ body {
   color: var(--color-tokyo-fg);
 }
 
+/* Mobile-friendly buttons with proper touch targets */
 .btn-primary {
-  @apply bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  @apply bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 .btn-secondary {
-  @apply bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 .btn-danger {
-  @apply bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  @apply bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 .btn-success {
-  @apply bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  @apply bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
+/* Responsive cards with proper mobile padding */
 .card {
-  @apply bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700;
+  @apply bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-700;
 }
 
+/* Mobile-friendly input fields with proper touch targets */
 .input-field {
-  @apply w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  @apply w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] text-base;
 }
 
+/* Responsive stat cards */
 .stat-card {
-  @apply bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-200;
+  @apply bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 sm:p-6 border border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-200;
+}
+
+/* Mobile typography helpers */
+@media (max-width: 640px) {
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
 }
