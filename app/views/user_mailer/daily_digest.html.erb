@@ -181,9 +181,6 @@
 
               <div class="game-date">
                 <%= game.game_date.strftime("%A, %B %d, %Y") %>
-                <% if game.game_time %>
-                  at <%= game.game_time.strftime("%I:%M %p") %>
-                <% end %>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">

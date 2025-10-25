@@ -8,7 +8,7 @@ Here's a look at your next <%= @games.count %> upcoming games:
 
 <% @games.each_with_index do |game, index| %>
 <%= index + 1 %>. Thunder vs <%= game.opponent.name %>
-   <%= game.game_date.strftime("%A, %B %d, %Y") %><% if game.game_time %> at <%= game.game_time.strftime("%I:%M %p") %><% end %>
+   <%= game.game_date.strftime("%A, %B %d, %Y") %>
 
    Status: <% if game.fully_sold? %>SOLD OUT<% elsif game.partially_sold? %>PARTIAL<% else %>AVAILABLE<% end %>
    Tickets: <%= game.tickets_sold_count %> / <%= game.season.num_seats %> sold
