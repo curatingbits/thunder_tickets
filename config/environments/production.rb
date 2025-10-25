@@ -68,9 +68,7 @@ Rails.application.configure do
     user_name: "resend",
     password: ENV["RESEND_API_KEY"],
     authentication: :plain,
-    enable_starttls_auto: true,
-    tls: true,
-    ssl: true
+    tls: true
   }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
