@@ -29,7 +29,12 @@ class UsersController < ApplicationController
 
     if @user.save(validate: false) # Skip validations since user hasn't set password yet
       @user.generate_invitation_token!
-      redirect_to users_path, notice: "Invitation created successfully. Share the invitation link with #{@user.name}."
+
+      # Send invitation email
+      invitation_url = accept_invitation_url(token: @user.invitation_token)
+      UserMailer.with(user: @user, invitation_url: invitation_url).invitation_email.deliver_later
+
+      redirect_to users_path, notice: "Invitation email sent to #{@user.email}."
     else
       render :new, status: :unprocessable_entity
     end
