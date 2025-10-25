@@ -6,7 +6,7 @@ class UserMailer < ApplicationMailer
 
     mail(
       to: @user.email,
-      subject: "You've been invited to Thunder Tickets"
+      subject: "You've been invited to MADR TICKETS"
     )
   end
 
@@ -16,7 +16,7 @@ class UserMailer < ApplicationMailer
 
     mail(
       to: @user.email,
-      subject: "Your Daily Thunder Tickets Digest - #{Date.current.strftime("%B %d, %Y")}"
+      subject: "Your Daily MADR TICKETS Digest - #{Date.current.strftime("%B %d, %Y")}"
     )
   end
 end
