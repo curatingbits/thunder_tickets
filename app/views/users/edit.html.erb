@@ -1,0 +1,85 @@
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <%= link_to users_path, class: "text-gray-400 hover:text-white transition-colors" do %>
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+      <% end %>
+      <h1 class="text-2xl sm:text-3xl font-bold text-white">Edit User</h1>
+    </div>
+    <p class="text-gray-400">Update user information</p>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <%= form_with model: @user, url: user_path(@user), method: :patch, class: "space-y-6" do |f| %>
+      <!-- Name Field -->
+      <div>
+        <%= f.label :name, "Full Name", class: "block text-sm font-medium text-gray-300 mb-2" %>
+        <%= f.text_field :name, class: "input-field", placeholder: "Enter user's full name", required: true, autofocus: true %>
+        <% if @user.errors[:name].any? %>
+          <p class="mt-1 text-sm text-red-400"><%= @user.errors[:name].first %></p>
+        <% end %>
+      </div>
+
+      <!-- Email Field -->
+      <div>
+        <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-300 mb-2" %>
+        <%= f.email_field :email, class: "input-field", placeholder: "user@example.com", required: true %>
+        <% if @user.errors[:email].any? %>
+          <p class="mt-1 text-sm text-red-400"><%= @user.errors[:email].first %></p>
+        <% end %>
+      </div>
+
+      <!-- User Status Info -->
+      <div class="bg-gray-750 border border-gray-700 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-300 mb-3">User Status</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div>
+            <span class="text-gray-400">Status:</span>
+            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= "bg-#{@user.status_badge_color}-900/50 text-#{@user.status_badge_color}-400 border border-#{@user.status_badge_color}-700" %>">
+              <%= @user.status %>
+            </span>
+          </div>
+          <div>
+            <span class="text-gray-400">Active:</span>
+            <span class="ml-2 text-white"><%= @user.active? ? "Yes" : "No" %></span>
+          </div>
+          <% if @user.invitation_sent_at %>
+            <div>
+              <span class="text-gray-400">Invited:</span>
+              <span class="ml-2 text-white"><%= time_ago_in_words(@user.invitation_sent_at) %> ago</span>
+            </div>
+          <% end %>
+          <% if @user.invitation_accepted_at %>
+            <div>
+              <span class="text-gray-400">Accepted:</span>
+              <span class="ml-2 text-white"><%= time_ago_in_words(@user.invitation_accepted_at) %> ago</span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Password Reset Info -->
+      <div class="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div class="text-sm text-blue-300">
+            <p class="font-medium mb-1">Password Management:</p>
+            <p class="text-blue-400">Users can change their password using the "Forgot Password" feature on the login page.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <%= f.submit "Update User", class: "btn-primary w-full sm:w-auto order-2 sm:order-1" %>
+        <%= link_to "Cancel", users_path, class: "btn-secondary w-full sm:w-auto text-center order-1 sm:order-2" %>
+      </div>
+    <% end %>
+  </div>
+</div>

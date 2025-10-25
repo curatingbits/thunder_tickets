@@ -67,12 +67,17 @@
             <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
               <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-semibold text-white">Seat <%= ticket.seat_number %></p>
+                  <p class="font-semibold text-white">Section <%= ticket.section %>, Row <%= ticket.row %>, Seat <%= ticket.seat_number %></p>
                   <p class="text-sm text-gray-400">
                     Sold for <span class="text-green-400 font-semibold">$<%= number_with_delimiter(ticket.sale_price) %></span>
                   </p>
-                  <% if ticket.buyer_name.present? %>
-                    <p class="text-xs text-gray-500 mt-1">Buyer: <%= ticket.buyer_name %></p>
+                  <% if ticket.buyer.present? %>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Buyer: <%= link_to ticket.buyer.name, ticket.buyer, class: "text-blue-400 hover:text-blue-300" %>
+                      <% if ticket.buyer.email.present? %>
+                        <span class="text-gray-600">(<%= ticket.buyer.email %>)</span>
+                      <% end %>
+                    </p>
                   <% end %>
                   <% if ticket.notes.present? %>
                     <p class="text-xs text-gray-400 mt-1"><%= ticket.notes %></p>
@@ -99,11 +104,23 @@
         <div class="border-t border-gray-700 pt-6">
           <h3 class="text-lg font-semibold text-white mb-4">Record New Sale</h3>
           <%= form_with model: [@game, Ticket.new], class: "space-y-4", data: { controller: "ticket-form" } do |f| %>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Seat Number</label>
-              <%= f.select :seat_number, @available_seats.map { |s| [s, s] },
-                  { prompt: "Select seat" },
-                  class: "input-field" %>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Section</label>
+                <%= f.text_field :section, value: "101", class: "input-field" %>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Row</label>
+                <%= f.text_field :row, value: "DD", class: "input-field" %>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Seat Number</label>
+                <%= f.select :seat_number, @available_seats.map { |s| [s, s] },
+                    { prompt: "Select seat" },
+                    class: "input-field" %>
+              </div>
             </div>
 
             <div>
@@ -112,14 +129,24 @@
                   class: "input-field" %>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Buyer Name (Optional)</label>
-              <%= f.text_field :buyer_name, placeholder: "John Doe", class: "input-field" %>
-            </div>
+            <div data-controller="buyer-form">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Buyer (Optional)</label>
+                <%= f.select :buyer_id,
+                    [["➕ Create New Buyer", "new"]] + @buyers.map { |b| [b.name + (b.email.present? ? " (#{b.email})" : ""), b.id] },
+                    { prompt: "Select buyer (optional)" },
+                    class: "input-field",
+                    data: {
+                      buyer_form_target: "select",
+                      action: "change->buyer-form#toggleForm"
+                    } %>
+                <p class="mt-1 text-xs text-gray-500">Link this sale to an existing buyer or create a new one</p>
+              </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Buyer Email (Optional)</label>
-              <%= f.email_field :buyer_email, placeholder: "buyer@example.com", class: "input-field" %>
+              <!-- Inline buyer creation form (hidden by default) -->
+              <div class="mt-6 hidden" data-buyer-form-target="formContainer">
+                <%= render "buyers/inline_form", buyer: Buyer.new %>
+              </div>
             </div>
 
             <div>

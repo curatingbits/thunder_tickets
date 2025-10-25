@@ -10,7 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_25_003323) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_25_122249) do
+  create_table "buyers", force: :cascade do |t|
+    t.string "name"
+    t.string "email"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_buyers_on_email"
+    t.index ["name"], name: "index_buyers_on_name"
+  end
+
   create_table "games", force: :cascade do |t|
     t.integer "season_id", null: false
     t.integer "game_number"
@@ -26,6 +36,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_25_003323) do
     t.index ["season_id"], name: "index_games_on_season_id"
   end
 
+  create_table "market_prices", force: :cascade do |t|
+    t.integer "game_id", null: false
+    t.string "section"
+    t.decimal "min_price", precision: 10, scale: 2
+    t.decimal "max_price", precision: 10, scale: 2
+    t.decimal "average_price", precision: 10, scale: 2
+    t.integer "listings_count"
+    t.datetime "fetched_at"
+    t.string "event_id"
+    t.string "event_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_market_prices_on_event_id"
+    t.index ["fetched_at"], name: "index_market_prices_on_fetched_at"
+    t.index ["game_id"], name: "index_market_prices_on_game_id"
+  end
+
   create_table "seasons", force: :cascade do |t|
     t.string "year"
     t.decimal "total_season_cost"
@@ -33,6 +60,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_25_003323) do
     t.integer "num_seats"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "seat_section"
     t.index ["year"], name: "index_seasons_on_year", unique: true
   end
 
@@ -50,11 +78,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_25_003323) do
     t.integer "seat_number"
     t.decimal "sale_price"
     t.datetime "sold_at"
-    t.string "buyer_name"
-    t.string "buyer_email"
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "section"
+    t.string "row"
+    t.integer "buyer_id"
+    t.index ["buyer_id"], name: "index_tickets_on_buyer_id"
     t.index ["game_id"], name: "index_tickets_on_game_id"
   end
 
@@ -67,10 +97,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_25_003323) do
     t.string "invited_by"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "active", default: true, null: false
+    t.string "invitation_token"
+    t.datetime "invitation_sent_at"
+    t.datetime "invitation_accepted_at"
+    t.index ["active"], name: "index_users_on_active"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["invitation_token"], name: "index_users_on_invitation_token", unique: true
   end
 
   add_foreign_key "games", "seasons"
   add_foreign_key "games", "teams", column: "opponent_id"
+  add_foreign_key "market_prices", "games"
+  add_foreign_key "tickets", "buyers"
   add_foreign_key "tickets", "games"
 end

@@ -7,6 +7,21 @@ Rails.application.routes.draw do
   # Password reset routes
   resources :password_resets, only: [:new, :create, :edit, :update]
 
+  # User management routes
+  resources :users do
+    member do
+      post :toggle_active
+      get :invitation_url
+    end
+  end
+
+  # Invitation acceptance routes
+  get "accept_invitation/:token", to: "invitations#show", as: :accept_invitation
+  patch "accept_invitation/:token", to: "invitations#update"
+
+  # Buyers
+  resources :buyers
+
   # Dashboard (root)
   root "dashboard#index"
   get "dashboard", to: "dashboard#index"
@@ -15,6 +30,10 @@ Rails.application.routes.draw do
   resources :games, only: [:index, :show, :edit, :update, :new, :create] do
     resources :tickets, only: [:create, :destroy]
   end
+
+  # Season settings
+  get "settings", to: "seasons#edit", as: :settings
+  patch "settings", to: "seasons#update"
 
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check

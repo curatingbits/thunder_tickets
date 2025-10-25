@@ -20,6 +20,7 @@ class GamesController < ApplicationController
 
   def show
     @available_seats = (1..current_season.num_seats).to_a - @game.tickets.pluck(:seat_number)
+    @buyers = Buyer.by_name
   end
 
   def new

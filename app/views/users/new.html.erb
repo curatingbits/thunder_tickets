@@ -1,0 +1,62 @@
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <%= link_to users_path, class: "text-gray-400 hover:text-white transition-colors" do %>
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+      <% end %>
+      <h1 class="text-2xl sm:text-3xl font-bold text-white">Invite New User</h1>
+    </div>
+    <p class="text-gray-400">Create a new user account and generate an invitation link</p>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <%= form_with model: @user, url: users_path, method: :post, class: "space-y-6" do |f| %>
+      <!-- Name Field -->
+      <div>
+        <%= f.label :name, "Full Name", class: "block text-sm font-medium text-gray-300 mb-2" %>
+        <%= f.text_field :name, class: "input-field", placeholder: "Enter user's full name", required: true, autofocus: true %>
+        <% if @user.errors[:name].any? %>
+          <p class="mt-1 text-sm text-red-400"><%= @user.errors[:name].first %></p>
+        <% end %>
+      </div>
+
+      <!-- Email Field -->
+      <div>
+        <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-300 mb-2" %>
+        <%= f.email_field :email, class: "input-field", placeholder: "user@example.com", required: true %>
+        <% if @user.errors[:email].any? %>
+          <p class="mt-1 text-sm text-red-400"><%= @user.errors[:email].first %></p>
+        <% end %>
+        <p class="mt-1 text-sm text-gray-500">The user will receive an invitation to set their password</p>
+      </div>
+
+      <!-- Info Box -->
+      <div class="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div class="text-sm text-blue-300">
+            <p class="font-medium mb-1">How invitations work:</p>
+            <ul class="list-disc list-inside space-y-1 text-blue-400">
+              <li>An invitation link will be generated for this user</li>
+              <li>Copy and share the link with the user</li>
+              <li>The link expires after 7 days</li>
+              <li>User will set their own password when accepting</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <%= f.submit "Create & Generate Invitation", class: "btn-primary w-full sm:w-auto order-2 sm:order-1" %>
+        <%= link_to "Cancel", users_path, class: "btn-secondary w-full sm:w-auto text-center order-1 sm:order-2" %>
+      </div>
+    <% end %>
+  </div>
+</div>

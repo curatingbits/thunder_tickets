@@ -1,5 +1,6 @@
 class Ticket < ApplicationRecord
   belongs_to :game
+  belongs_to :buyer, optional: true
 
   validates :seat_number, presence: true, uniqueness: { scope: :game_id }
   validates :sale_price, presence: true, numericality: { greater_than: 0 }

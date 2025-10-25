@@ -1,0 +1,83 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+    <div class="flex-1">
+      <%= link_to "← Back to Buyers", buyers_path, class: "text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block" %>
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white"><%= @buyer.name %></h1>
+      <% if @buyer.email.present? %>
+        <p class="text-sm sm:text-base text-gray-400 mt-2"><%= @buyer.email %></p>
+      <% end %>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "Edit", edit_buyer_path(@buyer), class: "btn-secondary" %>
+      <%= button_to "Delete", @buyer, method: :delete, data: { turbo_confirm: "Are you sure? This will unlink all tickets from this buyer." }, class: "btn-danger" %>
+    </div>
+  </div>
+
+  <!-- Stats Summary -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="stat-card">
+      <p class="text-xs sm:text-sm text-gray-400">Total Tickets</p>
+      <p class="text-2xl sm:text-3xl font-bold text-blue-400"><%= @buyer.tickets_count %></p>
+    </div>
+
+    <div class="stat-card">
+      <p class="text-xs sm:text-sm text-gray-400">Total Spent</p>
+      <p class="text-2xl sm:text-3xl font-bold text-green-400">$<%= number_with_delimiter(@buyer.total_spent.round) %></p>
+    </div>
+
+    <div class="stat-card">
+      <p class="text-xs sm:text-sm text-gray-400">Avg Price/Ticket</p>
+      <p class="text-2xl sm:text-3xl font-bold text-purple-400">
+        <% if @buyer.tickets_count > 0 %>
+          $<%= number_with_delimiter((@buyer.total_spent / @buyer.tickets_count).round) %>
+        <% else %>
+          $0
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <% if @buyer.notes.present? %>
+    <div class="card bg-yellow-900/20 border-yellow-700">
+      <h3 class="text-lg font-bold text-yellow-400 mb-2">Notes</h3>
+      <p class="text-gray-300 whitespace-pre-wrap"><%= @buyer.notes %></p>
+    </div>
+  <% end %>
+
+  <!-- Purchase History -->
+  <div class="card">
+    <h2 class="text-2xl font-bold text-white mb-4">Purchase History</h2>
+
+    <% if @tickets.any? %>
+      <div class="space-y-3">
+        <% @tickets.each do |ticket| %>
+          <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+            <%= link_to ticket.game, class: "block hover:opacity-80 transition" do %>
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                <div class="flex-1">
+                  <p class="font-semibold text-white">
+                    <%= ticket.game.opponent.name %>
+                  </p>
+                  <p class="text-sm text-gray-400">
+                    <%= ticket.game.game_date.strftime("%B %d, %Y") %> • Game #<%= ticket.game.game_number %>
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Section <%= ticket.section %>, Row <%= ticket.row %>, Seat <%= ticket.seat_number %>
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xl font-bold text-green-400">$<%= number_with_delimiter(ticket.sale_price) %></p>
+                  <p class="text-xs text-gray-500"><%= ticket.sold_at.strftime("%b %d, %Y") %></p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-center text-gray-400 py-8">No tickets purchased yet</p>
+    <% end %>
+  </div>
+</div>

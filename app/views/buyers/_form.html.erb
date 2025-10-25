@@ -1,0 +1,33 @@
+<%= form_with model: buyer, class: "space-y-6" do |f| %>
+  <% if buyer.errors.any? %>
+    <div class="bg-red-900/50 border border-red-700 rounded-lg p-4">
+      <h3 class="text-red-200 font-semibold mb-2"><%= pluralize(buyer.errors.count, "error") %> prohibited this buyer from being saved:</h3>
+      <ul class="list-disc list-inside text-red-300 text-sm">
+        <% buyer.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, class: "block text-sm font-medium text-gray-300 mb-2" %>
+    <%= f.text_field :name, class: "input-field", placeholder: "John Doe", required: true %>
+  </div>
+
+  <div>
+    <%= f.label :email, class: "block text-sm font-medium text-gray-300 mb-2" %>
+    <%= f.email_field :email, class: "input-field", placeholder: "buyer@example.com" %>
+    <p class="mt-1 text-xs text-gray-500">Optional - helps you contact the buyer</p>
+  </div>
+
+  <div>
+    <%= f.label :notes, class: "block text-sm font-medium text-gray-300 mb-2" %>
+    <%= f.text_area :notes, rows: 4, class: "input-field", placeholder: "Any notes about this buyer..." %>
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-700">
+    <%= f.submit class: "btn-primary w-full sm:w-auto" %>
+    <%= link_to "Cancel", buyer.persisted? ? buyer : buyers_path, class: "btn-secondary w-full sm:w-auto text-center" %>
+  </div>
+<% end %>

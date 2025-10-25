@@ -3,6 +3,7 @@ class Season < ApplicationRecord
 
   validates :year, presence: true, uniqueness: true
   validates :num_seats, presence: true, numericality: { greater_than: 0 }
+  # seat_section is optional, but required for Ticketmaster API pricing features
 
   scope :current, -> { where(is_current: true).first }
 

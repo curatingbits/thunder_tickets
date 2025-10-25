@@ -67,7 +67,7 @@ end
 
 # Import games from CSV
 puts "Importing games from CSV..."
-csv_file = "/home/dkr/Downloads/2025-26 Thunder Tickets - Ticket Tracker.csv"
+csv_file = ENV.fetch("SEED_CSV_PATH", "/tmp/ticket_tracker.csv")
 
 CSV.foreach(csv_file, headers: true) do |row|
   next if row["Game #"].nil? || row["Game #"].to_i == 0 # Skip summary row

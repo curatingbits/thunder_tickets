@@ -2,6 +2,7 @@ class Game < ApplicationRecord
   belongs_to :season
   belongs_to :opponent, class_name: "Team"
   has_many :tickets, dependent: :destroy
+  has_one :market_price, dependent: :destroy
 
   validates :game_number, presence: true, uniqueness: { scope: :season_id }
   validates :game_date, presence: true
