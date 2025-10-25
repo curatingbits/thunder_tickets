@@ -71,6 +71,12 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                       </button>
+
+                      <%= button_to resend_invitation_user_path(user), method: :post, class: "text-yellow-400 hover:text-yellow-300 transition-colors", title: "Resend Invitation Email" do %>
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                      <% end %>
                     <% end %>
 
                     <%= button_to toggle_active_user_path(user), method: :post, class: "text-#{user.active? ? 'red' : 'green'}-400 hover:text-#{user.active? ? 'red' : 'green'}-300 transition-colors", title: "#{user.active? ? 'Deactivate' : 'Activate'} User" do %>
@@ -121,6 +127,10 @@
                   class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-xs flex-1">
                   Copy Link
                 </button>
+
+                <%= button_to resend_invitation_user_path(user), method: :post, class: "bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-xs flex-1" do %>
+                  Resend Email
+                <% end %>
               <% end %>
 
               <%= button_to toggle_active_user_path(user), method: :post, class: "bg-#{user.active? ? 'red' : 'green'}-600 hover:bg-#{user.active? ? 'red' : 'green'}-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-xs flex-1" do %>

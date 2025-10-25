@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     member do
       post :toggle_active
       get :invitation_url
+      post :resend_invitation
     end
   end
 

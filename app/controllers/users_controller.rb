@@ -75,6 +75,23 @@ class UsersController < ApplicationController
     render json: { url: @invitation_url }
   end
 
+  def resend_invitation
+    @user = User.find(params[:id])
+
+    if @user.invitation_pending?
+      # Regenerate token and update sent time
+      @user.generate_invitation_token!
+
+      # Send invitation email
+      invitation_url = accept_invitation_url(token: @user.invitation_token)
+      UserMailer.with(user: @user, invitation_url: invitation_url).invitation_email.deliver_later
+
+      redirect_to users_path, notice: "Invitation email resent to #{@user.email}."
+    else
+      redirect_to users_path, alert: "Cannot resend invitation to this user."
+    end
+  end
+
   private
 
   def set_user
