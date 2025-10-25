@@ -61,10 +61,10 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "madrtickets.com", protocol: "https" }
 
-  # Resend SMTP settings
+  # Resend SMTP settings (using port 2587 - DigitalOcean blocks standard ports)
   config.action_mailer.smtp_settings = {
     address: "smtp.resend.com",
-    port: 587,
+    port: 2587,
     user_name: "resend",
     password: ENV["RESEND_API_KEY"],
     authentication: :plain,
