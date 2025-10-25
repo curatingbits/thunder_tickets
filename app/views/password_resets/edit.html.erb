@@ -1,0 +1,28 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h1 class="text-center text-5xl font-bold">
+        <span class="text-blue-400">Thunder</span><span class="text-orange-400">Tickets</span>
+      </h1>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-100">
+        Set New Password
+      </h2>
+    </div>
+
+    <%= form_with url: password_reset_path(params[:id]), method: :patch, class: "mt-8 space-y-6" do %>
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+        <%= password_field_tag :password, nil, placeholder: "Enter new password", class: "input-field", required: true, autofocus: true %>
+      </div>
+
+      <div>
+        <label for="password_confirmation" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+        <%= password_field_tag :password_confirmation, nil, placeholder: "Confirm new password", class: "input-field", required: true %>
+      </div>
+
+      <div>
+        <%= submit_tag "Reset Password", class: "w-full btn-primary text-lg py-3" %>
+      </div>
+    <% end %>
+  </div>
+</div>

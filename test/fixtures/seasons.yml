@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  year: MyString
+  total_season_cost: 9.99
+  is_current: false
+  num_seats: 1
+
+two:
+  year: MyString
+  total_season_cost: 9.99
+  is_current: false
+  num_seats: 1

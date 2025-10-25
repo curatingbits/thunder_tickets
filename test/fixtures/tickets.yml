@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  game: one
+  seat_number: 1
+  sale_price: 9.99
+  sold_at: 2025-10-24 19:33:23
+  buyer_name: MyString
+  buyer_email: MyString
+  notes: MyText
+
+two:
+  game: two
+  seat_number: 1
+  sale_price: 9.99
+  sold_at: 2025-10-24 19:33:23
+  buyer_name: MyString
+  buyer_email: MyString
+  notes: MyText

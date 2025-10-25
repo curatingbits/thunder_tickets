@@ -1,0 +1,90 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-4xl font-bold text-white">Games</h1>
+      <p class="text-gray-400 mt-2"><%= @season.year %> Season • <%= @games.count %> games</p>
+    </div>
+    <div>
+      <%= link_to "Add Playoff Game", new_game_path, class: "btn-primary" %>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card">
+    <div class="flex flex-wrap gap-2">
+      <%= link_to "All Games", games_path, class: "px-4 py-2 rounded-lg #{params[:filter].nil? ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}" %>
+      <%= link_to "Upcoming", games_path(filter: :upcoming), class: "px-4 py-2 rounded-lg #{params[:filter] == 'upcoming' ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}" %>
+      <%= link_to "Past", games_path(filter: :past), class: "px-4 py-2 rounded-lg #{params[:filter] == 'past' ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}" %>
+      <%= link_to "Fully Sold", games_path(filter: :sold), class: "px-4 py-2 rounded-lg #{params[:filter] == 'sold' ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}" %>
+      <%= link_to "Unsold", games_path(filter: :unsold), class: "px-4 py-2 rounded-lg #{params[:filter] == 'unsold' ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}" %>
+    </div>
+  </div>
+
+  <!-- Games List -->
+  <div class="space-y-4">
+    <% if @games.any? %>
+      <% @games.each do |game| %>
+        <div class="card hover:border-blue-500 transition-colors cursor-pointer">
+          <%= link_to game, class: "block" do %>
+            <div class="flex items-center justify-between">
+              <!-- Game Info -->
+              <div class="flex items-center space-x-6">
+                <div class="text-center min-w-[80px]">
+                  <div class="text-sm text-gray-400"><%= game.game_date.strftime("%b") %></div>
+                  <div class="text-3xl font-bold text-white"><%= game.game_date.strftime("%d") %></div>
+                  <div class="text-xs text-gray-500"><%= game.game_date.strftime("%Y") %></div>
+                </div>
+
+                <div class="border-l border-gray-700 pl-6">
+                  <h3 class="text-xl font-bold text-white">vs <%= game.opponent.name %></h3>
+                  <p class="text-sm text-gray-400">Game #<%= game.game_number %> • <%= game.game_type.titleize %></p>
+                  <% if game.game_type == "playoff" %>
+                    <span class="inline-block mt-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded">
+                      <%= game.playoff_round %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- Sales Status -->
+              <div class="flex items-center space-x-8">
+                <!-- Tickets Sold -->
+                <div class="text-center">
+                  <div class="text-sm text-gray-400">Tickets Sold</div>
+                  <div class="text-2xl font-bold <%= game.fully_sold? ? 'text-green-400' : game.partially_sold? ? 'text-yellow-400' : 'text-red-400' %>">
+                    <%= game.tickets_sold_count %>/<%= @season.num_seats %>
+                  </div>
+                </div>
+
+                <!-- Cost -->
+                <div class="text-center">
+                  <div class="text-sm text-gray-400">Cost</div>
+                  <div class="text-2xl font-bold text-red-400">$<%= number_with_delimiter(game.total_cost) %></div>
+                </div>
+
+                <!-- Revenue -->
+                <div class="text-center">
+                  <div class="text-sm text-gray-400">Revenue</div>
+                  <div class="text-2xl font-bold text-green-400">$<%= number_with_delimiter(game.total_revenue) %></div>
+                </div>
+
+                <!-- Profit/Loss -->
+                <div class="text-center">
+                  <div class="text-sm text-gray-400">Profit/Loss</div>
+                  <div class="text-2xl font-bold <%= game.profit_loss >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                    <%= game.profit_loss >= 0 ? '+' : '' %>$<%= number_with_delimiter(game.profit_loss) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="card text-center py-12">
+        <p class="text-gray-400 text-lg">No games found</p>
+      </div>
+    <% end %>
+  </div>
+</div>

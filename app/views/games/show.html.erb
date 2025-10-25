@@ -1,0 +1,200 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <div>
+      <%= link_to "← Back to Games", games_path, class: "text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block" %>
+      <h1 class="text-4xl font-bold text-white">vs <%= @game.opponent.name %></h1>
+      <p class="text-gray-400 mt-2">
+        <%= @game.game_date.strftime("%A, %B %d, %Y") %> • Game #<%= @game.game_number %>
+        <% if @game.game_type == "playoff" %>
+          • <span class="text-yellow-400"><%= @game.playoff_round %></span>
+        <% end %>
+      </p>
+    </div>
+    <div>
+      <%= link_to "Edit Game", edit_game_path(@game), class: "btn-secondary" %>
+    </div>
+  </div>
+
+  <!-- Financial Summary -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="stat-card">
+      <p class="text-sm text-gray-400">Total Cost</p>
+      <p class="text-2xl font-bold text-red-400">$<%= number_with_delimiter(@game.total_cost) %></p>
+      <p class="text-xs text-gray-500 mt-1">
+        $<%= number_with_delimiter(@game.cost_per_ticket) %>/ticket + $<%= number_with_delimiter(@game.parking_cost) %> parking
+      </p>
+    </div>
+
+    <div class="stat-card">
+      <p class="text-sm text-gray-400">Total Revenue</p>
+      <p class="text-2xl font-bold text-green-400">$<%= number_with_delimiter(@game.total_revenue) %></p>
+      <p class="text-xs text-gray-500 mt-1"><%= @game.tickets_sold_count %> tickets sold</p>
+    </div>
+
+    <div class="stat-card">
+      <p class="text-sm text-gray-400">Profit/Loss</p>
+      <p class="text-2xl font-bold <%= @game.profit_loss >= 0 ? 'text-green-400' : 'text-red-400' %>">
+        <%= @game.profit_loss >= 0 ? '+' : '' %>$<%= number_with_delimiter(@game.profit_loss) %>
+      </p>
+      <p class="text-xs text-gray-500 mt-1">
+        <%= @game.total_revenue > 0 ? ((@game.total_revenue / @game.total_cost - 1) * 100).round(1) : 0 %>% ROI
+      </p>
+    </div>
+
+    <div class="stat-card">
+      <p class="text-sm text-gray-400">Status</p>
+      <p class="text-2xl font-bold <%= @game.fully_sold? ? 'text-green-400' : @game.partially_sold? ? 'text-yellow-400' : 'text-red-400' %>">
+        <%= @game.tickets_available %> Left
+      </p>
+      <p class="text-xs text-gray-500 mt-1">
+        <%= ((@game.tickets_sold_count.to_f / current_season.num_seats) * 100).round(0) %>% sold
+      </p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Ticket Sales Management -->
+    <div class="card">
+      <h2 class="text-2xl font-bold text-white mb-4">Manage Tickets</h2>
+
+      <!-- Existing Tickets -->
+      <div class="space-y-3 mb-6">
+        <% if @game.tickets.any? %>
+          <% @game.tickets.order(:seat_number).each do |ticket| %>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-semibold text-white">Seat <%= ticket.seat_number %></p>
+                  <p class="text-sm text-gray-400">
+                    Sold for <span class="text-green-400 font-semibold">$<%= number_with_delimiter(ticket.sale_price) %></span>
+                  </p>
+                  <% if ticket.buyer_name.present? %>
+                    <p class="text-xs text-gray-500 mt-1">Buyer: <%= ticket.buyer_name %></p>
+                  <% end %>
+                  <% if ticket.notes.present? %>
+                    <p class="text-xs text-gray-400 mt-1"><%= ticket.notes %></p>
+                  <% end %>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm <%= ticket.sale_price > @game.cost_per_ticket ? 'text-green-400' : 'text-red-400' %>">
+                    <%= ((ticket.sale_price / @game.cost_per_ticket - 1) * 100).round(0) %>%
+                  </p>
+                  <%= button_to "Remove", game_ticket_path(@game, ticket), method: :delete,
+                      data: { turbo_confirm: "Are you sure?" },
+                      class: "text-xs text-red-400 hover:text-red-300 mt-2" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-gray-400 text-center py-4">No tickets sold yet</p>
+        <% end %>
+      </div>
+
+      <!-- Add New Ticket Sale -->
+      <% if @available_seats.any? %>
+        <div class="border-t border-gray-700 pt-6">
+          <h3 class="text-lg font-semibold text-white mb-4">Record New Sale</h3>
+          <%= form_with model: [@game, Ticket.new], class: "space-y-4", data: { controller: "ticket-form" } do |f| %>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Seat Number</label>
+              <%= f.select :seat_number, @available_seats.map { |s| [s, s] },
+                  { prompt: "Select seat" },
+                  class: "input-field" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Sale Price</label>
+              <%= f.number_field :sale_price, step: 0.01, placeholder: @game.cost_per_ticket.to_s,
+                  class: "input-field" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Buyer Name (Optional)</label>
+              <%= f.text_field :buyer_name, placeholder: "John Doe", class: "input-field" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Buyer Email (Optional)</label>
+              <%= f.email_field :buyer_email, placeholder: "buyer@example.com", class: "input-field" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Notes (Optional)</label>
+              <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
+            </div>
+
+            <%= f.submit "Record Sale", class: "btn-success w-full" %>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="border-t border-gray-700 pt-6">
+          <p class="text-center text-green-400 font-semibold">All tickets for this game have been sold!</p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Game Statistics -->
+    <div class="space-y-6">
+      <!-- Average Sale Price -->
+      <div class="card">
+        <h2 class="text-2xl font-bold text-white mb-4">Sale Statistics</h2>
+        <div class="space-y-4">
+          <% if @game.tickets.any? %>
+            <div>
+              <p class="text-sm text-gray-400">Average Sale Price</p>
+              <p class="text-3xl font-bold text-blue-400">
+                $<%= number_with_delimiter(@game.tickets.average(:sale_price).round(2)) %>
+              </p>
+            </div>
+
+            <div>
+              <p class="text-sm text-gray-400">Highest Sale</p>
+              <p class="text-2xl font-bold text-green-400">
+                $<%= number_with_delimiter(@game.tickets.maximum(:sale_price)) %>
+              </p>
+            </div>
+
+            <div>
+              <p class="text-sm text-gray-400">Lowest Sale</p>
+              <p class="text-2xl font-bold text-yellow-400">
+                $<%= number_with_delimiter(@game.tickets.minimum(:sale_price)) %>
+              </p>
+            </div>
+
+            <div>
+              <p class="text-sm text-gray-400">Average Markup</p>
+              <p class="text-2xl font-bold <%= (@game.tickets.average(:sale_price) > @game.cost_per_ticket) ? 'text-green-400' : 'text-red-400' %>">
+                <%= ((@game.tickets.average(:sale_price) / @game.cost_per_ticket - 1) * 100).round(1) %>%
+              </p>
+            </div>
+          <% else %>
+            <p class="text-gray-400 text-center py-4">No sales data yet</p>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Break Even Calculator -->
+      <div class="card bg-blue-900/20 border-blue-700">
+        <h3 class="text-lg font-bold text-blue-400 mb-3">Break Even Info</h3>
+        <p class="text-sm text-gray-300 mb-2">
+          Cost per ticket: <span class="text-white font-semibold">$<%= number_with_delimiter(@game.cost_per_ticket) %></span>
+        </p>
+        <p class="text-sm text-gray-300 mb-2">
+          Your share of parking: <span class="text-white font-semibold">$<%= number_with_delimiter(@game.parking_cost / current_season.num_seats) %></span>
+        </p>
+        <p class="text-sm text-gray-300 mb-4">
+          Break even price per ticket: <span class="text-yellow-400 font-bold">$<%= number_with_delimiter(@game.total_cost / current_season.num_seats) %></span>
+        </p>
+        <% if @game.tickets_available > 0 %>
+          <p class="text-xs text-gray-400">
+            You need to sell <%= @game.tickets_available %> remaining ticket<%= @game.tickets_available == 1 ? '' : 's' %>
+            at $<%= number_with_delimiter(((@game.total_cost - @game.total_revenue) / @game.tickets_available).round(2)) %>
+            each to break even.
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

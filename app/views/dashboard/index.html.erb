@@ -1,0 +1,190 @@
+<div class="space-y-8">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-4xl font-bold text-white">Dashboard</h1>
+      <p class="text-gray-400 mt-2">Oklahoma City Thunder <%= @season.year %> Season</p>
+    </div>
+    <div>
+      <%= link_to "Add Playoff Game", new_game_path, class: "btn-primary" %>
+    </div>
+  </div>
+
+  <!-- Financial Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Total Cost -->
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-400 uppercase tracking-wide">Total Cost</p>
+          <p class="text-3xl font-bold text-red-400 mt-2">$<%= number_with_delimiter(@total_cost, precision: 2) %></p>
+        </div>
+        <div class="bg-red-500/20 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2"><%= @total_games %> games</p>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-400 uppercase tracking-wide">Total Revenue</p>
+          <p class="text-3xl font-bold text-green-400 mt-2">$<%= number_with_delimiter(@total_revenue, precision: 2) %></p>
+        </div>
+        <div class="bg-green-500/20 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2"><%= @tickets_sold %> tickets sold</p>
+    </div>
+
+    <!-- Profit/Loss -->
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-400 uppercase tracking-wide">Current Profit/Loss</p>
+          <p class="text-3xl font-bold <%= @total_profit >= 0 ? 'text-green-400' : 'text-red-400' %> mt-2">
+            <%= @total_profit >= 0 ? '+' : '' %>$<%= number_with_delimiter(@total_profit, precision: 2) %>
+          </p>
+        </div>
+        <div class="bg-<%= @total_profit >= 0 ? 'green' : 'red' %>-500/20 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-<%= @total_profit >= 0 ? 'green' : 'red' %>-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">
+        <%= (@total_revenue / @total_cost * 100).round(1) %>% recovered
+      </p>
+    </div>
+
+    <!-- Tickets Sold -->
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-400 uppercase tracking-wide">Tickets Sold</p>
+          <p class="text-3xl font-bold text-blue-400 mt-2"><%= @tickets_sold %>/<%= @total_tickets %></p>
+        </div>
+        <div class="bg-blue-500/20 p-3 rounded-lg">
+          <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
+          </svg>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2"><%= @percentage_sold %>% sold</p>
+    </div>
+  </div>
+
+  <!-- Break Even Status -->
+  <div class="card <%= @on_track ? 'bg-green-900/20 border-green-700' : 'bg-red-900/20 border-red-700' %>">
+    <div class="flex items-center space-x-4">
+      <div class="flex-shrink-0">
+        <% if @on_track %>
+          <svg class="w-12 h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        <% else %>
+          <svg class="w-12 h-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        <% end %>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold <%= @on_track ? 'text-green-400' : 'text-red-400' %>">
+          <%= @on_track ? 'On Track to Break Even!' : 'Not On Track' %>
+        </h3>
+        <p class="text-gray-300 mt-1">
+          <% if @on_track %>
+            Based on your current average ticket price, you're projected to cover your season ticket costs.
+          <% else %>
+            You may need to increase prices or sell more tickets to break even on the season.
+          <% end %>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Upcoming Games -->
+    <div class="card">
+      <h2 class="text-2xl font-bold text-white mb-4">Upcoming Games</h2>
+      <div class="space-y-3">
+        <% if @upcoming_games.any? %>
+          <% @upcoming_games.each do |game| %>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-blue-500 transition-colors">
+              <%= link_to game, class: "block" do %>
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="font-semibold text-white">vs <%= game.opponent.name %></p>
+                    <p class="text-sm text-gray-400"><%= game.game_date.strftime("%B %d, %Y") %></p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm <%= game.fully_sold? ? 'text-green-400' : game.partially_sold? ? 'text-yellow-400' : 'text-red-400' %>">
+                      <%= game.tickets_sold_count %>/<%= @season.num_seats %> sold
+                    </p>
+                    <p class="text-xs text-gray-500">$<%= number_with_delimiter(game.cost_per_ticket) %>/ticket</p>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+          <%= link_to "View All Games →", games_path, class: "block text-center text-blue-400 hover:text-blue-300 mt-4" %>
+        <% else %>
+          <p class="text-gray-400 text-center py-8">No upcoming games</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Recent Sales -->
+    <div class="card">
+      <h2 class="text-2xl font-bold text-white mb-4">Recent Sales</h2>
+      <div class="space-y-3">
+        <% if @recent_sales.any? %>
+          <% @recent_sales.each do |ticket| %>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="font-semibold text-white">vs <%= ticket.game.opponent.name %></p>
+                  <p class="text-sm text-gray-400">Seat <%= ticket.seat_number %> • <%= ticket.sold_at.strftime("%b %d") %></p>
+                </div>
+                <div class="text-right">
+                  <p class="text-lg font-bold text-green-400">$<%= number_with_delimiter(ticket.sale_price) %></p>
+                  <p class="text-xs text-gray-500">
+                    <%= ((ticket.sale_price / ticket.game.cost_per_ticket - 1) * 100).round(0) %>% markup
+                  </p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-gray-400 text-center py-8">No sales yet</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Status Summary -->
+  <div class="card">
+    <h2 class="text-2xl font-bold text-white mb-4">Games Summary</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+        <p class="text-gray-400 text-sm">Fully Sold</p>
+        <p class="text-3xl font-bold text-green-400"><%= @season.games.select(&:fully_sold?).count %></p>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+        <p class="text-gray-400 text-sm">Partially Sold</p>
+        <p class="text-3xl font-bold text-yellow-400"><%= @season.games.select(&:partially_sold?).count %></p>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+        <p class="text-gray-400 text-sm">Unsold</p>
+        <p class="text-3xl font-bold text-red-400"><%= @season.games.select(&:unsold?).count %></p>
+      </div>
+    </div>
+  </div>
+</div>
