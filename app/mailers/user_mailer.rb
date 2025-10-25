@@ -9,4 +9,14 @@ class UserMailer < ApplicationMailer
       subject: "You've been invited to Thunder Tickets"
     )
   end
+
+  def daily_digest
+    @user = params[:user]
+    @games = Game.upcoming.limit(3)
+
+    mail(
+      to: @user.email,
+      subject: "Your Daily Thunder Tickets Digest - #{Date.current.strftime("%B %d, %Y")}"
+    )
+  end
 end
