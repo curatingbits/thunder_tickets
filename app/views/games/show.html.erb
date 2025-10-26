@@ -103,7 +103,12 @@
       <% if @available_seats.any? %>
         <div class="border-t border-gray-700 pt-6">
           <h3 class="text-lg font-semibold text-white mb-4">Record New Sale</h3>
-          <%= form_with model: [@game, Ticket.new], class: "space-y-4", data: { controller: "ticket-form" } do |f| %>
+          <%= form_with model: [@game, Ticket.new],
+                        class: "space-y-4",
+                        data: {
+                          controller: "ticket-form",
+                          action: "submit->ticket-form#submit"
+                        } do |f| %>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">Section</label>

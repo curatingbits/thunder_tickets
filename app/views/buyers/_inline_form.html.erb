@@ -1,41 +1,43 @@
-<%= form_with model: buyer,
-    class: "space-y-4 p-4 bg-gray-900 rounded-lg border border-gray-700",
-    data: {
-      buyer_form_target: "form",
-      action: "turbo:submit-end->buyer-form#handleSuccess ajax:error->buyer-form#handleError"
-    } do |f| %>
+<div class="space-y-4 p-4 bg-gray-900 rounded-lg border border-gray-700"
+     data-buyer-form-target="formFields">
 
-  <%= f.hidden_field :inline, value: "true" %>
-
-  <% if buyer.errors.any? %>
-    <div class="bg-red-900/50 border border-red-700 rounded-lg p-3">
-      <p class="text-red-200 text-sm font-semibold mb-1">Error creating buyer:</p>
-      <ul class="list-disc list-inside text-red-300 text-xs">
-        <% buyer.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+  <!-- Error container (hidden by default, shown via JavaScript) -->
+  <div class="bg-red-900/50 border border-red-700 rounded-lg p-3 hidden" data-buyer-form-target="errorContainer">
+    <p class="text-red-200 text-sm font-semibold mb-1">Error creating buyer:</p>
+    <ul class="list-disc list-inside text-red-300 text-xs" data-buyer-form-target="errorList">
+    </ul>
+  </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
-      <%= f.label :name, "Name *", class: "block text-xs font-medium text-gray-300 mb-1" %>
-      <%= f.text_field :name, class: "input-field text-sm", placeholder: "John Doe", required: true %>
+      <label for="buyer_name" class="block text-xs font-medium text-gray-300 mb-1">Name *</label>
+      <input type="text"
+             id="buyer_name"
+             data-buyer-form-target="nameInput"
+             class="input-field text-sm"
+             placeholder="John Doe">
     </div>
 
     <div>
-      <%= f.label :email, "Email (optional)", class: "block text-xs font-medium text-gray-300 mb-1" %>
-      <%= f.email_field :email, class: "input-field text-sm", placeholder: "buyer@example.com" %>
+      <label for="buyer_email" class="block text-xs font-medium text-gray-300 mb-1">Email (optional)</label>
+      <input type="email"
+             id="buyer_email"
+             data-buyer-form-target="emailInput"
+             class="input-field text-sm"
+             placeholder="buyer@example.com">
     </div>
   </div>
 
   <div class="flex gap-2 mt-4">
-    <%= f.submit "Add Buyer", class: "btn-success text-sm flex-1" %>
     <button type="button"
-            onclick="this.closest('[data-buyer-form-target=formContainer]').querySelector('select').value = ''; this.closest('[data-buyer-form-target=formContainer]').classList.add('hidden');"
+            data-action="click->buyer-form#submitBuyerForm"
+            class="btn-success text-sm flex-1">
+      Add Buyer
+    </button>
+    <button type="button"
+            data-action="click->buyer-form#cancelForm"
             class="btn-secondary text-sm">
       Cancel
     </button>
   </div>
-<% end %>
+</div>
