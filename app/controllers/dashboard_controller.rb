@@ -11,7 +11,8 @@ class DashboardController < ApplicationController
     @tickets_sold = @season.tickets_sold_count
     @total_tickets = @season.total_tickets_available
     @percentage_sold = @season.percentage_sold
-    @on_track = @season.on_track_to_break_even?
+    @break_even_status = @season.break_even_status
+    @break_even_metrics = @season.break_even_metrics
 
     # Upcoming games
     @upcoming_games = @season.games.upcoming.limit(5)
