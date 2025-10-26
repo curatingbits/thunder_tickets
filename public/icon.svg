@@ -1,6 +1,6 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Blue background circle -->
-  <circle cx="256" cy="256" r="256" fill="#60a5fa"/>
+  <!-- Blue background -->
+  <rect width="512" height="512" fill="#60a5fa"/>
 
   <!-- Orange lightning bolt -->
   <path d="M280 80 L180 260 L240 260 L200 432 L340 220 L280 220 Z"
