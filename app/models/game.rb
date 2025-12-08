@@ -3,12 +3,14 @@ class Game < ApplicationRecord
   belongs_to :opponent, class_name: "Team"
   has_many :tickets, dependent: :destroy
   has_one :market_price, dependent: :destroy
+  has_one_attached :receipt_image
 
   validates :game_number, presence: true, uniqueness: { scope: :season_id }
   validates :game_date, presence: true
   validates :cost_per_ticket, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :parking_cost, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :game_type, inclusion: { in: %w[regular playoff] }
+  validate :receipt_image_size
 
   scope :regular_season, -> { where(game_type: "regular") }
   scope :playoffs, -> { where(game_type: "playoff") }
@@ -45,5 +47,13 @@ class Game < ApplicationRecord
 
   def unsold?
     tickets_sold_count.zero?
+  end
+
+  private
+
+  def receipt_image_size
+    if receipt_image.attached? && receipt_image.blob.byte_size > 15.megabytes
+      errors.add(:receipt_image, "must be less than 15MB")
+    end
   end
 end

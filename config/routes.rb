@@ -29,7 +29,11 @@ Rails.application.routes.draw do
 
   # Games and tickets
   resources :games, only: [:index, :show, :edit, :update, :new, :create] do
-    resources :tickets, only: [:create, :destroy]
+    resources :tickets, only: [:create, :destroy] do
+      collection do
+        post :bulk_create
+      end
+    end
   end
 
   # Season settings

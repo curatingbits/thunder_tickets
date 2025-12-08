@@ -3,35 +3,46 @@ class DashboardController < ApplicationController
     @season = current_season
     return redirect_to login_path, alert: "No current season found" unless @season
 
-    @total_games = @season.games.count
-    @games_with_sales = @season.games.joins(:tickets).distinct.count
-    @total_cost = @season.total_cost
-    @total_revenue = @season.total_revenue
-    @total_profit = @season.total_profit
-    @tickets_sold = @season.tickets_sold_count
-    @total_tickets = @season.total_tickets_available
-    @percentage_sold = @season.percentage_sold
+    # Core metrics
+    @metrics = @season.dashboard_metrics
     @break_even_status = @season.break_even_status
     @break_even_metrics = @season.break_even_metrics
+
+    # Performance indicators
+    @best_game = @season.best_performing_game
+    @worst_game = @season.worst_performing_game
 
     # Upcoming games
     @upcoming_games = @season.games.upcoming.limit(5)
 
-    # Recent sales
+    # Recent sales with preloaded associations
     @recent_sales = Ticket.joins(:game)
+                          .includes(game: :opponent)
                           .where(games: { season_id: @season.id })
                           .order(sold_at: :desc)
                           .limit(10)
 
-    # Financial chart data
+    # Chart data: Monthly revenue trend
     @monthly_revenue = @season.games
                               .joins(:tickets)
                               .group("strftime('%Y-%m', games.game_date)")
                               .sum("tickets.sale_price")
 
-    @game_profitability = @season.games
-                                 .joins(:tickets)
-                                 .group("games.opponent_id")
-                                 .select("games.opponent_id, SUM(tickets.sale_price) - ((games.cost_per_ticket * #{@season.num_seats}) + games.parking_cost) as profit")
+    # Chart data: Profit by game (for profit distribution chart)
+    @game_profits = @season.games.includes(:opponent, :tickets).map do |game|
+      {
+        opponent: game.opponent.abbreviation,
+        profit: game.profit_loss,
+        revenue: game.total_revenue,
+        cost: game.total_cost,
+        tickets_sold: game.tickets_sold_count,
+        date: game.game_date
+      }
+    end.sort_by { |g| g[:date] }
+
+    # Games by status counts
+    @games_fully_sold = @season.games.select(&:fully_sold?).count
+    @games_partially_sold = @season.games.select(&:partially_sold?).count
+    @games_unsold = @season.games.select(&:unsold?).count
   end
 end

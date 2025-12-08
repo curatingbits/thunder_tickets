@@ -56,8 +56,9 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Ticket Sales Management -->
-    <div class="card">
+    <!-- Left Column: Ticket Sales Management + Receipt -->
+    <div class="space-y-6">
+      <div class="card">
       <h2 class="text-2xl font-bold text-white mb-4">Manage Tickets</h2>
 
       <!-- Existing Tickets -->
@@ -101,72 +102,149 @@
 
       <!-- Add New Ticket Sale -->
       <% if @available_seats.any? %>
-        <div class="border-t border-gray-700 pt-6">
+        <div class="border-t border-gray-700 pt-6" data-controller="bulk-sale" data-bulk-sale-available-count-value="<%= @available_seats.count %>">
           <h3 class="text-lg font-semibold text-white mb-4">Record New Sale</h3>
-          <%= form_with model: [@game, Ticket.new],
-                        class: "space-y-4",
-                        data: {
-                          controller: "ticket-form",
-                          action: "submit->ticket-form#submit"
-                        } do |f| %>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Section</label>
-                <%= f.text_field :section, value: "101", class: "input-field" %>
+
+          <!-- Tab Buttons -->
+          <div class="flex mb-4 border-b border-gray-700">
+            <button type="button"
+                    class="px-4 py-2 text-sm font-medium rounded-t-lg bg-blue-600 text-white"
+                    data-bulk-sale-target="singleTab"
+                    data-action="click->bulk-sale#showSingle">
+              Single Sale
+            </button>
+            <button type="button"
+                    class="px-4 py-2 text-sm font-medium rounded-t-lg bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    data-bulk-sale-target="bulkTab"
+                    data-action="click->bulk-sale#showBulk">
+              Bulk Sale (<%= @available_seats.count %>)
+            </button>
+          </div>
+
+          <!-- Single Sale Form -->
+          <div data-bulk-sale-target="singleForm">
+            <%= form_with model: [@game, Ticket.new],
+                          class: "space-y-4",
+                          data: {
+                            controller: "ticket-form",
+                            action: "submit->ticket-form#submit"
+                          } do |f| %>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Section</label>
+                  <%= f.text_field :section, value: "101", class: "input-field" %>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Row</label>
+                  <%= f.text_field :row, value: "DD", class: "input-field" %>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Seat Number</label>
+                  <%= f.select :seat_number, @available_seats.map { |s| [s, s] },
+                      { prompt: "Select seat" },
+                      class: "input-field" %>
+                </div>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Row</label>
-                <%= f.text_field :row, value: "DD", class: "input-field" %>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Seat Number</label>
-                <%= f.select :seat_number, @available_seats.map { |s| [s, s] },
-                    { prompt: "Select seat" },
+                <label class="block text-sm font-medium text-gray-300 mb-2">Sale Price</label>
+                <%= f.number_field :sale_price, step: 0.01, placeholder: @game.cost_per_ticket.to_s,
                     class: "input-field" %>
               </div>
-            </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Sale Price</label>
-              <%= f.number_field :sale_price, step: 0.01, placeholder: @game.cost_per_ticket.to_s,
-                  class: "input-field" %>
-            </div>
+              <div data-controller="buyer-form">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Buyer (Optional)</label>
+                  <%= f.select :buyer_id,
+                      [["+ Create New Buyer", "new"]] + @buyers.map { |b| [b.name + (b.email.present? ? " (#{b.email})" : ""), b.id] },
+                      { prompt: "Select buyer (optional)" },
+                      class: "input-field",
+                      data: {
+                        buyer_form_target: "select",
+                        action: "change->buyer-form#toggleForm"
+                      } %>
+                  <p class="mt-1 text-xs text-gray-500">Link this sale to an existing buyer or create a new one</p>
+                </div>
 
-            <div data-controller="buyer-form">
+                <!-- Inline buyer creation form (hidden by default) -->
+                <div class="mt-6 hidden" data-buyer-form-target="formContainer">
+                  <%= render "buyers/inline_form", buyer: Buyer.new %>
+                </div>
+              </div>
+
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Buyer (Optional)</label>
-                <%= f.select :buyer_id,
-                    [["➕ Create New Buyer", "new"]] + @buyers.map { |b| [b.name + (b.email.present? ? " (#{b.email})" : ""), b.id] },
-                    { prompt: "Select buyer (optional)" },
+                <label class="block text-sm font-medium text-gray-300 mb-2">Notes (Optional)</label>
+                <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
+              </div>
+
+              <%= f.submit "Record Sale", class: "btn-success w-full" %>
+            <% end %>
+          </div>
+
+          <!-- Bulk Sale Form -->
+          <div class="hidden" data-bulk-sale-target="bulkForm">
+            <%= form_with url: bulk_create_game_tickets_path(@game), method: :post, class: "space-y-4", data: { controller: "ticket-form", action: "submit->ticket-form#submit" } do |f| %>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Total Sale Amount</label>
+                <%= f.number_field :total_amount, step: 0.01, placeholder: (@game.cost_per_ticket * @available_seats.count).to_s,
                     class: "input-field",
                     data: {
-                      buyer_form_target: "select",
-                      action: "change->buyer-form#toggleForm"
+                      bulk_sale_target: "totalAmount",
+                      action: "input->bulk-sale#updatePreview"
                     } %>
-                <p class="mt-1 text-xs text-gray-500">Link this sale to an existing buyer or create a new one</p>
+                <p class="mt-2 text-sm text-blue-400 hidden" data-bulk-sale-target="pricePreview"></p>
               </div>
 
-              <!-- Inline buyer creation form (hidden by default) -->
-              <div class="mt-6 hidden" data-buyer-form-target="formContainer">
-                <%= render "buyers/inline_form", buyer: Buyer.new %>
+              <div data-controller="buyer-form">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Buyer (Optional)</label>
+                  <%= f.select :buyer_id,
+                      [["+ Create New Buyer", "new"]] + @buyers.map { |b| [b.name + (b.email.present? ? " (#{b.email})" : ""), b.id] },
+                      { prompt: "Select buyer (optional)" },
+                      class: "input-field",
+                      data: {
+                        buyer_form_target: "select",
+                        action: "change->buyer-form#toggleForm"
+                      } %>
+                  <p class="mt-1 text-xs text-gray-500">This buyer will be assigned to all <%= @available_seats.count %> tickets</p>
+                </div>
+
+                <!-- Inline buyer creation form (hidden by default) -->
+                <div class="mt-6 hidden" data-buyer-form-target="formContainer">
+                  <%= render "buyers/inline_form", buyer: Buyer.new %>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Notes (Optional)</label>
-              <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
-            </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Notes (Optional)</label>
+                <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
+              </div>
 
-            <%= f.submit "Record Sale", class: "btn-success w-full" %>
-          <% end %>
+              <%= f.submit "Record All #{@available_seats.count} Tickets", class: "btn-success w-full" %>
+            <% end %>
+          </div>
         </div>
       <% else %>
         <div class="border-t border-gray-700 pt-6">
           <p class="text-center text-green-400 font-semibold">All tickets for this game have been sold!</p>
         </div>
       <% end %>
+      </div>
+
+      <!-- Receipt Image -->
+      <div class="card">
+        <h3 class="text-lg font-semibold text-white mb-4">Receipt</h3>
+        <% if @game.receipt_image.attached? %>
+          <%= image_tag @game.receipt_image, class: "max-w-full rounded-lg mb-4" %>
+        <% end %>
+        <%= form_with model: @game, url: game_path(@game), method: :patch, class: "space-y-3" do |f| %>
+          <%= f.file_field :receipt_image, accept: "image/*", class: "input-field" %>
+          <p class="text-xs text-gray-500">Max 15MB. Accepts JPG, PNG, HEIC.</p>
+          <%= f.submit @game.receipt_image.attached? ? "Replace Image" : "Upload Image", class: "btn-secondary w-full" %>
+        <% end %>
+      </div>
     </div>
 
     <!-- Game Statistics -->

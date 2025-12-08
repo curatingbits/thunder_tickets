@@ -39,6 +39,17 @@
         </div>
       </div>
 
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Receipt Image (Venmo Screenshot)</label>
+        <%= f.file_field :receipt_image, accept: "image/*", class: "input-field" %>
+        <p class="mt-1 text-xs text-gray-500">Max 15MB. Accepts JPG, PNG, HEIC.</p>
+        <% if @game.receipt_image.attached? %>
+          <div class="mt-2">
+            <p class="text-xs text-green-400">Current image attached</p>
+          </div>
+        <% end %>
+      </div>
+
       <div class="flex gap-4 pt-4">
         <%= f.submit "Update Game", class: "btn-primary flex-1" %>
         <%= link_to "Cancel", @game, class: "btn-secondary flex-1 text-center" %>

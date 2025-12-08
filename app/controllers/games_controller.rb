@@ -61,6 +61,6 @@ class GamesController < ApplicationController
   end
 
   def game_params
-    params.require(:game).permit(:game_date, :opponent_id, :cost_per_ticket, :parking_cost, :game_type, :playoff_round)
+    params.require(:game).permit(:game_date, :opponent_id, :cost_per_ticket, :parking_cost, :game_type, :playoff_round, :receipt_image)
   end
 end
