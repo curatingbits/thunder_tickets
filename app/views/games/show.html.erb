@@ -10,6 +10,9 @@
         <% if @game.game_type == "playoff" %>
           <br class="sm:hidden">
           <span class="sm:before:content-['•'] sm:before:mx-2 text-yellow-400"><%= @game.playoff_round %></span>
+        <% elsif @game.game_type == "nba_cup" %>
+          <br class="sm:hidden">
+          <span class="sm:before:content-['•'] sm:before:mx-2 text-purple-400">NBA Cup: <%= @game.playoff_round %></span>
         <% end %>
       </p>
     </div>

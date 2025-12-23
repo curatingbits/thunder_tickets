@@ -9,11 +9,15 @@ class Game < ApplicationRecord
   validates :game_date, presence: true
   validates :cost_per_ticket, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :parking_cost, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :game_type, inclusion: { in: %w[regular playoff] }
+  validates :game_type, inclusion: { in: %w[regular playoff nba_cup] }
+
+  PLAYOFF_ROUNDS = ["First Round", "Conference Semifinals", "Conference Finals", "NBA Finals"].freeze
+  NBA_CUP_ROUNDS = ["Group Play", "Knockout Round", "Quarterfinals", "Semifinals", "Championship"].freeze
   validate :receipt_image_size
 
   scope :regular_season, -> { where(game_type: "regular") }
   scope :playoffs, -> { where(game_type: "playoff") }
+  scope :nba_cup, -> { where(game_type: "nba_cup") }
   scope :upcoming, -> { where("game_date >= ?", Date.current).order(:game_date) }
   scope :past, -> { where("game_date < ?", Date.current).order(game_date: :desc) }
 
@@ -47,6 +51,18 @@ class Game < ApplicationRecord
 
   def unsold?
     tickets_sold_count.zero?
+  end
+
+  def regular?
+    game_type == "regular"
+  end
+
+  def playoff?
+    game_type == "playoff"
+  end
+
+  def nba_cup?
+    game_type == "nba_cup"
   end
 
   private

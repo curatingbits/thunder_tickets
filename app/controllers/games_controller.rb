@@ -34,7 +34,8 @@ class GamesController < ApplicationController
     @game.game_number = current_season.games.maximum(:game_number).to_i + 1
 
     if @game.save
-      redirect_to @game, notice: "Playoff game added successfully"
+      game_type_label = @game.nba_cup? ? "NBA Cup" : @game.game_type.titleize
+      redirect_to @game, notice: "#{game_type_label} game added successfully"
     else
       @teams = Team.order(:name)
       render :new, status: :unprocessable_entity

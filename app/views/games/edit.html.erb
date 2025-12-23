@@ -17,13 +17,11 @@
         <%= f.date_field :game_date, class: "input-field" %>
       </div>
 
-      <% if @game.game_type == "playoff" %>
+      <% if @game.game_type.in?(%w[playoff nba_cup]) %>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Playoff Round</label>
-          <%= f.select :playoff_round,
-              ["First Round", "Conference Semifinals", "Conference Finals", "NBA Finals"],
-              {},
-              class: "input-field" %>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Round</label>
+          <% round_options = @game.playoff? ? Game::PLAYOFF_ROUNDS : Game::NBA_CUP_ROUNDS %>
+          <%= f.select :playoff_round, round_options, {}, class: "input-field" %>
         </div>
       <% end %>
 

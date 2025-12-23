@@ -1,12 +1,17 @@
 <div class="max-w-2xl mx-auto space-y-6">
   <div>
     <%= link_to "← Back to Games", games_path, class: "text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block" %>
-    <h1 class="text-4xl font-bold text-white">Add Playoff Game</h1>
-    <p class="text-gray-400 mt-2">Add a new playoff game to the <%= current_season.year %> season</p>
+    <h1 class="text-4xl font-bold text-white">Add Game</h1>
+    <p class="text-gray-400 mt-2">Add a new playoff or NBA Cup game to the <%= current_season.year %> season</p>
   </div>
 
   <div class="card">
-    <%= form_with model: @game, class: "space-y-6" do |f| %>
+    <%= form_with model: @game, class: "space-y-6",
+        data: {
+          controller: "game-form",
+          game_form_playoff_rounds_value: Game::PLAYOFF_ROUNDS.to_json,
+          game_form_nba_cup_rounds_value: Game::NBA_CUP_ROUNDS.to_json
+        } do |f| %>
       <div>
         <label class="block text-sm font-medium text-gray-300 mb-2">Opponent</label>
         <%= f.collection_select :opponent_id, @teams, :id, :name,
@@ -20,11 +25,20 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Playoff Round</label>
-        <%= f.select :playoff_round,
-            ["First Round", "Conference Semifinals", "Conference Finals", "NBA Finals"],
+        <label class="block text-sm font-medium text-gray-300 mb-2">Game Type</label>
+        <%= f.select :game_type,
+            [["Playoff", "playoff"], ["NBA Cup", "nba_cup"]],
+            {},
+            class: "input-field",
+            data: { game_form_target: "gameType", action: "change->game-form#updateRoundOptions" } %>
+      </div>
+
+      <div data-game-form-target="roundContainer">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Round</label>
+        <%= f.select :playoff_round, [],
             { prompt: "Select round" },
-            class: "input-field" %>
+            class: "input-field",
+            data: { game_form_target: "roundSelect" } %>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -42,7 +56,7 @@
       </div>
 
       <div class="flex gap-4 pt-4">
-        <%= f.submit "Add Playoff Game", class: "btn-primary flex-1" %>
+        <%= f.submit "Add Game", class: "btn-primary flex-1" %>
         <%= link_to "Cancel", games_path, class: "btn-secondary flex-1 text-center" %>
       </div>
     <% end %>
