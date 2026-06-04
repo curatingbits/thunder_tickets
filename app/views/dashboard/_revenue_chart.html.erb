@@ -1,0 +1,16 @@
+<%# locals: monthly_financials (array from Season#monthly_financials) %>
+<div class="card">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-bold text-white">Revenue Over Time</h2>
+    <span class="text-xs text-gray-500">Cumulative revenue vs cost</span>
+  </div>
+  <% if monthly_financials.any? %>
+    <div class="h-64 sm:h-80">
+      <canvas id="revenueChart"
+              data-dashboard-charts-target="revenueChart"
+              data-monthly-financials='<%= monthly_financials.to_json %>'></canvas>
+    </div>
+  <% else %>
+    <p class="text-gray-400 text-center py-8">No revenue data yet</p>
+  <% end %>
+</div>

@@ -1,19 +1,34 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
-one:
-  game: one
+# Current season — past game: 2 of 3 seats sold (partially sold)
+cur_past_1:
+  game: current_past
   seat_number: 1
-  sale_price: 9.99
-  sold_at: 2025-10-24 19:33:23
-  buyer_name: MyString
-  buyer_email: MyString
-  notes: MyText
+  sale_price: 130
+  sold_at: <%= 2.months.ago %>
+  buyer: john
 
-two:
-  game: two
+cur_past_2:
+  game: current_past
+  seat_number: 2
+  sale_price: 120
+  sold_at: <%= 2.months.ago %>
+
+# Past season — regular game: 2 of 2 seats sold (fully sold), revenue 300
+past_reg_1:
+  game: past_regular
   seat_number: 1
-  sale_price: 9.99
-  sold_at: 2025-10-24 19:33:23
-  buyer_name: MyString
-  buyer_email: MyString
-  notes: MyText
+  sale_price: 150
+  sold_at: <%= 8.months.ago %>
+
+past_reg_2:
+  game: past_regular
+  seat_number: 2
+  sale_price: 150
+  sold_at: <%= 8.months.ago %>
+
+# Past season — playoff game: 1 of 2 seats sold (partially sold), revenue 200
+# leaves 1 unsold seat -> write-off = 1 * 150 = 150
+past_play_1:
+  game: past_playoff
+  seat_number: 1
+  sale_price: 200
+  sold_at: <%= 7.months.ago %>

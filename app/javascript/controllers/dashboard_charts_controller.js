@@ -2,17 +2,23 @@ import { Controller } from "@hotwired/stimulus"
 import { Chart } from "chart.js/auto"
 
 export default class extends Controller {
-  static targets = ["profitChart"]
+  static targets = ["profitChart", "revenueChart"]
 
   connect() {
     if (this.hasProfitChartTarget) {
       this.initProfitChart()
+    }
+    if (this.hasRevenueChartTarget) {
+      this.initRevenueChart()
     }
   }
 
   disconnect() {
     if (this.profitChartInstance) {
       this.profitChartInstance.destroy()
+    }
+    if (this.revenueChartInstance) {
+      this.revenueChartInstance.destroy()
     }
   }
 
@@ -125,5 +131,124 @@ export default class extends Controller {
         }
       }
     })
+  }
+
+  initRevenueChart() {
+    const canvas = this.revenueChartTarget
+    const data = JSON.parse(canvas.dataset.monthlyFinancials || "[]")
+
+    if (data.length === 0) return
+
+    const ctx = canvas.getContext("2d")
+
+    const labels = data.map(d => this.formatMonth(d.month))
+    const cumulativeRevenue = data.map(d => d.cumulative_revenue)
+    const cumulativeCost = data.map(d => d.cumulative_cost)
+
+    this.revenueChartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Cumulative Revenue",
+            data: cumulativeRevenue,
+            borderColor: "rgba(34, 197, 94, 1)",
+            backgroundColor: "rgba(34, 197, 94, 0.15)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointBackgroundColor: "rgba(34, 197, 94, 1)"
+          },
+          {
+            label: "Cumulative Cost",
+            data: cumulativeCost,
+            borderColor: "rgba(239, 68, 68, 1)",
+            backgroundColor: "rgba(239, 68, 68, 0.05)",
+            borderDash: [6, 4],
+            fill: false,
+            tension: 0.3,
+            pointRadius: 3,
+            pointBackgroundColor: "rgba(239, 68, 68, 1)"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: "index"
+        },
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              color: "#d1d5db",
+              usePointStyle: true,
+              padding: 16,
+              font: {
+                size: 12
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: "rgba(17, 24, 39, 0.95)",
+            titleColor: "#fff",
+            bodyColor: "#d1d5db",
+            borderColor: "rgba(75, 85, 99, 0.5)",
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: "#9ca3af",
+              font: {
+                size: 11
+              }
+            }
+          },
+          y: {
+            grid: {
+              color: "rgba(75, 85, 99, 0.3)",
+              drawBorder: false
+            },
+            ticks: {
+              color: "#9ca3af",
+              font: {
+                size: 11
+              },
+              callback: function(value) {
+                if (value >= 1000 || value <= -1000) {
+                  return "$" + (value / 1000).toFixed(0) + "k"
+                }
+                return "$" + value
+              }
+            },
+            beginAtZero: true
+          }
+        }
+      }
+    })
+  }
+
+  // "2025-11" -> "Nov '25"
+  formatMonth(month) {
+    const [year, mon] = month.split("-")
+    const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const idx = parseInt(mon, 10) - 1
+    const name = names[idx] || month
+    return `${name} '${year.slice(2)}`
   }
 }

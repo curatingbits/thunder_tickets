@@ -1,13 +1,15 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# "current" is the active season (has a future game); "past_season" is complete
+# (all games in the past) and is used to exercise recap mode.
+current:
+  year: "2025-26"
+  total_season_cost: 0
+  is_current: true
+  num_seats: 3
+  seat_section: "101"
 
-one:
-  year: MyString
-  total_season_cost: 9.99
+past_season:
+  year: "2024-25"
+  total_season_cost: 0
   is_current: false
-  num_seats: 1
-
-two:
-  year: MyString
-  total_season_cost: 9.99
-  is_current: false
-  num_seats: 1
+  num_seats: 2
+  seat_section: "101"

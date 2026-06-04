@@ -1,0 +1,60 @@
+<%# locals: season (a completed Season) %>
+<div class="card border-l-4 border-l-gray-500">
+  <div class="flex items-center gap-2 mb-4">
+    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h2 class="text-lg font-bold text-white">Season Recap</h2>
+    <span class="text-xs text-gray-500">Final results — season complete</span>
+  </div>
+
+  <!-- Final outcome -->
+  <div class="grid grid-cols-3 gap-4 mb-4">
+    <div class="text-center p-4 bg-gray-900 rounded-lg border <%= season.final_net_profit >= 0 ? 'border-green-700 bg-green-900/10' : 'border-red-700 bg-red-900/10' %>">
+      <p class="text-xs text-gray-400 uppercase mb-1">Final Net Profit</p>
+      <p class="text-xl sm:text-2xl font-bold <%= season.final_net_profit >= 0 ? 'text-green-400' : 'text-red-400' %>">
+        <%= season.final_net_profit >= 0 ? '+' : '' %>$<%= number_with_delimiter(season.final_net_profit.round) %>
+      </p>
+    </div>
+    <div class="text-center p-4 bg-gray-900 rounded-lg border border-gray-700">
+      <p class="text-xs text-gray-400 uppercase mb-1">Final ROI</p>
+      <p class="text-xl sm:text-2xl font-bold <%= season.final_roi >= 0 ? 'text-green-400' : 'text-red-400' %>">
+        <%= season.final_roi >= 0 ? '+' : '' %><%= season.final_roi %>%
+      </p>
+    </div>
+    <div class="text-center p-4 bg-gray-900 rounded-lg border border-gray-700">
+      <p class="text-xs text-gray-400 uppercase mb-1">Sell-Through</p>
+      <p class="text-xl sm:text-2xl font-bold text-blue-400"><%= season.sell_through_rate %>%</p>
+    </div>
+  </div>
+
+  <!-- Unsold inventory write-off -->
+  <div class="p-4 bg-red-900/10 rounded-lg border border-red-700/50">
+    <div class="flex items-start gap-3">
+      <div class="bg-red-500/20 p-2 rounded-lg flex-shrink-0">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-medium text-white">Unsold Inventory Write-Off</p>
+          <p class="text-lg font-bold text-red-400">
+            <% if season.unsold_tickets_count.zero? %>
+              $0
+            <% else %>
+              −$<%= number_with_delimiter(season.unsold_inventory_cost.round) %>
+            <% end %>
+          </p>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">
+          <% if season.unsold_tickets_count.zero? %>
+            Every seat was sold — no inventory written off.
+          <% else %>
+            <%= pluralize(season.unsold_tickets_count, "seat") %> never sold (sunk ticket cost).
+          <% end %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

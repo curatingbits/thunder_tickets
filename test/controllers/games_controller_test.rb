@@ -1,33 +1,28 @@
 require "test_helper"
 
 class GamesControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    sign_in
+    @game = games(:current_past)
+  end
+
   test "should get index" do
-    get games_index_url
-    assert_response :success
-  end
-
-  test "should get show" do
-    get games_show_url
-    assert_response :success
-  end
-
-  test "should get edit" do
-    get games_edit_url
-    assert_response :success
-  end
-
-  test "should get update" do
-    get games_update_url
+    get games_path
     assert_response :success
   end
 
   test "should get new" do
-    get games_new_url
+    get new_game_path
     assert_response :success
   end
 
-  test "should get create" do
-    get games_create_url
+  test "should get show" do
+    get game_path(@game)
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get edit_game_path(@game)
     assert_response :success
   end
 end

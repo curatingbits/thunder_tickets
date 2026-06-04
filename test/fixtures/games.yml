@@ -1,21 +1,41 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
-one:
-  season: one
+# Current (active) season: one past game with sales, one future game (keeps the
+# season "active" because a game remains today-or-later).
+current_past:
+  season: current
   game_number: 1
-  game_date: 2025-10-24
-  opponent: one
-  cost_per_ticket: 9.99
-  parking_cost: 9.99
-  game_type: MyString
-  playoff_round: MyString
+  game_date: <%= 2.months.ago.to_date.iso8601 %>
+  opponent: mavericks
+  cost_per_ticket: 100
+  parking_cost: 20
+  game_type: regular
 
-two:
-  season: two
+current_future:
+  season: current
+  game_number: 2
+  game_date: <%= 2.months.from_now.to_date.iso8601 %>
+  opponent: nuggets
+  cost_per_ticket: 100
+  parking_cost: 20
+  game_type: regular
+
+# Past (complete) season: all games in the past, mixed game types.
+# regular: cost 100*2+20=220, revenue 300, profit +80
+# playoff: cost 150*2+25=325, revenue 200, profit -125
+# season total: cost 545, revenue 500, profit -45
+past_regular:
+  season: past_season
   game_number: 1
-  game_date: 2025-10-24
-  opponent: two
-  cost_per_ticket: 9.99
-  parking_cost: 9.99
-  game_type: MyString
-  playoff_round: MyString
+  game_date: <%= 8.months.ago.to_date.iso8601 %>
+  opponent: mavericks
+  cost_per_ticket: 100
+  parking_cost: 20
+  game_type: regular
+
+past_playoff:
+  season: past_season
+  game_number: 2
+  game_date: <%= 7.months.ago.to_date.iso8601 %>
+  opponent: nuggets
+  cost_per_ticket: 150
+  parking_cost: 25
+  game_type: playoff

@@ -1,0 +1,64 @@
+<% content_for :title, "Seasons" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl sm:text-4xl font-bold text-white">Seasons</h1>
+      <p class="text-sm sm:text-base text-gray-400 mt-1">History &amp; final results across all tracked seasons</p>
+    </div>
+    <%= link_to "← Back to Dashboard", root_path, class: "text-sm text-blue-400 hover:text-blue-300" %>
+  </div>
+
+  <% if @seasons.any? %>
+    <div class="grid grid-cols-1 gap-4">
+      <% @seasons.each do |season| %>
+        <%= link_to dashboard_path(season_id: season.id), class: "card hover:border-blue-500 transition-colors block" do %>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <!-- Identity -->
+            <div class="flex items-center gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xl font-bold text-white"><%= season.year %></h2>
+                  <% if season.is_current? %>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Current</span>
+                  <% end %>
+                  <% if season.complete? %>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">Complete</span>
+                  <% else %>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">Active</span>
+                  <% end %>
+                </div>
+                <p class="text-sm text-gray-400 mt-1"><%= season.games.count %> games &bull; <%= season.sell_through_rate %>% sell-through</p>
+              </div>
+            </div>
+
+            <!-- Financials -->
+            <div class="grid grid-cols-3 gap-4 sm:gap-8 text-right">
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Revenue</p>
+                <p class="text-base font-bold text-green-400">$<%= number_with_delimiter(season.total_revenue.round) %></p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Net Profit</p>
+                <p class="text-base font-bold <%= season.total_profit >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                  <%= season.total_profit >= 0 ? '+' : '' %>$<%= number_with_delimiter(season.total_profit.round) %>
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">ROI</p>
+                <p class="text-base font-bold <%= season.roi >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                  <%= season.roi >= 0 ? '+' : '' %><%= season.roi %>%
+                </p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="card text-center py-12">
+      <p class="text-gray-400">No seasons have been created yet.</p>
+    </div>
+  <% end %>
+</div>

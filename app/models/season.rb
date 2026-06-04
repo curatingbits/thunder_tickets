@@ -202,6 +202,117 @@ class Season < ApplicationRecord
     games_with_sales.min_by(&:profit_loss)
   end
 
+  # ============================================
+  # SEASON LIFECYCLE / STATUS
+  # ============================================
+
+  GAME_TYPES = %w[regular playoff nba_cup].freeze
+
+  # Date of the season's final game (nil if no games scheduled)
+  def last_game_date
+    games.maximum(:game_date)
+  end
+
+  # A season is "complete" once it has games and none remain today-or-later.
+  # Auto-detected so there is no manual close-out step. This is orthogonal to
+  # is_current (which marks the default season used for write operations
+  # elsewhere in the app). If manually re-opening a complete season is ever
+  # needed, add a closed_at:datetime column and factor it in here.
+  def complete?
+    games.exists? && !games.where("game_date >= ?", Date.current).exists?
+  end
+
+  # Active = not complete. A season with no games yet is active (nothing to recap).
+  def active?
+    !complete?
+  end
+
+  # Symbol for view branching
+  def status
+    complete? ? :complete : :active
+  end
+
+  # ============================================
+  # GAME-TYPE BREAKDOWN
+  # ============================================
+
+  # Cost / revenue / profit / ROI broken out by game type. Returns an ordered
+  # array (regular, playoff, nba_cup) containing only the types that have games.
+  # Invariant: the sum of every row's :profit equals total_profit.
+  def profit_by_game_type
+    GAME_TYPES.filter_map do |type|
+      type_games = games.where(game_type: type).includes(:tickets).to_a
+      next if type_games.empty?
+
+      cost         = type_games.sum(&:total_cost)
+      revenue      = type_games.sum(&:total_revenue)
+      tickets_sold = type_games.sum(&:tickets_sold_count)
+
+      {
+        type: type,
+        label: type_label(type),
+        games_count: type_games.size,
+        cost: cost,
+        revenue: revenue,
+        profit: revenue - cost,
+        roi: cost.zero? ? 0.0 : ((revenue - cost) / cost * 100).round(1),
+        tickets_sold: tickets_sold
+      }
+    end
+  end
+
+  # ============================================
+  # REVENUE OVER TIME (cumulative)
+  # ============================================
+
+  # Cumulative revenue vs cumulative cost over the season timeline, keyed by
+  # month ("YYYY-MM") of each game. Computed in memory so it is database-agnostic.
+  # Returns [] when there are no games.
+  def monthly_financials
+    season_games = games.includes(:tickets).to_a
+    return [] if season_games.empty?
+
+    by_month = season_games.group_by { |g| g.game_date.strftime("%Y-%m") }
+
+    cumulative_revenue = 0
+    cumulative_cost = 0
+
+    by_month.keys.sort.map do |month|
+      month_games = by_month[month]
+      revenue = month_games.sum(&:total_revenue)
+      cost = month_games.sum(&:total_cost)
+      cumulative_revenue += revenue
+      cumulative_cost += cost
+
+      {
+        month: month,
+        revenue: revenue,
+        cost: cost,
+        cumulative_revenue: cumulative_revenue,
+        cumulative_cost: cumulative_cost
+      }
+    end
+  end
+
+  # ============================================
+  # RECAP / WRITE-OFF METRICS (complete seasons)
+  # ============================================
+
+  # Seats that were never sold (>= 0)
+  def unsold_tickets_count
+    [ total_tickets_available - tickets_sold_count, 0 ].max
+  end
+
+  # Sunk cost of unsold seats: unsold seats per game * that game's cost_per_ticket
+  # (parking is a per-game cost regardless of sales and is excluded here).
+  def unsold_inventory_cost
+    games.includes(:tickets).sum { |g| g.tickets_available * g.cost_per_ticket }
+  end
+
+  # Semantic aliases for recap display
+  alias_method :final_net_profit, :total_profit
+  alias_method :final_roi, :roi
+
   # Comprehensive dashboard metrics hash
   def dashboard_metrics
     {
@@ -239,5 +350,15 @@ class Season < ApplicationRecord
       break_even_status: break_even_status,
       profitable: total_profit >= 0
     }
+  end
+
+  private
+
+  def type_label(type)
+    {
+      "regular" => "Regular Season",
+      "playoff" => "Playoffs",
+      "nba_cup" => "NBA Cup"
+    }.fetch(type, type.titleize)
   end
 end

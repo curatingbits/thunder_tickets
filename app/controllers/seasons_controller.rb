@@ -1,6 +1,10 @@
 class SeasonsController < ApplicationController
   before_action :require_login
 
+  def index
+    @seasons = Season.order(year: :desc)
+  end
+
   def edit
     @season = Season.find_by(is_current: true)
     redirect_to root_path, alert: "No current season found" unless @season

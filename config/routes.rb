@@ -36,6 +36,9 @@ Rails.application.routes.draw do
     end
   end
 
+  # Seasons history
+  resources :seasons, only: [:index]
+
   # Season settings
   get "settings", to: "seasons#edit", as: :settings
   patch "settings", to: "seasons#update"

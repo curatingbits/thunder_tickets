@@ -1,0 +1,43 @@
+<%# locals: breakdown (array of hashes from Season#profit_by_game_type) %>
+<div class="card">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-bold text-white">Profit by Game Type</h2>
+    <span class="text-xs text-gray-500"><%= pluralize(breakdown.size, "type") %></span>
+  </div>
+
+  <% if breakdown.any? %>
+    <div class="space-y-3">
+      <% breakdown.each do |row| %>
+        <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-white"><%= row[:label] %></span>
+              <span class="text-xs text-gray-500"><%= pluralize(row[:games_count], "game") %> &bull; <%= row[:tickets_sold] %> sold</span>
+            </div>
+            <span class="text-sm font-bold <%= row[:roi] >= 0 ? 'text-green-400' : 'text-red-400' %>">
+              <%= row[:roi] >= 0 ? '+' : '' %><%= row[:roi] %>% ROI
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">Cost</p>
+              <p class="text-sm font-bold text-red-400">$<%= number_with_delimiter(row[:cost].round) %></p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">Revenue</p>
+              <p class="text-sm font-bold text-green-400">$<%= number_with_delimiter(row[:revenue].round) %></p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-wide">Profit</p>
+              <p class="text-sm font-bold <%= row[:profit] >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                <%= row[:profit] >= 0 ? '+' : '' %>$<%= number_with_delimiter(row[:profit].round) %>
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-gray-400 text-center py-8">No games yet</p>
+  <% end %>
+</div>

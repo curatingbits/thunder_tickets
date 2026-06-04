@@ -13,3 +13,12 @@ module ActiveSupport
     # Add more helper methods to be used by all tests here...
   end
 end
+
+class ActionDispatch::IntegrationTest
+  # Log in as the given user (defaults to the admin fixture) via the real
+  # session flow, so controllers gated by require_login can be exercised.
+  def sign_in(user = users(:admin), password = "password")
+    post login_path, params: { email: user.email, password: password }
+    user
+  end
+end
