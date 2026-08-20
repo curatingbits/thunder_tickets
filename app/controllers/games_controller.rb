@@ -2,8 +2,9 @@ class GamesController < ApplicationController
   before_action :set_game, only: [:show, :edit, :update]
 
   def index
-    @season = current_season
-    @games = @season.games.order(:game_date) if @season
+    @season = viewed_season
+    @seasons = Season.order(year: :desc)
+    @games = @season ? @season.games.includes(:opponent, :tickets).order(:game_date) : Game.none
 
     # Filter by status
     case params[:filter]
@@ -19,7 +20,10 @@ class GamesController < ApplicationController
   end
 
   def show
-    @available_seats = (1..current_season.num_seats).to_a - @game.tickets.pluck(:seat_number)
+    # A game carries its own season, so past-season games render correctly
+    # even when the session is pointed at the current year.
+    @season = @game.season
+    @available_seats = (1..@season.num_seats).to_a - @game.tickets.pluck(:seat_number)
     @buyers = Buyer.by_name
   end
 

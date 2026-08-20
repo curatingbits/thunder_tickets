@@ -1,0 +1,26 @@
+<%#
+  Season switcher. Renders nothing when there's only one season.
+
+  Locals:
+    seasons  - all seasons, newest first
+    selected - the season currently being viewed
+    path     - proc/lambda taking a season and returning the URL to navigate to
+%>
+<% if seasons.size > 1 %>
+  <div data-controller="season-switcher" class="flex items-center gap-2">
+    <select data-action="change->season-switcher#navigate"
+            aria-label="View season"
+            class="input-field text-sm py-2 pr-8">
+      <% seasons.each do |s| %>
+        <option value="<%= path.call(s) %>" <%= "selected" if s.id == selected&.id %>>
+          <%= s.year %> Season<%= s.complete? ? " (Complete)" : "" %>
+        </option>
+      <% end %>
+    </select>
+    <% unless selected.nil? || selected.is_current? %>
+      <span class="text-xs font-semibold px-2 py-1 rounded bg-amber-500/20 text-amber-400 whitespace-nowrap">
+        Past season
+      </span>
+    <% end %>
+  </div>
+<% end %>

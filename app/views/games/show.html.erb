@@ -53,7 +53,7 @@
         <%= @game.tickets_available %> Left
       </p>
       <p class="text-xs text-gray-500 mt-1">
-        <%= ((@game.tickets_sold_count.to_f / current_season.num_seats) * 100).round(0) %>% sold
+        <%= ((@game.tickets_sold_count.to_f / @season.num_seats) * 100).round(0) %>% sold
       </p>
     </div>
   </div>
@@ -297,10 +297,10 @@
           Cost per ticket: <span class="text-white font-semibold">$<%= number_with_delimiter(@game.cost_per_ticket) %></span>
         </p>
         <p class="text-sm text-gray-300 mb-2">
-          Your share of parking: <span class="text-white font-semibold">$<%= number_with_delimiter(@game.parking_cost / current_season.num_seats) %></span>
+          Your share of parking: <span class="text-white font-semibold">$<%= number_with_delimiter(@game.parking_cost / @season.num_seats) %></span>
         </p>
         <p class="text-sm text-gray-300 mb-4">
-          Break even price per ticket: <span class="text-yellow-400 font-bold">$<%= number_with_delimiter(@game.total_cost / current_season.num_seats) %></span>
+          Break even price per ticket: <span class="text-yellow-400 font-bold">$<%= number_with_delimiter(@game.total_cost / @season.num_seats) %></span>
         </p>
         <% if @game.tickets_available > 0 %>
           <p class="text-xs text-gray-400">

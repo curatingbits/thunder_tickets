@@ -1,8 +1,8 @@
 class DashboardController < ApplicationController
   def index
-    # View the current season by default; allow viewing any season's recap via
-    # ?season_id= without disturbing is_current (used by write controllers).
-    @season = params[:season_id] ? Season.find_by(id: params[:season_id]) : current_season
+    # viewed_season honours ?season_id= and remembers it for the session,
+    # defaulting to the current season. is_current is never disturbed.
+    @season = viewed_season
     return redirect_to login_path, alert: "No current season found" unless @season
 
     @seasons  = Season.order(year: :desc)

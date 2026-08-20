@@ -40,8 +40,12 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert seasons(:current).reload.is_current, "current season must remain is_current"
   end
 
-  test "redirects when season_id is invalid" do
+  # An unknown season_id used to redirect to the login page, which is a
+  # confusing answer to a stale bookmark. It now falls back to the current
+  # season; see SeasonSwitchingTest for the rest of the fallback behaviour.
+  test "falls back to the current season when season_id is invalid" do
     get dashboard_path(season_id: 999_999)
-    assert_redirected_to login_path
+    assert_response :success
+    assert_match seasons(:current).year, response.body
   end
 end

@@ -13,18 +13,10 @@
       <p class="text-sm sm:text-base text-gray-400 mt-1">Oklahoma City Thunder <%= @season.year %> Season</p>
     </div>
     <div class="flex flex-col items-start sm:items-end gap-2">
-      <% if @seasons.size > 1 %>
-        <div data-controller="season-switcher">
-          <select data-action="change->season-switcher#navigate"
-                  class="input-field text-sm py-2 pr-8">
-            <% @seasons.each do |s| %>
-              <option value="<%= dashboard_path(season_id: s.id) %>" <%= "selected" if s.id == @season.id %>>
-                <%= s.year %> Season<%= s.complete? ? " (Complete)" : "" %>
-              </option>
-            <% end %>
-          </select>
-        </div>
-      <% end %>
+      <%= render "shared/season_switcher",
+                 seasons: @seasons,
+                 selected: @season,
+                 path: ->(s) { dashboard_path(season_id: s.id) } %>
       <div class="flex items-center gap-3">
         <%= link_to "All seasons →", seasons_path, class: "text-xs text-blue-400 hover:text-blue-300" %>
         <span class="text-xs text-gray-500">Updated <%= Time.current.strftime("%b %d, %I:%M %p") %></span>

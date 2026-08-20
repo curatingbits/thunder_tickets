@@ -45,7 +45,7 @@
             <!-- Right side items - Desktop Only -->
             <div class="hidden md:flex items-center space-x-4">
               <% if current_season %>
-                <span class="text-sm text-gray-400">Season: <span class="text-blue-400 font-semibold"><%= current_season.year %></span></span>
+                <span class="text-sm text-gray-400">Season: <span class="<%= viewing_current_season? ? 'text-blue-400' : 'text-amber-400' %> font-semibold"><%= viewed_season.year %></span><%= " (viewing)" unless viewing_current_season? %></span>
               <% end %>
               <span class="text-sm text-gray-400">Welcome, <span class="text-white"><%= current_user.name %></span></span>
               <%= button_to "Logout", logout_path, method: :delete, class: "btn-secondary text-xs" %>
@@ -87,7 +87,7 @@
               <p class="text-sm text-gray-400">Welcome,</p>
               <p class="text-white font-semibold"><%= current_user.name %></p>
               <% if current_season %>
-                <p class="text-xs text-gray-500 mt-2">Season: <span class="text-blue-400"><%= current_season.year %></span></p>
+                <p class="text-xs text-gray-500 mt-2">Season: <span class="<%= viewing_current_season? ? 'text-blue-400' : 'text-amber-400' %>"><%= viewed_season.year %></span><%= " (viewing)" unless viewing_current_season? %></p>
               <% end %>
             </div>
 
