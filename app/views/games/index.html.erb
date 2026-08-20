@@ -46,14 +46,14 @@
 
                 <div class="border-l border-gray-700 pl-4 sm:pl-6 flex-1">
                   <h3 class="text-lg sm:text-xl font-bold text-white">vs <%= game.opponent.name %></h3>
-                  <p class="text-xs sm:text-sm text-gray-400">Game #<%= game.game_number %> • <%= game.nba_cup? ? "NBA Cup" : game.game_type.titleize %></p>
-                  <% if game.game_type == "playoff" %>
+                  <p class="text-xs sm:text-sm text-gray-400">Game #<%= game.game_number %> • <%= game.cup_round ? "NBA Cup" : game.game_type.titleize %></p>
+                  <% if game.playoff? %>
                     <span class="inline-block mt-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded">
                       <%= game.playoff_round %>
                     </span>
-                  <% elsif game.game_type == "nba_cup" %>
+                  <% elsif game.cup_round %>
                     <span class="inline-block mt-1 px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded">
-                      NBA Cup: <%= game.playoff_round %>
+                      NBA Cup: <%= game.cup_round %>
                     </span>
                   <% end %>
                 </div>

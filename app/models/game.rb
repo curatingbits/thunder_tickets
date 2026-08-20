@@ -9,12 +9,13 @@ class Game < ApplicationRecord
   validates :game_date, presence: true
   validates :cost_per_ticket, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :parking_cost, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :game_type, inclusion: { in: %w[regular playoff nba_cup] }
+  validates :game_type, inclusion: { in: %w[preseason regular playoff nba_cup] }
 
   PLAYOFF_ROUNDS = ["First Round", "Conference Semifinals", "Conference Finals", "NBA Finals"].freeze
   NBA_CUP_ROUNDS = ["Group Play", "Knockout Round", "Quarterfinals", "Semifinals", "Championship"].freeze
   validate :receipt_image_size
 
+  scope :preseason, -> { where(game_type: "preseason") }
   scope :regular_season, -> { where(game_type: "regular") }
   scope :playoffs, -> { where(game_type: "playoff") }
   scope :nba_cup, -> { where(game_type: "nba_cup") }
@@ -57,12 +58,25 @@ class Game < ApplicationRecord
     game_type == "regular"
   end
 
+  def preseason?
+    game_type == "preseason"
+  end
+
   def playoff?
     game_type == "playoff"
   end
 
   def nba_cup?
     game_type == "nba_cup"
+  end
+
+  # NBA Cup group-play games are part of the regular-season package, so they
+  # stay game_type "regular" for cost purposes and carry the round instead.
+  # Either shape should read as "NBA Cup" in the UI.
+  def cup_round
+    return playoff_round if nba_cup? || (regular? && playoff_round.present?)
+
+    nil
   end
 
   private

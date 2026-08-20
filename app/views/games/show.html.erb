@@ -7,12 +7,15 @@
       <p class="text-sm sm:text-base text-gray-400 mt-2">
         <%= @game.game_date.strftime("%A, %B %d, %Y") %><br class="sm:hidden">
         <span class="sm:before:content-['•'] sm:before:mx-2">Game #<%= @game.game_number %></span>
-        <% if @game.game_type == "playoff" %>
+        <% if @game.playoff? %>
           <br class="sm:hidden">
           <span class="sm:before:content-['•'] sm:before:mx-2 text-yellow-400"><%= @game.playoff_round %></span>
-        <% elsif @game.game_type == "nba_cup" %>
+        <% elsif @game.cup_round %>
           <br class="sm:hidden">
-          <span class="sm:before:content-['•'] sm:before:mx-2 text-purple-400">NBA Cup: <%= @game.playoff_round %></span>
+          <span class="sm:before:content-['•'] sm:before:mx-2 text-purple-400">NBA Cup: <%= @game.cup_round %></span>
+        <% elsif @game.preseason? %>
+          <br class="sm:hidden">
+          <span class="sm:before:content-['•'] sm:before:mx-2 text-sky-400">Preseason</span>
         <% end %>
       </p>
     </div>

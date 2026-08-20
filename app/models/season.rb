@@ -206,7 +206,7 @@ class Season < ApplicationRecord
   # SEASON LIFECYCLE / STATUS
   # ============================================
 
-  GAME_TYPES = %w[regular playoff nba_cup].freeze
+  GAME_TYPES = %w[preseason regular playoff nba_cup].freeze
 
   # Date of the season's final game (nil if no games scheduled)
   def last_game_date
@@ -356,6 +356,7 @@ class Season < ApplicationRecord
 
   def type_label(type)
     {
+      "preseason" => "Preseason",
       "regular" => "Regular Season",
       "playoff" => "Playoffs",
       "nba_cup" => "NBA Cup"

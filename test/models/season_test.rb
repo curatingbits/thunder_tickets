@@ -37,6 +37,22 @@ class SeasonTest < ActiveSupport::TestCase
     assert_equal %w[regular playoff], breakdown.map { |r| r[:type] }
   end
 
+  test "profit_by_game_type lists preseason first and labels it" do
+    @past.games.create!(
+      game_number: 99,
+      game_date: 9.months.ago.to_date,
+      opponent: teams(:nuggets),
+      cost_per_ticket: 50,
+      parking_cost: 10,
+      game_type: "preseason"
+    )
+
+    breakdown = @past.reload.profit_by_game_type
+    assert_equal %w[preseason regular playoff], breakdown.map { |r| r[:type] }
+    assert_equal "Preseason", breakdown.first[:label]
+    assert_in_delta @past.total_profit, breakdown.sum { |r| r[:profit] }, 0.01
+  end
+
   test "profit_by_game_type rows reconcile to total_profit" do
     breakdown = @past.profit_by_game_type
     assert_in_delta @past.total_profit, breakdown.sum { |r| r[:profit] }, 0.01

@@ -1,17 +1,30 @@
-# Imports OKC home games for a season from a cached ESPN team-schedule JSON file.
+# Imports OKC home games for a season from cached ESPN team-schedule JSON files.
 #
 # The JSON is the payload of:
-#   https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=<end_year>&seasontype=2
+#   https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=<end_year>&seasontype=<1|2>
 #
-# It is cached under db/schedules/<year>.json rather than fetched at runtime:
-# ESPN's edge (Akamai) rejects non-browser clients with 403, so an unattended
-# HTTP fetch is not dependable. Refresh the file with a browser, then re-run.
+#   seasontype=1 -> preseason, seasontype=2 -> regular season
+#
+# Files are cached under db/schedules/ rather than fetched at runtime: ESPN's
+# edge (Akamai) rejects non-browser clients with 403, so an unattended HTTP
+# fetch is not dependable. Refresh them with a browser, then re-run.
 #
 # Idempotent: games are keyed on (season, game_number), so re-running updates
 # costs and dates in place instead of duplicating. Existing tickets are kept.
 class ScheduleImporter
   OKC_ESPN_ID = "25".freeze
   CENTRAL = "America/Chicago".freeze
+
+  # The seats this app tracks are at Paycom Center. OKC plays an annual
+  # preseason exhibition in Tulsa (BOK Center) that season-ticket holders do
+  # not receive, so home games are filtered by venue.
+  HOME_VENUE = "Paycom Center".freeze
+
+  # ESPN seasonType abbreviations -> this app's game_type values.
+  GAME_TYPE_BY_SEASON_TYPE = {
+    "pre" => "preseason",
+    "reg" => "regular"
+  }.freeze
 
   # ESPN display names that differ from the Team records in this app.
   TEAM_NAME_ALIASES = {
@@ -20,18 +33,20 @@ class ScheduleImporter
 
   class Error < StandardError; end
 
-  Result = Struct.new(:season, :created, :updated, :games, keyword_init: true)
+  Result = Struct.new(:season, :created, :updated, :games, :cost_per_ticket, keyword_init: true)
 
   # season_year   - "2026-27"
+  # source_paths  - one or more cached ESPN payloads (preseason and/or regular)
   # total_cost    - full season invoice for all seats, parking included
   # parking_cost  - per-game parking, already part of total_cost
   # num_seats     - seats held per game
   # billed_games  - games the invoice covers, when that differs from the games
-  #                 currently published (the NBA Cup window leaves late-season
-  #                 home dates TBD). Defaults to the number of games imported.
-  def initialize(season_year:, source_path:, total_cost:, parking_cost:, num_seats:, seat_section: nil, billed_games: nil, make_current: true)
+  #                 currently published (the NBA Cup window leaves two late
+  #                 season dates TBD). Defaults to the number of games imported.
+  def initialize(season_year:, source_paths:, total_cost:, parking_cost:, num_seats:,
+                 seat_section: nil, billed_games: nil, make_current: true)
     @season_year = season_year
-    @source_path = source_path
+    @source_paths = Array(source_paths)
     @total_cost = BigDecimal(total_cost.to_s)
     @parking_cost = BigDecimal(parking_cost.to_s)
     @num_seats = Integer(num_seats)
@@ -42,7 +57,7 @@ class ScheduleImporter
 
   def call
     games = home_games
-    raise Error, "No home games found in #{@source_path}" if games.empty?
+    raise Error, "No home games found in #{@source_paths.join(', ')}" if games.empty?
 
     cost_per_ticket = derive_cost_per_ticket(games.size)
 
@@ -60,13 +75,15 @@ class ScheduleImporter
           opponent: find_team!(g[:opponent]),
           cost_per_ticket: cost_per_ticket,
           parking_cost: @parking_cost,
-          game_type: "regular"
+          game_type: g[:game_type],
+          playoff_round: g[:nba_cup] ? "Group Play" : nil
         )
         record.save!
       end
     end
 
-    Result.new(season: season, created: created, updated: updated, games: games)
+    Result.new(season: season, created: created, updated: updated, games: games,
+               cost_per_ticket: cost_per_ticket)
   end
 
   # Per-ticket cost implied by the season invoice, after backing out parking.
@@ -81,31 +98,61 @@ class ScheduleImporter
     (ticket_portion / (@num_seats * games)).round(2)
   end
 
-  # Home games, chronological, as [{ date:, opponent:, tipoff:, nba_cup: }]
-  def home_games
-    payload = JSON.parse(File.read(@source_path))
-    events = payload["events"] or raise Error, "#{@source_path} has no \"events\" key"
+  # What the derived per-ticket cost actually re-totals to, so a caller can
+  # report the rounding drift against the invoice.
+  def reconciled_total(game_count)
+    games = @billed_games || game_count
+    (derive_cost_per_ticket(game_count) * @num_seats * games) + (@parking_cost * games)
+  end
 
-    events.filter_map { |event| parse_event(event) }
-          .select { |g| g[:home] }
-          .sort_by { |g| g[:tipoff] }
+  # Home games at HOME_VENUE across every source file, chronological.
+  # Preseason sorts before the regular season because it happens first.
+  def home_games
+    @source_paths.flat_map { |path| parse_file(path) }
+                 .select { |g| g[:home] && g[:venue] == HOME_VENUE }
+                 .sort_by { |g| g[:tipoff] }
+  end
+
+  # Home games that were dropped for being at another venue (the Tulsa
+  # exhibition), so the caller can say so out loud rather than silently
+  # under-importing.
+  def excluded_home_games
+    @source_paths.flat_map { |path| parse_file(path) }
+                 .select { |g| g[:home] && g[:venue] != HOME_VENUE }
+                 .sort_by { |g| g[:tipoff] }
   end
 
   private
 
-  def parse_event(event)
+  def parse_file(path)
+    raise Error, "Schedule file not found: #{path}" unless File.exist?(path)
+
+    payload = JSON.parse(File.read(path))
+    events = payload["events"] or raise Error, "#{path} has no \"events\" key"
+    events.filter_map { |event| parse_event(event, path) }
+  end
+
+  def parse_event(event, path)
     competition = event.fetch("competitions").first
     okc, opponent = competition.fetch("competitors").partition { |c| c["id"] == OKC_ESPN_ID }
     return nil if okc.empty? || opponent.empty?
+
+    # Per-event seasonType is authoritative; the payload's top-level season
+    # block reports type 1 on both the preseason and regular-season feeds.
+    abbreviation = event.dig("seasonType", "abbreviation")
+    game_type = GAME_TYPE_BY_SEASON_TYPE[abbreviation]
+    raise Error, "Unsupported seasonType #{abbreviation.inspect} in #{path}" if game_type.nil?
 
     tipoff = Time.parse(event.fetch("date")).in_time_zone(CENTRAL)
     notes = competition["notes"] || []
 
     {
       home: okc.first["homeAway"] == "home",
+      venue: competition.dig("venue", "fullName"),
       tipoff: tipoff,
       date: tipoff.to_date,
       opponent: opponent.first.dig("team", "displayName"),
+      game_type: game_type,
       nba_cup: notes.any? { |n| n["headline"].to_s.include?("Cup") }
     }
   end
