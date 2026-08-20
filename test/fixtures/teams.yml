@@ -9,3 +9,15 @@ nuggets:
   abbreviation: DEN
   conference: Western
   division: Northwest
+
+clippers:
+  name: Los Angeles Clippers
+  abbreviation: LAC
+  conference: Western
+  division: Pacific
+
+rockets:
+  name: Houston Rockets
+  abbreviation: HOU
+  conference: Western
+  division: Southwest
