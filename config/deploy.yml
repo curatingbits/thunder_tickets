@@ -90,6 +90,17 @@ builder:
   #   - GITHUB_TOKEN
   #   - RAILS_MASTER_KEY
 
+# Deploy over the on-disk key rather than an ssh-agent.
+#
+# ~/.ssh/config routes this host through the 1Password agent, which refuses to
+# sign unattended when the vault is locked ("agent refused operation"), and a
+# deploy that dies mid-run is worse than one that never starts.
+# ~/.ssh/id_ed25519 has no passphrase and is already in the server's
+# authorized_keys, so keys_only pins Kamal to it and skips the agent entirely.
+ssh:
+  keys_only: true
+  keys: [ "~/.ssh/id_ed25519" ]
+
 # Use a different ssh user than root
 # ssh:
 #   user: app

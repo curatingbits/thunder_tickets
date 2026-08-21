@@ -7,6 +7,9 @@ class DashboardController < ApplicationController
 
     @seasons  = Season.order(year: :desc)
     @is_recap = @season.complete?
+    # Scheduled but not underway — the overview zone shows a commitment
+    # summary rather than -100% ROI and a row of zeroes.
+    @not_started = @season.not_started?
 
     # Core metrics
     @metrics = @season.dashboard_metrics

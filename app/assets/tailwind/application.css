@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  /* Tokyo Night Color Palette */
+  /* ---------------------------------------------------------------
+   * Tokyo Night palette — raw values. Don't reference these in views;
+   * use the semantic tokens below so a palette swap stays one edit.
+   * --------------------------------------------------------------- */
   --color-tokyo-bg: #1a1b26;
   --color-tokyo-bg-dark: #16161e;
   --color-tokyo-bg-highlight: #24283b;
@@ -18,43 +21,109 @@
   --color-tokyo-yellow: #e0af68;
   --color-tokyo-magenta: #bb9af7;
   --color-tokyo-teal: #1abc9c;
+
+  /* ---------------------------------------------------------------
+   * Semantic tokens — what views should actually use.
+   * Available as bg-canvas, text-muted, border-subtle, etc.
+   * --------------------------------------------------------------- */
+
+  /* Surfaces, back to front */
+  --color-canvas: #16161e;         /* page background */
+  --color-surface: #1a1b26;        /* cards, nav */
+  --color-surface-raised: #24283b; /* hover, table header, nested panels */
+  --color-subtle: #292e42;         /* borders, dividers */
+  --color-strong: #414868;         /* stronger borders, disabled fills */
+
+  /* Text */
+  --color-content: #c0caf5;        /* body copy */
+  --color-content-strong: #ffffff; /* headings, key figures */
+  --color-content-dim: #a9b1d6;    /* secondary copy */
+  /* Lightened from Tokyo Night's comment #565f89, which is ~3.0:1 on the
+   * canvas and fails WCAG AA for small text. This is ~5.2:1. */
+  --color-muted: #7e88b8;          /* labels, captions, placeholders */
+
+  /* Meaning. Money-good is green, money-bad is red, and NEITHER is used
+   * for anything that is merely a cost — a cost is a neutral fact. */
+  --color-positive: #9ece6a;
+  --color-negative: #f7768e;
+  --color-warning: #e0af68;
+  --color-accent: #7aa2f7;
+  --color-accent-alt: #ff9e64;
+
+  /* Numerals: figures should line up in columns. */
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Single source of truth for the page background. The layout previously
+ * also set bg-gray-950 on <body>, which won and left this rule dead. */
 body {
-  background-color: var(--color-tokyo-bg);
-  color: var(--color-tokyo-fg);
+  background-color: var(--color-canvas);
+  color: var(--color-content);
+}
+
+/* Financial figures — tabular so columns align and digits don't jitter. */
+.figure {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Mobile-friendly buttons with proper touch targets */
 .btn-primary {
-  @apply bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
+  @apply bg-accent hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 .btn-secondary {
-  @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
+  @apply bg-surface-raised hover:bg-strong active:brightness-95 text-content font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center border border-subtle;
 }
 
 .btn-danger {
-  @apply bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
+  @apply bg-negative hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 .btn-success {
-  @apply bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
+  @apply bg-positive hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
 }
 
 /* Responsive cards with proper mobile padding */
 .card {
-  @apply bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-700;
+  @apply bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-subtle;
 }
 
 /* Mobile-friendly input fields with proper touch targets */
 .input-field {
-  @apply w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] text-base;
+  @apply w-full px-4 py-2.5 bg-canvas border border-subtle rounded-lg text-content placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px] text-base;
 }
 
 /* Responsive stat cards */
 .stat-card {
-  @apply bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 sm:p-6 border border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-200;
+  @apply bg-surface rounded-xl p-4 sm:p-6 border border-subtle shadow-lg hover:border-strong transition-colors duration-200;
+}
+
+/* Section label above a group of stats or a table */
+.section-label {
+  @apply text-xs font-medium uppercase tracking-wider text-muted;
+}
+
+/* Data table — desktop presentation for list views */
+.data-table {
+  @apply w-full text-sm;
+}
+
+.data-table thead th {
+  @apply bg-surface-raised text-muted font-medium uppercase tracking-wider text-xs px-4 py-3 text-left;
+}
+
+.data-table tbody tr {
+  @apply border-b border-subtle hover:bg-surface-raised transition-colors;
+}
+
+.data-table tbody td {
+  @apply px-4 py-3 align-middle;
+}
+
+.data-table .num {
+  @apply text-right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Mobile typography helpers */

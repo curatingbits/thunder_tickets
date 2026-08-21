@@ -83,6 +83,20 @@ class User < ApplicationRecord
     end
   end
 
+  # Full literal class strings, not interpolated fragments: Tailwind scans
+  # source for complete class names, so "bg-#{color}-900/50" is invisible to
+  # it and silently renders unstyled in production.
+  STATUS_BADGE_CLASSES = {
+    "green" => "bg-green-900/50 text-green-400 border border-green-700",
+    "yellow" => "bg-yellow-900/50 text-yellow-400 border border-yellow-700",
+    "orange" => "bg-orange-900/50 text-orange-400 border border-orange-700",
+    "red" => "bg-red-900/50 text-red-400 border border-red-700"
+  }.freeze
+
+  def status_badge_classes
+    STATUS_BADGE_CLASSES.fetch(status_badge_color, STATUS_BADGE_CLASSES["red"])
+  end
+
   private
 
   def set_reset_token

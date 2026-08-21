@@ -227,6 +227,20 @@ class Season < ApplicationRecord
     !complete?
   end
 
+  # Scheduled but not underway: games exist, none has been played, and nothing
+  # has sold. ROI/margin/sell-through are all mathematically -100%/0% in this
+  # state, which is technically true and useless to display — the dashboard
+  # shows a commitment summary instead.
+  def not_started?
+    games.exists? &&
+      tickets_sold_count.zero? &&
+      !games.where("game_date < ?", Date.current).exists?
+  end
+
+  def first_game_date
+    games.minimum(:game_date)
+  end
+
   # Symbol for view branching
   def status
     complete? ? :complete : :active

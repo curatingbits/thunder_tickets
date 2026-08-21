@@ -1,20 +1,20 @@
-<div class="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4">
+<div class="min-h-screen flex items-center justify-center bg-canvas py-12 px-4">
   <div class="max-w-md w-full space-y-8">
     <div>
       <h1 class="text-center text-5xl font-bold">
-        <span class="text-blue-400">MADR</span> <span class="text-orange-400">TICKETS</span>
+        <span class="text-accent">MADR</span> <span class="text-orange-400">TICKETS</span>
       </h1>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-100">
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-content-strong">
         Reset Password
       </h2>
-      <p class="mt-2 text-center text-sm text-gray-400">
+      <p class="mt-2 text-center text-sm text-content-dim">
         Enter your email to receive reset instructions
       </p>
     </div>
 
     <%= form_with url: password_resets_path, method: :post, class: "mt-8 space-y-6" do %>
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email address</label>
+        <label for="email" class="block text-sm font-medium text-content mb-2">Email address</label>
         <%= email_field_tag :email, nil, placeholder: "admin@madrtickets.com", class: "input-field", required: true, autofocus: true %>
       </div>
 
@@ -23,7 +23,7 @@
       </div>
 
       <div class="text-center">
-        <%= link_to "Back to Login", login_path, class: "text-blue-400 hover:text-blue-300 text-sm" %>
+        <%= link_to "Back to Login", login_path, class: "text-accent hover:brightness-125 text-sm" %>
       </div>
     <% end %>
   </div>

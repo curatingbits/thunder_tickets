@@ -1,8 +1,8 @@
 <div class="max-w-2xl mx-auto space-y-6">
   <div>
-    <%= link_to "← Back to Games", games_path, class: "text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block" %>
-    <h1 class="text-4xl font-bold text-white">Add Game</h1>
-    <p class="text-gray-400 mt-2">Add a preseason, playoff, or NBA Cup game to the <%= current_season.year %> season</p>
+    <%= link_to "← Back to Games", games_path, class: "text-accent hover:brightness-125 text-sm mb-2 inline-block" %>
+    <h1 class="text-4xl font-bold text-content-strong">Add Game</h1>
+    <p class="text-content-dim mt-2">Add a preseason, playoff, or NBA Cup game to the <%= current_season.year %> season</p>
   </div>
 
   <div class="card">
@@ -13,19 +13,19 @@
           game_form_nba_cup_rounds_value: Game::NBA_CUP_ROUNDS.to_json
         } do |f| %>
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Opponent</label>
+        <label class="block text-sm font-medium text-content mb-2">Opponent</label>
         <%= f.collection_select :opponent_id, @teams, :id, :name,
             { prompt: "Select opponent" },
             class: "input-field" %>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Game Date</label>
+        <label class="block text-sm font-medium text-content mb-2">Game Date</label>
         <%= f.date_field :game_date, class: "input-field" %>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">Game Type</label>
+        <label class="block text-sm font-medium text-content mb-2">Game Type</label>
         <%= f.select :game_type,
             [["Playoff", "playoff"], ["NBA Cup", "nba_cup"], ["Preseason", "preseason"]],
             {},
@@ -34,7 +34,7 @@
       </div>
 
       <div data-game-form-target="roundContainer">
-        <label class="block text-sm font-medium text-gray-300 mb-2">Round</label>
+        <label class="block text-sm font-medium text-content mb-2">Round</label>
         <%= f.select :playoff_round, [],
             { prompt: "Select round" },
             class: "input-field",
@@ -43,15 +43,15 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Cost Per Ticket</label>
+          <label class="block text-sm font-medium text-content mb-2">Cost Per Ticket</label>
           <%= f.number_field :cost_per_ticket, step: 0.01, placeholder: "150.00", class: "input-field" %>
-          <p class="text-xs text-gray-500 mt-1">What you paid for each ticket</p>
+          <p class="text-xs text-muted mt-1">What you paid for each ticket</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Parking Cost</label>
+          <label class="block text-sm font-medium text-content mb-2">Parking Cost</label>
           <%= f.number_field :parking_cost, step: 0.01, placeholder: "10.00", class: "input-field" %>
-          <p class="text-xs text-gray-500 mt-1">Total parking cost for this game</p>
+          <p class="text-xs text-muted mt-1">Total parking cost for this game</p>
         </div>
       </div>
 
