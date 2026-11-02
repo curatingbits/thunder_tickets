@@ -21,4 +21,4 @@ production:
   daily_digest_email:
     class: DailyDigestJob
     queue: default
-    schedule: at 6am every day
+    schedule: at 6am every day America/Chicago # app clock is UTC; without this it fired at midnight Central
