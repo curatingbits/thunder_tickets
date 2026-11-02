@@ -98,6 +98,7 @@ builder:
 # ~/.ssh/id_ed25519 has no passphrase and is already in the server's
 # authorized_keys, so keys_only pins Kamal to it and skips the agent entirely.
 ssh:
+  config: false # ~/.ssh/config sets IdentityAgent to 1Password, which net-ssh still tries
   keys_only: true
   keys: [ "~/.ssh/id_ed25519" ]
 
