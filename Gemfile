@@ -40,7 +40,7 @@ gem "solid_cable"
 gem "bootsnap", require: false
 
 # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
-gem "kamal", "~> 2.9.0", require: false # 2.8.1 crashes with ssh config: false; 2.9 matches proxy v0.9.0
+gem "kamal", "~> 2.12.0", require: false # 2.11+ needs kamal-proxy >= 0.9.2 (`kamal proxy reboot` once)
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
