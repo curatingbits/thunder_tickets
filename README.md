@@ -29,7 +29,7 @@ A comprehensive web application for managing Oklahoma City Thunder season ticket
 
 ## Tech Stack
 
-- **Ruby on Rails 8.0.3**
+- **Ruby 4.0** and **Rails 8.1**
 - **SQLite3** - Lightweight database
 - **TailwindCSS 4** - Modern utility-first CSS
 - **Stimulus** - Modest JavaScript framework
@@ -39,9 +39,10 @@ A comprehensive web application for managing Oklahoma City Thunder season ticket
 ## Getting Started
 
 ### Prerequisites
-- Ruby 3.4+ (using RVM)
-- Rails 8.0+
-- Node.js (for asset compilation)
+- Ruby 4.0.9 (the version in `.ruby-version`; `mise install` picks it up)
+- SQLite 3
+- No Node.js: JavaScript ships through importmap and Tailwind uses its
+  standalone binary
 
 ### Installation
 

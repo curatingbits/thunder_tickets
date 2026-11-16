@@ -5,12 +5,9 @@ on:
   push:
     branches: [ main ]
 
-# Runners are pinned: ubuntu-latest moved to 26.04, where ruby/setup-ruby has
-# no prebuilt Ruby 3.4.5, so every job failed at "Set up Ruby". Unpin when
-# .ruby-version moves to a release built for the newer image.
 jobs:
   scan_ruby:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -26,7 +23,7 @@ jobs:
         run: bin/brakeman --no-pager
 
   scan_js:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -42,7 +39,7 @@ jobs:
         run: bin/importmap audit
 
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,7 +54,7 @@ jobs:
         run: bin/rubocop -f github
 
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     # services:
     #  redis:
