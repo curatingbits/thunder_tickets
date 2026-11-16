@@ -48,87 +48,103 @@
   --color-negative: #f7768e;
   --color-warning: #e0af68;
   --color-accent: #7aa2f7;
-  --color-accent-alt: #ff9e64;
+  --color-accent-alt: #ff9e64;      /* brand second word, expired badges */
+
+  /* Categorical colors with no money meaning. */
+  --color-highlight: #bb9af7;       /* NBA Cup tags, invitation-link actions */
+  --color-info: #7dcfff;            /* preseason labels */
 
   /* Numerals: figures should line up in columns. */
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Single source of truth for the page background. The layout previously
- * also set bg-gray-950 on <body>, which won and left this rule dead. */
-body {
-  background-color: var(--color-canvas);
-  color: var(--color-content);
+/* ---------------------------------------------------------------
+ * Base and component styles live in cascade layers on purpose.
+ * Unlayered CSS outranks every @layer regardless of specificity, so
+ * leaving these as plain rules made them silently beat any utility
+ * placed beside them ("card bg-accent/10", "card border-l-4",
+ * "btn-primary py-3" all rendered as if the utility weren't there).
+ * In layers, utilities win as intended.
+ * --------------------------------------------------------------- */
+@layer base {
+  /* Single source of truth for the page background. The layout previously
+   * also set bg-gray-950 on <body>, which won and left this rule dead. */
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-content);
+  }
 }
 
-/* Financial figures — tabular so columns align and digits don't jitter. */
-.figure {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
+@layer components {
+  /* Financial figures — tabular so columns align and digits don't jitter. */
+  .figure {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
 
-/* Mobile-friendly buttons with proper touch targets */
-.btn-primary {
-  @apply bg-accent hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
-}
+  /* Mobile-friendly buttons with proper touch targets */
+  .btn-primary {
+    @apply bg-accent hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
+  }
 
-.btn-secondary {
-  @apply bg-surface-raised hover:bg-strong active:brightness-95 text-content font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center border border-subtle;
-}
+  .btn-secondary {
+    @apply bg-surface-raised hover:bg-strong active:brightness-95 text-content font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center border border-subtle;
+  }
 
-.btn-danger {
-  @apply bg-negative hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
-}
+  .btn-danger {
+    @apply bg-negative hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
+  }
 
-.btn-success {
-  @apply bg-positive hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
-}
+  .btn-success {
+    @apply bg-positive hover:brightness-110 active:brightness-95 text-canvas font-semibold py-2.5 px-4 rounded-lg transition duration-200 min-h-[44px] inline-flex items-center justify-center;
+  }
 
-/* Responsive cards with proper mobile padding */
-.card {
-  @apply bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-subtle;
-}
+  /* Responsive cards with proper mobile padding */
+  .card {
+    @apply bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-subtle;
+  }
 
-/* Mobile-friendly input fields with proper touch targets */
-.input-field {
-  @apply w-full px-4 py-2.5 bg-canvas border border-subtle rounded-lg text-content placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px] text-base;
-}
+  /* Mobile-friendly input fields with proper touch targets */
+  .input-field {
+    @apply w-full px-4 py-2.5 bg-canvas border border-subtle rounded-lg text-content placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent min-h-[44px] text-base;
+  }
 
-/* Responsive stat cards */
-.stat-card {
-  @apply bg-surface rounded-xl p-4 sm:p-6 border border-subtle shadow-lg hover:border-strong transition-colors duration-200;
-}
+  /* Responsive stat cards */
+  .stat-card {
+    @apply bg-surface rounded-xl p-4 sm:p-6 border border-subtle shadow-lg hover:border-strong transition-colors duration-200;
+  }
 
-/* Section label above a group of stats or a table */
-.section-label {
-  @apply text-xs font-medium uppercase tracking-wider text-muted;
-}
+  /* Section label above a group of stats or a table */
+  .section-label {
+    @apply text-xs font-medium uppercase tracking-wider text-muted;
+  }
 
-/* Data table — desktop presentation for list views */
-.data-table {
-  @apply w-full text-sm;
-}
+  /* Data table — desktop presentation for list views */
+  .data-table {
+    @apply w-full text-sm;
+  }
 
-.data-table thead th {
-  @apply bg-surface-raised text-muted font-medium uppercase tracking-wider text-xs px-4 py-3 text-left;
-}
+  .data-table thead th {
+    @apply bg-surface-raised text-muted font-medium uppercase tracking-wider text-xs px-4 py-3 text-left;
+  }
 
-.data-table tbody tr {
-  @apply border-b border-subtle hover:bg-surface-raised transition-colors;
-}
+  .data-table tbody tr {
+    @apply border-b border-subtle hover:bg-surface-raised transition-colors;
+  }
 
-.data-table tbody td {
-  @apply px-4 py-3 align-middle;
-}
+  .data-table tbody td {
+    @apply px-4 py-3 align-middle;
+  }
 
-.data-table .num {
-  @apply text-right;
-  font-variant-numeric: tabular-nums;
-}
+  .data-table .num {
+    @apply text-right;
+    font-variant-numeric: tabular-nums;
+  }
 
-/* Mobile typography helpers */
-@media (max-width: 640px) {
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
+  /* Mobile typography helpers */
+  @media (max-width: 640px) {
+    .touch-target {
+      @apply min-h-[44px] min-w-[44px];
+    }
   }
 }

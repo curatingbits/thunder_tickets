@@ -24,7 +24,7 @@ class InvitationsController < ApplicationController
       params[:user][:password_confirmation]
     )
       session[:user_id] = @user.id
-      redirect_to root_path, notice: "Welcome to ThunderTickets! Your account has been activated."
+      redirect_to root_path, notice: "Welcome to MADR TICKETS! Your account has been activated."
     else
       render :show, status: :unprocessable_entity
     end

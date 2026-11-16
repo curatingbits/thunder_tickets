@@ -115,9 +115,8 @@ class SeasonSwitchingTest < ActionDispatch::IntegrationTest
     # past_season holds 2 seats (the current season holds 3). Break-even is
     # total_cost / num_seats = (100*2 + 20) / 2 = 110.00. Reading the current
     # season's 3 seats here would render 73.33.
-    assert_match "Break even price per ticket", response.body
-    assert_match "$110.0", response.body
-    assert_match "Your share of parking: <span class=\"text-content-strong font-semibold\">$10.0", response.body
+    assert_select "p", text: /Break even price per ticket:\s*\$110\.00/
+    assert_select "p", text: /Your share of parking:\s*\$10\.00/
   end
 
   test "adding a game is hidden while viewing a past season" do

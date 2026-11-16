@@ -9,7 +9,7 @@ class GamesController < ApplicationController
     # Filter by status
     case params[:filter]
     when "sold"
-      @games = @games.joins(:tickets).distinct
+      @games = @games.fully_sold
     when "unsold"
       @games = @games.left_joins(:tickets).where(tickets: { id: nil })
     when "upcoming"

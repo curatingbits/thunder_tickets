@@ -1,4 +1,4 @@
-# ThunderTickets - NBA Season Ticket Tracker
+# MADR TICKETS - NBA Season Ticket Tracker
 
 A comprehensive web application for managing Oklahoma City Thunder season tickets, built with Ruby on Rails, Stimulus, SolidQueue, TailwindCSS, and SQLite.
 
@@ -7,14 +7,14 @@ A comprehensive web application for managing Oklahoma City Thunder season ticket
 ### Core Functionality
 - **Dashboard Analytics** - Real-time financial tracking with profit/loss calculations
 - **Game Management** - Track all regular season and playoff games
-- **Ticket Sales** - Record and manage individual ticket sales for each seat
+- **Ticket Sales** - Record, edit, and remove individual ticket sales for each seat
 - **Break-Even Analysis** - Know if you're on track to recover your season ticket investment
 - **Financial Insights** - View revenue, costs, and profitability per game
 - **Playoff Support** - Add playoff games as they're scheduled
 
 ### Authentication & Security
 - **Invite-Only Access** - No public registration, admin-controlled user creation
-- **Password Reset** - Secure password recovery via email (token printed to console)
+- **Password Reset** - Emailed reset link (via Resend), valid for 2 hours and single-use
 - **Session Management** - Secure login/logout with encrypted passwords
 
 ### Design
@@ -98,6 +98,9 @@ The main dashboard displays:
 5. Optionally add buyer information and notes
 6. Click "Record Sale"
 
+To fix a sale later, click **Edit** next to it on the game page to change the
+seat, price, sale date, buyer, or notes.
+
 ### Adding Playoff Games
 1. Click "Add Playoff Game" from dashboard or games list
 2. Select opponent
@@ -109,8 +112,12 @@ The main dashboard displays:
 ### Password Recovery
 1. Click "Forgot your password?" on login page
 2. Enter your email address
-3. Check the Rails console for the reset token URL
-4. Visit the URL to set a new password
+3. Open the reset link in the email (in development, letter_opener opens it in
+   your browser)
+4. Set a new password. The link expires after 2 hours and works once.
+
+Only active accounts can reset. Pending invitees should use their invitation
+link, which an admin can resend from the Users page.
 
 ## Database Schema
 
@@ -182,7 +189,6 @@ Set these in your production environment:
 ## Future Enhancements
 
 Potential features to add:
-- Email notifications for password resets
 - Export financial reports to CSV/PDF
 - Charts and visualizations with Chartkick
 - Mobile app notifications

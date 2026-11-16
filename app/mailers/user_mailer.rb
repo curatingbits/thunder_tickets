@@ -10,6 +10,17 @@ class UserMailer < ApplicationMailer
     )
   end
 
+  def password_reset
+    @user = params[:user]
+    @reset_url = edit_password_reset_url(params[:token])
+    @expires_in = User::RESET_TOKEN_TTL.inspect
+
+    mail(
+      to: @user.email,
+      subject: "Reset your MADR TICKETS password"
+    )
+  end
+
   def daily_digest
     @user = params[:user]
     @games = Game.upcoming.limit(3)

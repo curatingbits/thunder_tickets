@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
   before_action :require_login
   before_action :set_user, only: [:edit, :update, :destroy, :toggle_active]
+  before_action :prevent_self_deactivation, only: [ :destroy, :toggle_active ]
 
   def index
     @users = User.all.order(created_at: :desc)
@@ -96,6 +97,14 @@ class UsersController < ApplicationController
 
   def set_user
     @user = User.find(params[:id])
+  end
+
+  # Deactivated users are signed out immediately, so deactivating yourself
+  # would lock you out mid-click.
+  def prevent_self_deactivation
+    return unless @user == current_user && @user.active?
+
+    redirect_to users_path, alert: "You can't deactivate your own account."
   end
 
   def user_params

@@ -8,8 +8,10 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Re-checked on every request, so deactivating someone ends any session
+  # they already have open rather than waiting for them to log out.
   def current_user
-    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+    @current_user ||= User.active.find_by(id: session[:user_id]) if session[:user_id]
   end
 
   def logged_in?

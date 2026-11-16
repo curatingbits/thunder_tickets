@@ -21,6 +21,14 @@ class Game < ApplicationRecord
   scope :nba_cup, -> { where(game_type: "nba_cup") }
   scope :upcoming, -> { where("game_date >= ?", Date.current).order(:game_date) }
   scope :past, -> { where("game_date < ?", Date.current).order(game_date: :desc) }
+  # Every seat sold. The seat count lives on the season, so each game is
+  # compared against its own season's num_seats.
+  scope :fully_sold, -> {
+    where(<<~SQL.squish)
+      (SELECT COUNT(*) FROM tickets WHERE tickets.game_id = games.id)
+        >= (SELECT seasons.num_seats FROM seasons WHERE seasons.id = games.season_id)
+    SQL
+  }
 
   def total_cost
     (cost_per_ticket * season.num_seats) + parking_cost
@@ -32,6 +40,24 @@ class Game < ApplicationRecord
 
   def profit_loss
     total_revenue - total_cost
+  end
+
+  # Average each seat must sell for to cover this game's tickets and parking.
+  def break_even_price_per_ticket
+    total_cost / season.num_seats
+  end
+
+  # Revenue still needed to cover this game's cost; zero once it's covered.
+  def remaining_to_break_even
+    [ total_cost - total_revenue, 0 ].max
+  end
+
+  # What each unsold seat must go for to break even, or nil when nothing is
+  # left to sell or the game has already covered its cost.
+  def break_even_price_for_remaining
+    return nil if tickets_available.zero? || remaining_to_break_even.zero?
+
+    remaining_to_break_even / tickets_available
   end
 
   def tickets_sold_count

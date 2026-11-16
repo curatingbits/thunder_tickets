@@ -21,17 +21,18 @@ export default class extends Controller {
         await navigator.clipboard.writeText(data.url)
 
         // Show success feedback
+        // The colour goes on the icon, not the button: the button already
+        // carries its own text colour class, and two competing colour
+        // utilities resolve by stylesheet order, not by which was added last.
         button.innerHTML = `
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="h-5 w-5 text-positive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         `
-        button.classList.add("text-green-400")
 
         // Reset button after 2 seconds
         setTimeout(() => {
           button.innerHTML = originalHTML
-          button.classList.remove("text-green-400")
         }, 2000)
       }
     } catch (error) {
@@ -39,16 +40,14 @@ export default class extends Controller {
 
       // Show error feedback
       button.innerHTML = `
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="h-5 w-5 text-negative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       `
-      button.classList.add("text-red-400")
 
       // Reset button after 2 seconds
       setTimeout(() => {
         button.innerHTML = originalHTML
-        button.classList.remove("text-red-400")
       }, 2000)
     }
   }

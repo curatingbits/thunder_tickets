@@ -1,52 +1,41 @@
 class PasswordResetsController < ApplicationController
   skip_before_action :require_login
+  before_action :set_user_from_token, only: [ :edit, :update ]
 
   def new
   end
 
   def create
-    user = User.find_by(email: params[:email].downcase)
+    # Only active accounts can reset. Deactivated users are locked out on
+    # purpose, and pending invitees should use their invitation link instead.
+    user = User.active.find_by(email: params[:email].to_s.strip.downcase)
 
     if user
       user.generate_reset_token!
-      # In a real app, send email here
-      flash[:notice] = "Password reset instructions sent (check console for token)"
-      puts "\n=== PASSWORD RESET TOKEN ==="
-      puts "Email: #{user.email}"
-      puts "Reset URL: http://localhost:3000/password_resets/#{user.reset_password_token}/edit"
-      puts "===========================\n"
-    else
-      flash[:notice] = "If that email exists, password reset instructions have been sent"
+      UserMailer.with(user: user, token: user.reset_password_token).password_reset.deliver_later
     end
 
-    redirect_to login_path
+    # Same response either way, so this form can't be used to discover which
+    # email addresses have accounts.
+    redirect_to login_path, notice: "If that email has an account, a reset link is on its way. It expires in #{User::RESET_TOKEN_TTL.inspect}."
   end
 
   def edit
-    @user = User.find_by_reset_token(params[:id])
-
-    unless @user
-      flash[:alert] = "Invalid or expired password reset link"
-      redirect_to login_path
-    end
   end
 
   def update
-    @user = User.find_by_reset_token(params[:id])
-
-    unless @user
-      flash[:alert] = "Invalid or expired password reset link"
-      redirect_to login_path
-      return
-    end
-
-    if @user.update(password: params[:password], password_confirmation: params[:password_confirmation])
-      @user.update(reset_password_token: nil, reset_password_sent_at: nil)
-      flash[:notice] = "Password reset successfully"
-      redirect_to login_path
+    if @user.reset_password(params[:password], params[:password_confirmation])
+      redirect_to login_path, notice: "Password reset. Log in with your new password."
     else
-      flash.now[:alert] = "Passwords don't match or are invalid"
+      flash.now[:alert] = @user.errors.full_messages.to_sentence
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  private
+
+  def set_user_from_token
+    @user = User.active.find_by_reset_token(params[:id])
+    redirect_to login_path, alert: "That reset link is invalid or has expired." unless @user
   end
 end

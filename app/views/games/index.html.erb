@@ -75,7 +75,7 @@
                 <% if game.playoff? %>
                   <span class="inline-block px-2 py-0.5 text-xs bg-warning/20 text-warning rounded"><%= game.playoff_round.presence || "Playoff" %></span>
                 <% elsif game.cup_round %>
-                  <span class="inline-block px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">NBA Cup</span>
+                  <span class="inline-block px-2 py-0.5 text-xs bg-highlight/20 text-highlight rounded">NBA Cup</span>
                 <% elsif game.preseason? %>
                   <span class="inline-block px-2 py-0.5 text-xs bg-surface-raised text-content-dim rounded">Preseason</span>
                 <% else %>

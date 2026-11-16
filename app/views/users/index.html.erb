@@ -16,11 +16,11 @@
   <!-- Filters -->
   <div class="card mb-6">
     <div class="flex flex-wrap gap-2">
-      <%= link_to "All Users", users_path, class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter].nil? ? 'bg-blue-600 text-content-strong' : 'bg-surface-raised text-content hover:bg-strong'}" %>
-      <%= link_to "Active", users_path(filter: "active"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'active' ? 'bg-blue-600 text-content-strong' : 'bg-surface-raised text-content hover:bg-strong'}" %>
-      <%= link_to "Inactive", users_path(filter: "inactive"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'inactive' ? 'bg-blue-600 text-content-strong' : 'bg-surface-raised text-content hover:bg-strong'}" %>
-      <%= link_to "Pending Invitation", users_path(filter: "pending"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'pending' ? 'bg-blue-600 text-content-strong' : 'bg-surface-raised text-content hover:bg-strong'}" %>
-      <%= link_to "Accepted", users_path(filter: "accepted"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'accepted' ? 'bg-blue-600 text-content-strong' : 'bg-surface-raised text-content hover:bg-strong'}" %>
+      <%= link_to "All Users", users_path, class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter].nil? ? 'bg-accent text-canvas' : 'bg-surface-raised text-content hover:bg-strong'}" %>
+      <%= link_to "Active", users_path(filter: "active"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'active' ? 'bg-accent text-canvas' : 'bg-surface-raised text-content hover:bg-strong'}" %>
+      <%= link_to "Inactive", users_path(filter: "inactive"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'inactive' ? 'bg-accent text-canvas' : 'bg-surface-raised text-content hover:bg-strong'}" %>
+      <%= link_to "Pending Invitation", users_path(filter: "pending"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'pending' ? 'bg-accent text-canvas' : 'bg-surface-raised text-content hover:bg-strong'}" %>
+      <%= link_to "Accepted", users_path(filter: "accepted"), class: "px-4 py-2 rounded-lg font-medium transition-colors #{params[:filter] == 'accepted' ? 'bg-accent text-canvas' : 'bg-surface-raised text-content hover:bg-strong'}" %>
     </div>
   </div>
 
@@ -65,7 +65,7 @@
                         data-controller="clipboard"
                         data-clipboard-user-id-value="<%= user.id %>"
                         data-action="click->clipboard#copyInvitation"
-                        class="text-purple-400 hover:text-purple-300 transition-colors"
+                        class="text-highlight hover:brightness-125 transition-all"
                         title="Copy Invitation Link">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -124,7 +124,7 @@
                   data-controller="clipboard"
                   data-clipboard-user-id-value="<%= user.id %>"
                   data-action="click->clipboard#copyInvitation"
-                  class="bg-purple-600 hover:bg-purple-700 text-content-strong font-semibold py-2.5 px-4 rounded-lg transition-colors text-xs flex-1">
+                  class="bg-highlight hover:brightness-110 text-canvas font-semibold py-2.5 px-4 rounded-lg transition-colors text-xs flex-1">
                   Copy Link
                 </button>
 

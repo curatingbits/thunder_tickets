@@ -12,10 +12,10 @@
           <span class="sm:before:content-['•'] sm:before:mx-2 text-warning"><%= @game.playoff_round %></span>
         <% elsif @game.cup_round %>
           <br class="sm:hidden">
-          <span class="sm:before:content-['•'] sm:before:mx-2 text-purple-400">NBA Cup: <%= @game.cup_round %></span>
+          <span class="sm:before:content-['•'] sm:before:mx-2 text-highlight">NBA Cup: <%= @game.cup_round %></span>
         <% elsif @game.preseason? %>
           <br class="sm:hidden">
-          <span class="sm:before:content-['•'] sm:before:mx-2 text-sky-400">Preseason</span>
+          <span class="sm:before:content-['•'] sm:before:mx-2 text-info">Preseason</span>
         <% end %>
       </p>
     </div>
@@ -94,9 +94,12 @@
                   <p class="text-sm <%= ticket.sale_price > @game.cost_per_ticket ? 'text-positive' : 'text-negative' %>">
                     <%= ((ticket.sale_price / @game.cost_per_ticket - 1) * 100).round(0) %>%
                   </p>
-                  <%= button_to "Remove", game_ticket_path(@game, ticket), method: :delete,
-                      data: { turbo_confirm: "Are you sure?" },
-                      class: "text-xs text-negative hover:text-negative mt-2" %>
+                  <div class="flex items-center justify-end gap-3 mt-2">
+                    <%= link_to "Edit", edit_game_ticket_path(@game, ticket), class: "text-xs text-accent hover:brightness-125" %>
+                    <%= button_to "Remove", game_ticket_path(@game, ticket), method: :delete,
+                        data: { turbo_confirm: "Are you sure?" },
+                        class: "text-xs text-negative hover:brightness-125" %>
+                  </div>
                 </div>
               </div>
             </div>
@@ -108,13 +111,17 @@
 
       <!-- Add New Ticket Sale -->
       <% if @available_seats.any? %>
-        <div class="border-t border-subtle pt-6" data-controller="bulk-sale" data-bulk-sale-available-count-value="<%= @available_seats.count %>">
+        <div class="border-t border-subtle pt-6"
+             data-controller="bulk-sale"
+             data-bulk-sale-available-count-value="<%= @available_seats.count %>"
+             data-bulk-sale-active-tab-class="bg-accent text-canvas font-semibold"
+             data-bulk-sale-inactive-tab-class="bg-surface-raised text-content hover:bg-strong">
           <h3 class="text-lg font-semibold text-content-strong mb-4">Record New Sale</h3>
 
           <!-- Tab Buttons -->
           <div class="flex mb-4 border-b border-subtle">
             <button type="button"
-                    class="px-4 py-2 text-sm font-medium rounded-t-lg bg-blue-600 text-content-strong"
+                    class="px-4 py-2 text-sm font-medium rounded-t-lg bg-accent text-canvas font-semibold"
                     data-bulk-sale-target="singleTab"
                     data-action="click->bulk-sale#showSingle">
               Single Sale
@@ -294,22 +301,26 @@
       </div>
 
       <!-- Break Even Calculator -->
-      <div class="card bg-accent/10 border-blue-700">
+      <div class="card bg-accent/10 border-accent/40">
         <h3 class="text-lg font-bold text-accent mb-3">Break Even Info</h3>
         <p class="text-sm text-content mb-2">
-          Cost per ticket: <span class="text-content-strong font-semibold">$<%= number_with_delimiter(@game.cost_per_ticket) %></span>
+          Cost per ticket: <span class="text-content-strong font-semibold figure"><%= number_to_currency(@game.cost_per_ticket) %></span>
         </p>
         <p class="text-sm text-content mb-2">
-          Your share of parking: <span class="text-content-strong font-semibold">$<%= number_with_delimiter(@game.parking_cost / @season.num_seats) %></span>
+          Your share of parking: <span class="text-content-strong font-semibold figure"><%= number_to_currency(@game.parking_cost / @season.num_seats) %></span>
         </p>
         <p class="text-sm text-content mb-4">
-          Break even price per ticket: <span class="text-warning font-bold">$<%= number_with_delimiter(@game.total_cost / @season.num_seats) %></span>
+          Break even price per ticket: <span class="text-warning font-bold figure"><%= number_to_currency(@game.break_even_price_per_ticket) %></span>
         </p>
-        <% if @game.tickets_available > 0 %>
+        <% if @game.break_even_price_for_remaining %>
           <p class="text-xs text-content-dim">
-            You need to sell <%= @game.tickets_available %> remaining ticket<%= @game.tickets_available == 1 ? '' : 's' %>
-            at $<%= number_with_delimiter(((@game.total_cost - @game.total_revenue) / @game.tickets_available).round(2)) %>
+            You need to sell <%= pluralize(@game.tickets_available, "remaining ticket") %>
+            at <span class="figure"><%= number_to_currency(@game.break_even_price_for_remaining) %></span>
             each to break even.
+          </p>
+        <% elsif @game.remaining_to_break_even.zero? && @game.tickets_available.positive? %>
+          <p class="text-xs text-positive">
+            Cost covered: anything from the <%= pluralize(@game.tickets_available, "remaining ticket") %> is profit.
           </p>
         <% end %>
       </div>

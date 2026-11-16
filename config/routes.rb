@@ -29,7 +29,7 @@ Rails.application.routes.draw do
 
   # Games and tickets
   resources :games, only: [:index, :show, :edit, :update, :new, :create] do
-    resources :tickets, only: [:create, :destroy] do
+    resources :tickets, only: [:create, :edit, :update, :destroy] do
       collection do
         post :bulk_create
       end

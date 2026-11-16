@@ -5,9 +5,11 @@ class SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(email: params[:email].downcase)
+    # Deactivated accounts get the same "invalid" response as a wrong
+    # password, so the form doesn't confirm which emails exist.
+    user = User.active.find_by(email: params[:email].to_s.strip.downcase)
 
-    if user && user.authenticate(params[:password])
+    if user&.authenticate(params[:password])
       session[:user_id] = user.id
       redirect_to root_path, notice: "Welcome back, #{user.name}!"
     else

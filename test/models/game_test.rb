@@ -51,6 +51,53 @@ class GameTest < ActiveSupport::TestCase
     assert_equal BigDecimal("310"), game.total_cost
   end
 
+  # --- fully_sold ------------------------------------------------------
+
+  test "fully_sold returns only games with every seat sold for their season" do
+    sold = Game.fully_sold
+
+    assert_includes sold, games(:past_regular)    # 2 of 2 (2-seat season)
+    refute_includes sold, games(:past_playoff)    # 1 of 2
+    refute_includes sold, games(:current_past)    # 2 of 3 — partial is not "fully sold"
+    refute_includes sold, games(:current_future)  # 0 of 3
+  end
+
+  test "a game becomes fully sold when its last seat sells" do
+    game = games(:current_past)
+    game.tickets.create!(seat_number: 3, sale_price: 100)
+
+    assert_includes Game.fully_sold, game
+  end
+
+  # --- break-even ------------------------------------------------------
+
+  test "break-even price covers tickets and each seat's share of parking" do
+    # current_past: (100 * 3) + 20 parking = 320 over 3 seats
+    assert_in_delta 106.67, games(:current_past).break_even_price_per_ticket, 0.005
+  end
+
+  test "remaining seats must cover whatever cost is still outstanding" do
+    game = games(:current_past) # cost 320, revenue 250, 1 seat left
+
+    assert_equal 70, game.remaining_to_break_even
+    assert_equal 70, game.break_even_price_for_remaining
+  end
+
+  test "once a game covers its cost there's no break-even price for the rest" do
+    game = games(:current_past)
+    game.tickets.find_by(seat_number: 1).update!(sale_price: 300) # revenue 420 > cost 320
+
+    assert_equal 0, game.remaining_to_break_even
+    assert_nil game.break_even_price_for_remaining
+  end
+
+  test "an unsold game spreads its whole cost over every seat" do
+    game = games(:current_future) # cost 320, nothing sold
+
+    assert_equal 320, game.remaining_to_break_even
+    assert_in_delta 106.67, game.break_even_price_for_remaining, 0.005
+  end
+
   # --- cup_round -------------------------------------------------------
 
   test "cup_round reads the round from a regular game in the Cup package" do

@@ -1,8 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
 
+// Switches between the single-sale and bulk-sale forms on the game page.
+// Tab styling comes from data-bulk-sale-{active,inactive}-tab-class on the
+// element, so the class names live in the view with the rest of the design
+// tokens instead of being hardcoded here.
 export default class extends Controller {
   static targets = ["singleTab", "bulkTab", "singleForm", "bulkForm", "totalAmount", "pricePreview"]
   static values = { availableCount: Number }
+  static classes = ["activeTab", "inactiveTab"]
 
   connect() {
     this.updatePreview()
@@ -10,22 +15,23 @@ export default class extends Controller {
 
   showSingle(event) {
     event.preventDefault()
-    this.singleTabTarget.classList.add("bg-blue-600", "text-white")
-    this.singleTabTarget.classList.remove("bg-gray-700", "text-gray-300")
-    this.bulkTabTarget.classList.remove("bg-blue-600", "text-white")
-    this.bulkTabTarget.classList.add("bg-gray-700", "text-gray-300")
+    this.activate(this.singleTabTarget, this.bulkTabTarget)
     this.singleFormTarget.classList.remove("hidden")
     this.bulkFormTarget.classList.add("hidden")
   }
 
   showBulk(event) {
     event.preventDefault()
-    this.bulkTabTarget.classList.add("bg-blue-600", "text-white")
-    this.bulkTabTarget.classList.remove("bg-gray-700", "text-gray-300")
-    this.singleTabTarget.classList.remove("bg-blue-600", "text-white")
-    this.singleTabTarget.classList.add("bg-gray-700", "text-gray-300")
+    this.activate(this.bulkTabTarget, this.singleTabTarget)
     this.bulkFormTarget.classList.remove("hidden")
     this.singleFormTarget.classList.add("hidden")
+  }
+
+  activate(activeTab, inactiveTab) {
+    activeTab.classList.remove(...this.inactiveTabClasses)
+    activeTab.classList.add(...this.activeTabClasses)
+    inactiveTab.classList.remove(...this.activeTabClasses)
+    inactiveTab.classList.add(...this.inactiveTabClasses)
   }
 
   updatePreview() {

@@ -1,0 +1,82 @@
+<% content_for :title, "Edit Sale" %>
+
+<div class="max-w-2xl mx-auto space-y-6">
+  <!-- Header -->
+  <div>
+    <%= link_to "← Back to Game", game_path(@game), class: "text-accent hover:brightness-125 text-sm mb-2 inline-block" %>
+    <h1 class="text-2xl sm:text-3xl font-bold text-content-strong">Edit Sale</h1>
+    <p class="text-sm sm:text-base text-content-dim mt-2">
+      vs <%= @game.opponent.name %> · <%= @game.game_date.strftime("%A, %B %-d, %Y") %>
+      <% if @ticket.section.present? %>
+        · Section <%= @ticket.section %>, Row <%= @ticket.row %>
+      <% end %>
+    </p>
+  </div>
+
+  <div class="card">
+    <%= form_with model: [@game, @ticket],
+                  class: "space-y-5",
+                  data: {
+                    controller: "ticket-form",
+                    action: "submit->ticket-form#submit"
+                  } do |f| %>
+      <% if @ticket.errors.any? %>
+        <div class="bg-negative/15 border border-negative/40 rounded-lg p-4">
+          <p class="text-negative text-sm font-semibold mb-1">Couldn't save this sale:</p>
+          <ul class="list-disc list-inside text-negative text-sm">
+            <% @ticket.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <%= f.label :seat_number, "Seat", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.select :seat_number, @seat_options, {}, class: "input-field" %>
+        </div>
+
+        <div>
+          <%= f.label :sale_price, "Sale Price", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.number_field :sale_price, step: 0.01, min: 0.01, required: true, class: "input-field figure" %>
+          <p class="mt-1 text-xs text-muted">Cost <span class="figure"><%= number_to_currency(@game.cost_per_ticket) %></span>/ticket</p>
+        </div>
+
+        <div>
+          <%= f.label :sold_on, "Sale Date", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.date_field :sold_on, class: "input-field" %>
+        </div>
+      </div>
+
+      <div data-controller="buyer-form">
+        <div>
+          <%= f.label :buyer_id, "Buyer", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.select :buyer_id,
+              [["+ Create New Buyer", "new"]] + @buyers.map { |b| [b.name + (b.email.present? ? " (#{b.email})" : ""), b.id] },
+              { include_blank: "No buyer" },
+              class: "input-field",
+              data: {
+                buyer_form_target: "select",
+                action: "change->buyer-form#toggleForm"
+              } %>
+        </div>
+
+        <!-- Inline buyer creation form (hidden by default) -->
+        <div class="mt-6 hidden" data-buyer-form-target="formContainer">
+          <%= render "buyers/inline_form", buyer: Buyer.new %>
+        </div>
+      </div>
+
+      <div>
+        <%= f.label :notes, "Notes", class: "block text-sm font-medium text-content mb-2" %>
+        <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-subtle">
+        <%= f.submit "Save Changes", class: "btn-primary w-full sm:w-auto" %>
+        <%= link_to "Cancel", game_path(@game), class: "btn-secondary w-full sm:w-auto text-center" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -2,7 +2,7 @@
   <div class="max-w-md w-full space-y-8">
     <div>
       <h1 class="text-center text-5xl font-bold">
-        <span class="text-accent">MADR</span> <span class="text-orange-400">TICKETS</span>
+        <span class="text-accent">MADR</span> <span class="text-accent-alt">TICKETS</span>
       </h1>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-content-strong">
         Set New Password
@@ -12,7 +12,8 @@
     <%= form_with url: password_reset_path(params[:id]), method: :patch, class: "mt-8 space-y-6" do %>
       <div>
         <label for="password" class="block text-sm font-medium text-content mb-2">New Password</label>
-        <%= password_field_tag :password, nil, placeholder: "Enter new password", class: "input-field", required: true, autofocus: true %>
+        <%= password_field_tag :password, nil, placeholder: "Enter new password", class: "input-field", required: true, minlength: 6, autofocus: true %>
+        <p class="mt-1 text-xs text-muted">At least 6 characters</p>
       </div>
 
       <div>
