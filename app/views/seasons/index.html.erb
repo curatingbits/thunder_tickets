@@ -42,7 +42,7 @@
               <div>
                 <p class="text-xs text-muted uppercase tracking-wide">Net Profit</p>
                 <p class="text-base font-bold <%= season.total_profit >= 0 ? 'text-positive' : 'text-negative' %>">
-                  <%= season.total_profit >= 0 ? '+' : '' %>$<%= number_with_delimiter(season.total_profit.round) %>
+                  <%= signed_currency(season.total_profit) %>
                 </p>
               </div>
               <div>

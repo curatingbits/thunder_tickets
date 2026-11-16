@@ -43,7 +43,7 @@
     <div class="stat-card">
       <p class="text-xs sm:text-sm text-content-dim">Profit/Loss</p>
       <p class="text-xl sm:text-2xl font-bold <%= @game.profit_loss >= 0 ? 'text-positive' : 'text-negative' %>">
-        <%= @game.profit_loss >= 0 ? '+' : '' %>$<%= number_with_delimiter(@game.profit_loss.round) %>
+        <%= signed_currency(@game.profit_loss) %>
       </p>
       <p class="text-xs text-muted mt-1">
         <%= @game.total_revenue > 0 ? ((@game.total_revenue / @game.total_cost - 1) * 100).round(1) : 0 %>% ROI

@@ -81,7 +81,7 @@
           <div>
             <p class="section-label"><%= @is_recap ? "Final net profit" : "Net profit" %></p>
             <p class="text-4xl sm:text-5xl font-bold mt-1 figure <%= @metrics[:total_profit].positive? ? 'text-positive' : @metrics[:total_profit].negative? ? 'text-negative' : 'text-content' %>">
-              <%= @metrics[:total_profit].positive? ? '+' : '' %>$<%= number_with_delimiter(@metrics[:total_profit].round) %>
+              <%= signed_currency(@metrics[:total_profit]) %>
             </p>
             <p class="text-sm text-content-dim mt-2">
               <span class="<%= @metrics[:roi] >= 0 ? 'text-positive' : 'text-negative' %> font-semibold figure">
@@ -191,7 +191,7 @@
             <div class="text-center p-4 bg-canvas rounded-lg border <%= @metrics[:total_profit] >= 0 ? 'border-positive/40 bg-positive/10' : 'border-negative/40 bg-negative/10' %>">
               <p class="section-label mb-1">Net Profit</p>
               <p class="text-xl sm:text-2xl font-bold figure <%= @metrics[:total_profit] >= 0 ? 'text-positive' : 'text-negative' %>">
-                <%= @metrics[:total_profit] >= 0 ? '+' : '' %>$<%= number_with_delimiter(@metrics[:total_profit].round) %>
+                <%= signed_currency(@metrics[:total_profit]) %>
               </p>
               <p class="text-xs text-muted mt-1"><%= @metrics[:cost_recovery_rate] %>% recovered</p>
             </div>
@@ -213,7 +213,7 @@
             <span>$0</span>
             <span class="font-medium">Break-even: $<%= number_with_delimiter(@metrics[:total_cost].round) %></span>
             <% if @metrics[:cost_recovery_rate] >= 100 %>
-              <span class="text-positive">+$<%= number_with_delimiter(@metrics[:total_profit].round) %> profit</span>
+              <span class="text-positive"><%= signed_currency(@metrics[:total_profit]) %> profit</span>
             <% elsif @is_recap %>
               <span>Recovered <%= @metrics[:cost_recovery_rate] %>% — final</span>
             <% else %>
@@ -302,7 +302,7 @@
                   <p class="text-sm text-content-dim"><%= @best_game.game_date.strftime("%B %d") %></p>
                 </div>
                 <div class="text-right">
-                  <p class="text-lg font-bold text-positive">+$<%= number_with_delimiter(@best_game.profit_loss.round) %></p>
+                  <p class="text-lg font-bold figure <%= @best_game.profit_loss.positive? ? 'text-positive' : @best_game.profit_loss.negative? ? 'text-negative' : 'text-content' %>"><%= signed_currency(@best_game.profit_loss) %></p>
                   <p class="text-xs text-muted"><%= @best_game.tickets_sold_count %>/<%= @season.num_seats %> sold</p>
                 </div>
               </div>
@@ -326,7 +326,7 @@
                 </div>
                 <div class="text-right">
                   <p class="text-lg font-bold <%= @worst_game.profit_loss >= 0 ? 'text-warning' : 'text-negative' %>">
-                    <%= @worst_game.profit_loss >= 0 ? '+' : '' %>$<%= number_with_delimiter(@worst_game.profit_loss.round) %>
+                    <%= signed_currency(@worst_game.profit_loss) %>
                   </p>
                   <p class="text-xs text-muted"><%= @worst_game.tickets_sold_count %>/<%= @season.num_seats %> sold</p>
                 </div>
@@ -364,7 +364,7 @@
                   <div class="text-right">
                     <% if @is_recap %>
                       <p class="text-sm font-bold <%= game.profit_loss >= 0 ? 'text-positive' : 'text-negative' %>">
-                        <%= game.profit_loss >= 0 ? '+' : '' %>$<%= number_with_delimiter(game.profit_loss.round) %>
+                        <%= signed_currency(game.profit_loss) %>
                       </p>
                       <p class="text-xs text-muted"><%= game.tickets_sold_count %>/<%= @season.num_seats %> sold</p>
                     <% else %>

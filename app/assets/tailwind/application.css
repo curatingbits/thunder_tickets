@@ -58,6 +58,23 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* `static`: always emit these variables. Tailwind only outputs theme vars
+ * it sees referenced in source, and the chart controller reads them by
+ * name at runtime (getComputedStyle), which its scanner can't see. */
+@theme static {
+  /* Chart marks (read by dashboard_charts_controller.js). Same hues as
+   * positive/negative, stepped into the dark-mode mark lightness band
+   * (OKLCH L 0.48-0.67): the text tokens above are tuned for type and glare
+   * as large fills. Validated on --color-surface with the dataviz palette
+   * checks: all >= 3:1 contrast; positive/negative colorblind (deutan) dE 11.1,
+   * normal-vision dE 27.7; worst pair including neutral dE 10.3. Neutral is
+   * deliberately low-chroma: it marks games that haven't sold yet, which
+   * are not losses. Figures and labels stay on the text tokens. */
+  --color-chart-positive: #75a33e;
+  --color-chart-negative: #be435e;
+  --color-chart-neutral: #656e9d;
+}
+
 /* ---------------------------------------------------------------
  * Base and component styles live in cascade layers on purpose.
  * Unlayered CSS outranks every @layer regardless of specificity, so

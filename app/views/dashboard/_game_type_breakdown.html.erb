@@ -41,7 +41,7 @@
                 <p class="text-sm font-bold text-muted figure">—</p>
               <% else %>
                 <p class="text-sm font-bold figure <%= row[:profit] >= 0 ? 'text-positive' : 'text-negative' %>">
-                  <%= row[:profit] >= 0 ? '+' : '' %>$<%= number_with_delimiter(row[:profit].round) %>
+                  <%= signed_currency(row[:profit]) %>
                 </p>
               <% end %>
             </div>

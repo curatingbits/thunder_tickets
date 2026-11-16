@@ -48,4 +48,24 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match seasons(:current).year, response.body
   end
+
+  test "the profit chart marks unplayed, unsold games as pending" do
+    get dashboard_path
+
+    data = JSON.parse(css_select("canvas[data-dashboard-charts-target='profitChart']").first["data-game-profits"])
+    by_opponent = data.index_by { |g| g["opponent"] }
+    assert_equal false, by_opponent["DAL"]["pending"] # current_past: played, 2 sold
+    assert_equal true,  by_opponent["DEN"]["pending"] # current_future: nothing sold yet
+  end
+
+  test "losses render with a leading minus, never as $-N or +$-N" do
+    # Every current-season game is underwater, so even the Top Performer
+    # (current_past: 250 revenue - 320 cost) is a loss.
+    get dashboard_path
+
+    assert_response :success
+    assert_select "a[href='#{game_path(games(:current_past))}'] p.text-negative", text: "-$70"
+    assert_no_match(/\$-\d/, response.body)
+    assert_no_match(/\+\$-/, response.body)
+  end
 end

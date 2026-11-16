@@ -99,7 +99,7 @@
                 <% if pending %>
                   —
                 <% else %>
-                  <%= game.profit_loss.positive? ? '+' : '' %>$<%= number_with_delimiter(game.profit_loss.round) %>
+                  <%= signed_currency(game.profit_loss) %>
                 <% end %>
               </td>
             </tr>
@@ -117,7 +117,7 @@
               <% if nothing_sold %>
                 —
               <% else %>
-                <%= totals[:profit].positive? ? '+' : '' %>$<%= number_with_delimiter(totals[:profit].round) %>
+                <%= signed_currency(totals[:profit]) %>
               <% end %>
             </td>
           </tr>
@@ -158,7 +158,7 @@
                 <% if pending %>
                   —
                 <% else %>
-                  <%= game.profit_loss.positive? ? '+' : '' %>$<%= number_with_delimiter(game.profit_loss.round) %>
+                  <%= signed_currency(game.profit_loss) %>
                 <% end %>
               </div>
               <div class="text-xs mt-0.5 <%= game.fully_sold? ? 'text-positive' : game.partially_sold? ? 'text-warning' : 'text-muted' %>">
@@ -180,7 +180,7 @@
             <% if nothing_sold %>
               $<%= number_with_delimiter(totals[:cost].round) %> committed
             <% else %>
-              <%= totals[:profit].positive? ? '+' : '' %>$<%= number_with_delimiter(totals[:profit].round) %>
+              <%= signed_currency(totals[:profit]) %>
             <% end %>
           </span>
         </div>

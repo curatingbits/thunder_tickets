@@ -48,7 +48,11 @@ class DashboardController < ApplicationController
         revenue: game.total_revenue,
         cost: game.total_cost,
         tickets_sold: game.tickets_sold_count,
-        date: game.game_date
+        date: game.game_date,
+        # Not played and nothing sold yet: its "loss" is just the cost not
+        # yet recovered, so the chart draws it neutral rather than red (the
+        # same rule the games table follows).
+        pending: game.tickets_sold_count.zero? && game.game_date >= Date.current
       }
     end.sort_by { |g| g[:date] }
 

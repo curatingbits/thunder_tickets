@@ -13,7 +13,7 @@
     <div class="text-center p-4 bg-canvas rounded-lg border <%= season.final_net_profit >= 0 ? 'border-positive/40 bg-positive/10' : 'border-negative/40 bg-negative/10' %>">
       <p class="text-xs text-content-dim uppercase mb-1">Final Net Profit</p>
       <p class="text-xl sm:text-2xl font-bold <%= season.final_net_profit >= 0 ? 'text-positive' : 'text-negative' %>">
-        <%= season.final_net_profit >= 0 ? '+' : '' %>$<%= number_with_delimiter(season.final_net_profit.round) %>
+        <%= signed_currency(season.final_net_profit) %>
       </p>
     </div>
     <div class="text-center p-4 bg-canvas rounded-lg border border-subtle">

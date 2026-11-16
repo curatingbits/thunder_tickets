@@ -1,10 +1,62 @@
 import { Controller } from "@hotwired/stimulus"
 import { Chart } from "chart.js/auto"
 
+// Chart colors come from the theme's CSS custom properties
+// (app/assets/tailwind/application.css), so the charts follow the design
+// tokens instead of carrying their own hex values.
+function token(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim()
+}
+
+// "#rrggbb" + alpha -> "rgba(...)". Chart.js parses colors to derive hover
+// shades, so it needs plain hex/rgb rather than color-mix().
+function withAlpha(hex, alpha) {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex)
+  if (!match) return hex
+  const n = parseInt(match[1], 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
+}
+
+// Money arrives as strings (Rails serializes BigDecimal that way), so every
+// formatter coerces with Number() first.
+function currency(value) {
+  return `$${Math.round(Number(value)).toLocaleString()}`
+}
+
+// Mirrors ApplicationHelper#signed_currency: "+$1,234", "-$390", "$0".
+function signedCurrency(value) {
+  const rounded = Math.round(Number(value))
+  const formatted = `$${Math.abs(rounded).toLocaleString()}`
+  if (rounded > 0) return `+${formatted}`
+  if (rounded < 0) return `-${formatted}`
+  return formatted
+}
+
+// Axis ticks: "$500", "-$50", "$2k", "-$1k".
+function axisCurrency(value) {
+  const sign = value < 0 ? "-" : ""
+  const abs = Math.abs(value)
+  return abs >= 1000 ? `${sign}$${(abs / 1000).toFixed(0)}k` : `${sign}$${abs}`
+}
+
 export default class extends Controller {
   static targets = ["profitChart", "revenueChart"]
 
   connect() {
+    this.colors = {
+      positive: token("chart-positive"),
+      negative: token("chart-negative"),
+      neutral: token("chart-neutral"),
+      reference: token("muted"),
+      tooltipBg: token("surface-raised"),
+      tooltipBorder: token("subtle"),
+      text: token("content"),
+      textStrong: token("content-strong"),
+      textDim: token("content-dim"),
+      axis: token("muted"),
+      grid: token("subtle")
+    }
+
     if (this.hasProfitChartTarget) {
       this.initProfitChart()
     }
@@ -22,6 +74,36 @@ export default class extends Controller {
     }
   }
 
+  // Shared tooltip chrome: surface + text tokens, never series colors.
+  tooltipStyle() {
+    return {
+      backgroundColor: this.colors.tooltipBg,
+      titleColor: this.colors.textStrong,
+      bodyColor: this.colors.text,
+      borderColor: this.colors.tooltipBorder,
+      borderWidth: 1,
+      padding: 12,
+      cornerRadius: 8
+    }
+  }
+
+  currencyAxis() {
+    return {
+      grid: {
+        color: this.colors.grid,
+        drawBorder: false
+      },
+      ticks: {
+        color: this.colors.axis,
+        font: {
+          size: 11
+        },
+        callback: axisCurrency
+      },
+      beginAtZero: true
+    }
+  }
+
   initProfitChart() {
     const canvas = this.profitChartTarget
     const gameData = JSON.parse(canvas.dataset.gameProfits || "[]")
@@ -31,12 +113,16 @@ export default class extends Controller {
     const ctx = canvas.getContext("2d")
 
     const labels = gameData.map(g => g.opponent)
-    const profits = gameData.map(g => g.profit)
-    const revenues = gameData.map(g => g.revenue)
+    const profits = gameData.map(g => Number(g.profit))
 
-    // Create gradient backgrounds for bars
-    const profitColors = profits.map(p => p >= 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(239, 68, 68, 0.8)")
-    const profitBorders = profits.map(p => p >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239, 68, 68, 1)")
+    // Polarity: profit green, loss red. A game not yet played with nothing
+    // sold is neutral: its bar is cost not yet recovered, not a loss.
+    const barColors = gameData.map((g, i) => {
+      if (g.pending) return this.colors.neutral
+      if (profits[i] > 0) return this.colors.positive
+      if (profits[i] < 0) return this.colors.negative
+      return this.colors.neutral
+    })
 
     this.profitChartInstance = new Chart(ctx, {
       type: "bar",
@@ -46,9 +132,8 @@ export default class extends Controller {
           {
             label: "Profit/Loss",
             data: profits,
-            backgroundColor: profitColors,
-            borderColor: profitBorders,
-            borderWidth: 1,
+            backgroundColor: barColors,
+            borderWidth: 0,
             borderRadius: 4,
             barPercentage: 0.7,
             categoryPercentage: 0.8
@@ -67,13 +152,7 @@ export default class extends Controller {
             display: false
           },
           tooltip: {
-            backgroundColor: "rgba(17, 24, 39, 0.95)",
-            titleColor: "#fff",
-            bodyColor: "#d1d5db",
-            borderColor: "rgba(75, 85, 99, 0.5)",
-            borderWidth: 1,
-            padding: 12,
-            cornerRadius: 8,
+            ...this.tooltipStyle(),
             displayColors: false,
             callbacks: {
               title: function(context) {
@@ -81,14 +160,17 @@ export default class extends Controller {
                 return `vs ${gameData[idx].opponent}`
               },
               label: function(context) {
-                const idx = context.dataIndex
-                const game = gameData[idx]
-                const profit = game.profit
-                const sign = profit >= 0 ? "+" : ""
+                const game = gameData[context.dataIndex]
+                if (game.pending) {
+                  return [
+                    "Not sold yet",
+                    `Cost: ${currency(game.cost)}`
+                  ]
+                }
                 return [
-                  `Profit: ${sign}$${profit.toLocaleString()}`,
-                  `Revenue: $${game.revenue.toLocaleString()}`,
-                  `Cost: $${game.cost.toLocaleString()}`,
+                  `Profit: ${signedCurrency(game.profit)}`,
+                  `Revenue: ${currency(game.revenue)}`,
+                  `Cost: ${currency(game.cost)}`,
                   `Tickets: ${game.tickets_sold} sold`
                 ]
               }
@@ -101,7 +183,7 @@ export default class extends Controller {
               display: false
             },
             ticks: {
-              color: "#9ca3af",
+              color: this.colors.axis,
               font: {
                 size: 11
               },
@@ -109,25 +191,7 @@ export default class extends Controller {
               minRotation: 45
             }
           },
-          y: {
-            grid: {
-              color: "rgba(75, 85, 99, 0.3)",
-              drawBorder: false
-            },
-            ticks: {
-              color: "#9ca3af",
-              font: {
-                size: 11
-              },
-              callback: function(value) {
-                if (value >= 1000 || value <= -1000) {
-                  return "$" + (value / 1000).toFixed(0) + "k"
-                }
-                return "$" + value
-              }
-            },
-            beginAtZero: true
-          }
+          y: this.currencyAxis()
         }
       }
     })
@@ -142,8 +206,8 @@ export default class extends Controller {
     const ctx = canvas.getContext("2d")
 
     const labels = data.map(d => this.formatMonth(d.month))
-    const cumulativeRevenue = data.map(d => d.cumulative_revenue)
-    const cumulativeCost = data.map(d => d.cumulative_cost)
+    const cumulativeRevenue = data.map(d => Number(d.cumulative_revenue))
+    const cumulativeCost = data.map(d => Number(d.cumulative_cost))
 
     this.revenueChartInstance = new Chart(ctx, {
       type: "line",
@@ -153,23 +217,24 @@ export default class extends Controller {
           {
             label: "Cumulative Revenue",
             data: cumulativeRevenue,
-            borderColor: "rgba(34, 197, 94, 1)",
-            backgroundColor: "rgba(34, 197, 94, 0.15)",
+            borderColor: this.colors.positive,
+            backgroundColor: withAlpha(this.colors.positive, 0.15),
             fill: true,
             tension: 0.3,
             pointRadius: 3,
-            pointBackgroundColor: "rgba(34, 197, 94, 1)"
+            pointBackgroundColor: this.colors.positive
           },
           {
+            // Cost is the line revenue has to clear, not bad news: a neutral
+            // dashed reference, never red.
             label: "Cumulative Cost",
             data: cumulativeCost,
-            borderColor: "rgba(239, 68, 68, 1)",
-            backgroundColor: "rgba(239, 68, 68, 0.05)",
+            borderColor: this.colors.reference,
             borderDash: [6, 4],
             fill: false,
             tension: 0.3,
             pointRadius: 3,
-            pointBackgroundColor: "rgba(239, 68, 68, 1)"
+            pointBackgroundColor: this.colors.reference
           }
         ]
       },
@@ -184,7 +249,7 @@ export default class extends Controller {
           legend: {
             display: true,
             labels: {
-              color: "#d1d5db",
+              color: this.colors.textDim,
               usePointStyle: true,
               padding: 16,
               font: {
@@ -193,16 +258,10 @@ export default class extends Controller {
             }
           },
           tooltip: {
-            backgroundColor: "rgba(17, 24, 39, 0.95)",
-            titleColor: "#fff",
-            bodyColor: "#d1d5db",
-            borderColor: "rgba(75, 85, 99, 0.5)",
-            borderWidth: 1,
-            padding: 12,
-            cornerRadius: 8,
+            ...this.tooltipStyle(),
             callbacks: {
               label: function(context) {
-                return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
+                return `${context.dataset.label}: ${currency(context.parsed.y)}`
               }
             }
           }
@@ -213,31 +272,13 @@ export default class extends Controller {
               display: false
             },
             ticks: {
-              color: "#9ca3af",
+              color: this.colors.axis,
               font: {
                 size: 11
               }
             }
           },
-          y: {
-            grid: {
-              color: "rgba(75, 85, 99, 0.3)",
-              drawBorder: false
-            },
-            ticks: {
-              color: "#9ca3af",
-              font: {
-                size: 11
-              },
-              callback: function(value) {
-                if (value >= 1000 || value <= -1000) {
-                  return "$" + (value / 1000).toFixed(0) + "k"
-                }
-                return "$" + value
-              }
-            },
-            beginAtZero: true
-          }
+          y: this.currencyAxis()
         }
       }
     })
