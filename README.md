@@ -46,33 +46,20 @@ A comprehensive web application for managing Oklahoma City Thunder season ticket
 
 ### Installation
 
-1. **Clone the repository** (if applicable)
+1. **Set up and start the app**
    ```bash
-   cd thunder_tickets
+   bin/setup
    ```
+   This installs gems, creates the database, loads the seeds, and starts the
+   server at `http://localhost:3000`. Later, start it with `bin/dev`.
 
-2. **Install dependencies**
-   ```bash
-   bundle install
-   ```
+2. **Sign in** with the sample account: `admin@example.com` / `password`.
 
-3. **Setup the database**
-   ```bash
-   bin/rails db:create
-   bin/rails db:migrate
-   bin/rails db:seed
-   ```
-
-4. **Start the server**
-   ```bash
-   bin/dev
-   ```
-
-5. **Access the application**
-   - Open your browser to `http://localhost:3000`
-   - Default login credentials:
-     - Email: `admin@thundertickets.com`
-     - Password: `thunder2026`
+The seeds give a fresh database the 29 opposing teams, the real 2026-27 home
+schedule from `db/schedules`, and some made-up sales and buyers. They only
+fill an empty database: re-running them never changes or deletes anything, and
+in production they add the teams only. To start over with sample data, run
+`bin/setup --reset`.
 
 ## Usage
 
@@ -138,14 +125,16 @@ link, which an admin can resend from the Users page.
 ## Configuration
 
 ### Season Setup
-The current season is marked with `is_current: true` in the database. To start a new season:
-1. Create a new Season record
-2. Set `is_current: true`
-3. Set the previous season's `is_current` to `false`
-4. Import or create games for the new season
+Load a season's home games from the cached ESPN schedule in `db/schedules`:
+```bash
+bin/rails schedule:import YEAR=2026-27 TOTAL=20842.80 PARKING=8.70 SEATS=3 SECTION=101 PRESEASON=1 BILLED_GAMES=41
+```
+Add `DRY_RUN=1` to preview. The import makes that season current and is safe to
+re-run. See `lib/tasks/schedule.rake` for the options.
 
 ### Adding New Users
-Since this is invite-only, create users via Rails console:
+Invite people from the Users page. A brand-new production database has no
+accounts, so create the first one from a console (`bin/kamal console`):
 ```ruby
 User.create!(
   email: "user@example.com",

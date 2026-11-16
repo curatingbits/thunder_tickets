@@ -1,131 +1,112 @@
-require "csv"
+# Seeds only add what's missing. They never change or delete existing records,
+# so running them against a database with real data is safe.
+#
+#   Every environment: the 29 teams the Thunder can host.
+#   Development and test: a sign-in plus a sample 2026-27 season (the real
+#   home schedule from db/schedules with made-up sales), and only when the
+#   database has no seasons yet.
+#
+# Real seasons are loaded with `bin/rails schedule:import` (lib/tasks/schedule.rake).
 
-# Clear existing data
-puts "Clearing existing data..."
-Ticket.destroy_all
-Game.destroy_all
-Team.destroy_all
-Season.destroy_all
-User.destroy_all
-
-# Create default admin user
-puts "Creating default user..."
-User.create!(
-  email: "admin@thundertickets.com",
-  password: "thunder2026",
-  password_confirmation: "thunder2026",
-  name: "Admin User",
-  invited_by: "System"
-)
-
-# Create 2025-26 Season
-puts "Creating 2025-26 season..."
-season = Season.create!(
-  year: "2025-26",
-  is_current: true,
-  num_seats: 3,
-  total_season_cost: 17084.70
-)
-
-# Create NBA teams
-puts "Creating NBA teams..."
+# Names match ESPN's display names so ScheduleImporter can find them.
 teams = {
-  "Houston Rockets" => "HOU",
-  "Sacramento Kings" => "SAC",
-  "Washington Wizards" => "WAS",
-  "New Orleans Pelicans" => "NOP",
-  "Golden State Warriors" => "GSW",
-  "Los Angeles Lakers" => "LAL",
-  "Portland Trail Blazers" => "POR",
-  "Minnesota Timberwolves" => "MIN",
-  "Phoenix Suns" => "PHX",
-  "Dallas Mavericks" => "DAL",
-  "Los Angeles Clippers" => "LAC",
-  "Memphis Grizzlies" => "MEM",
-  "San Antonio Spurs" => "SAS",
-  "Philadelphia 76ers" => "PHI",
   "Atlanta Hawks" => "ATL",
+  "Boston Celtics" => "BOS",
+  "Brooklyn Nets" => "BKN",
   "Charlotte Hornets" => "CHA",
-  "Utah Jazz" => "UTA",
+  "Chicago Bulls" => "CHI",
+  "Cleveland Cavaliers" => "CLE",
+  "Dallas Mavericks" => "DAL",
+  "Denver Nuggets" => "DEN",
+  "Detroit Pistons" => "DET",
+  "Golden State Warriors" => "GSW",
+  "Houston Rockets" => "HOU",
+  "Indiana Pacers" => "IND",
+  "Los Angeles Clippers" => "LAC",
+  "Los Angeles Lakers" => "LAL",
+  "Memphis Grizzlies" => "MEM",
   "Miami Heat" => "MIA",
   "Milwaukee Bucks" => "MIL",
-  "Indiana Pacers" => "IND",
-  "Toronto Raptors" => "TOR",
-  "Orlando Magic" => "ORL",
-  "Brooklyn Nets" => "BKN",
-  "Cleveland Cavaliers" => "CLE",
-  "Denver Nuggets" => "DEN",
-  "Boston Celtics" => "BOS",
-  "Chicago Bulls" => "CHI",
+  "Minnesota Timberwolves" => "MIN",
+  "New Orleans Pelicans" => "NOP",
   "New York Knicks" => "NYK",
-  "Detroit Pistons" => "DET"
+  "Orlando Magic" => "ORL",
+  "Philadelphia 76ers" => "PHI",
+  "Phoenix Suns" => "PHX",
+  "Portland Trail Blazers" => "POR",
+  "Sacramento Kings" => "SAC",
+  "San Antonio Spurs" => "SAS",
+  "Toronto Raptors" => "TOR",
+  "Utah Jazz" => "UTA",
+  "Washington Wizards" => "WAS"
 }
 
-teams.each do |name, abbr|
-  Team.create!(name: name, abbreviation: abbr)
+teams.each do |name, abbreviation|
+  Team.find_or_create_by!(name: name) { |team| team.abbreviation = abbreviation }
+end
+puts "Teams: #{Team.count}"
+
+if Rails.env.production?
+  puts "Production gets teams only. Load a season with `bin/rails schedule:import`."
+  return
 end
 
-# Import games from CSV
-puts "Importing games from CSV..."
-csv_file = ENV.fetch("SEED_CSV_PATH", "/tmp/ticket_tracker.csv")
+if Season.exists?
+  puts "Seasons already exist, so no sample data was added."
+  return
+end
 
-CSV.foreach(csv_file, headers: true) do |row|
-  next if row["Game #"].nil? || row["Game #"].to_i == 0 # Skip summary row
+User.find_or_create_by!(email: "admin@example.com") do |user|
+  user.name = "Sample Admin"
+  user.password = user.password_confirmation = "password"
+  user.invited_by = "Seeds"
+end
 
-  opponent_name = row["Opponent"]
-  opponent = Team.find_by(name: opponent_name)
+# The same numbers `schedule:import` is documented with.
+schedules = Rails.root.join("db/schedules")
+season = ScheduleImporter.new(
+  season_year: "2026-27",
+  source_paths: [ schedules.join("2026-27-preseason.json").to_s, schedules.join("2026-27.json").to_s ],
+  total_cost: "20842.80",
+  parking_cost: "8.70",
+  num_seats: 3,
+  seat_section: "101",
+  billed_games: 41
+).call.season
 
-  unless opponent
-    puts "Warning: Could not find team '#{opponent_name}'"
-    next
-  end
+buyers = [
+  [ "Jordan Avery", "jordan@example.com" ],
+  [ "Sam Patel", "sam@example.com" ],
+  [ "Riley Chen", "riley@example.com" ],
+  [ "Morgan Diaz", nil ]
+].map { |name, email| Buyer.create!(name: name, email: email) }
 
-  # Parse cost values (remove $ and commas)
-  cost_per_ticket = row["Cost per Ticket"].gsub(/[$,]/, "").to_f
-  parking_cost = row["Parking Pass Cost"].gsub(/[$,]/, "").to_f
+# Sale price as a multiple of cost, cycled so some sales win and some lose.
+markups = [ 1.6, 0.85, 1.25, 2.4, 0.7, 1.1, 1.45 ]
 
-  # Parse date
-  game_date = Date.parse(row["Date"])
+season.games.order(:game_date).each_with_index do |game, i|
+  seats_sold =
+    if game.game_date < Date.current
+      [ 3, 2, 3, 3, 1, 3, 2 ][i % 7]
+    elsif game.game_date <= 3.weeks.from_now.to_date
+      [ 1, 0, 2 ][i % 3]
+    else
+      0
+    end
 
-  game = Game.create!(
-    season: season,
-    game_number: row["Game #"].to_i,
-    game_date: game_date,
-    opponent: opponent,
-    cost_per_ticket: cost_per_ticket,
-    parking_cost: parking_cost,
-    game_type: "regular"
-  )
-
-  # Create tickets for sold seats
-  [ 1, 2, 3 ].each do |seat_num|
-    sold_price = row["Sold Ticket #{seat_num}"]
-    next if sold_price.nil? || sold_price.strip.empty?
-
-    sale_price = sold_price.gsub(/[$,]/, "").to_f
-    next if sale_price.zero?
-
-    Ticket.create!(
-      game: game,
-      seat_number: seat_num,
-      sale_price: sale_price,
-      buyer_name: "Initial Sale"
+  1.upto(seats_sold) do |seat|
+    n = i + seat
+    sold_at = (game.game_date - (3 + n % 10).days).in_time_zone.change(hour: 12)
+    game.tickets.create!(
+      seat_number: seat,
+      section: "101",
+      row: "DD",
+      sale_price: (game.cost_per_ticket * markups[n % markups.size]).round,
+      buyer: buyers[n % (buyers.size + 1)], # every fifth sale has no buyer
+      sold_at: [ sold_at, Time.current ].min
     )
   end
 end
 
-puts "\n=========================================="
-puts "Seed completed successfully!"
-puts "=========================================="
-puts "Season: #{season.year}"
-puts "Total Games: #{Game.count}"
-puts "Total Teams: #{Team.count}"
-puts "Total Tickets Sold: #{Ticket.count}"
-puts "Total Season Cost: $#{season.total_cost}"
-puts "Total Revenue: $#{season.total_revenue}"
-puts "Current Profit/Loss: $#{season.total_profit}"
-puts "=========================================="
-puts "\nDefault Login:"
-puts "Email: admin@thundertickets.com"
-puts "Password: thunder2026"
-puts "=========================================="
+puts "Season #{season.year}: #{season.games.count} games, #{Ticket.count} sales, #{Buyer.count} buyers"
+puts "Sign in as admin@example.com / password"
