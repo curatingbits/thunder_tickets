@@ -70,8 +70,7 @@ season = ScheduleImporter.new(
   total_cost: "20842.80",
   parking_cost: "8.70",
   num_seats: 3,
-  seat_section: "101",
-  billed_games: 41
+  seat_section: "101"
 ).call.season
 
 buyers = [

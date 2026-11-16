@@ -63,6 +63,11 @@ in production they add the teams only. To start over with sample data, run
 
 ## Usage
 
+### On your phone
+MADR Tickets installs like an app. On iPhone, open madrtickets.com in Safari,
+tap Share, then **Add to Home Screen**. On Android, use Chrome's **Install app**.
+Phones get a bottom tab bar (Home, Games, Buyers, More); desktop gets a sidebar.
+
 ### Dashboard
 The main dashboard displays:
 - Total season cost vs. revenue
@@ -127,10 +132,16 @@ link, which an admin can resend from the Users page.
 ### Season Setup
 Load a season's home games from the cached ESPN schedule in `db/schedules`:
 ```bash
-bin/rails schedule:import YEAR=2026-27 TOTAL=20842.80 PARKING=8.70 SEATS=3 SECTION=101 PRESEASON=1 BILLED_GAMES=41
+bin/rails schedule:import YEAR=2026-27 TOTAL=20842.80 PARKING=8.70 SEATS=3 SECTION=101 PRESEASON=1
 ```
 Add `DRY_RUN=1` to preview. The import makes that season current and is safe to
 re-run. See `lib/tasks/schedule.rake` for the options.
+
+The import also records each game's tipoff time. For a season imported before
+tipoffs were stored, fill them in without touching anything else:
+```bash
+bin/rails schedule:backfill_tipoffs YEAR=2026-27 PRESEASON=1
+```
 
 ### Adding New Users
 Invite people from the Users page. A brand-new production database has no

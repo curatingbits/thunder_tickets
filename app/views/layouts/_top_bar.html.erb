@@ -1,0 +1,10 @@
+<%# Phone header (below lg): brand and the season being viewed. Navigation lives
+    in _bottom_nav, within thumb reach. %>
+<header class="lg:hidden sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-subtle pt-safe" data-shell="top-bar">
+  <div class="h-14 px-4 flex items-center justify-between gap-4">
+    <%= link_to root_path, class: "text-lg font-bold whitespace-nowrap" do %>
+      <span class="text-accent">MADR</span> <span class="text-accent-alt">TICKETS</span>
+    <% end %>
+    <%= render "layouts/season_indicator" %>
+  </div>
+</header>

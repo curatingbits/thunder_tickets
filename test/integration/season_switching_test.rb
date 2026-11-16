@@ -135,10 +135,12 @@ class SeasonSwitchingTest < ActionDispatch::IntegrationTest
 
   test "the nav shows which season is being viewed, not just the current one" do
     get games_path(season_id: @past.id)
-    assert_match "Season: <span class=\"text-warning font-semibold\">#{@past.year}</span> (viewing)", response.body
+    assert_select "[data-season-indicator='viewing-past']", text: /Season:\s*#{Regexp.escape(@past.year)}\s*\(viewing\)/
+    assert_select "[data-season-indicator='current']", count: 0
 
     get games_path(season_id: @current.id)
-    assert_match "Season: <span class=\"text-accent font-semibold\">#{@current.year}</span>", response.body
+    assert_select "[data-season-indicator='current']", text: /Season:\s*#{Regexp.escape(@current.year)}/
+    assert_select "[data-season-indicator='viewing-past']", count: 0
     assert_no_match(/\(viewing\)/, response.body)
   end
 

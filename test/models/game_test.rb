@@ -110,6 +110,28 @@ class GameTest < ActiveSupport::TestCase
     assert_equal "Quarterfinals", game.cup_round
   end
 
+  test "days_until counts whole days on Oklahoma City's calendar" do
+    game = build_game(game_date: Date.new(2026, 11, 18))
+
+    assert_equal 2, game.days_until(Date.new(2026, 11, 16))
+    assert_equal 0, game.days_until(Date.new(2026, 11, 18))
+    assert_equal(-1, game.days_until(Date.new(2026, 11, 19)))
+    assert game.game_day?(Date.new(2026, 11, 18))
+  end
+
+  # On a UTC clock, 11:30pm Central is already the next day, so a game
+  # dropped out of "upcoming" around 6-7pm on game day.
+  test "a game is still upcoming late on game night in Oklahoma City" do
+    game = build_game(game_date: Date.new(2026, 11, 18))
+    game.save!
+
+    travel_to Time.find_zone("America/Chicago").local(2026, 11, 18, 23, 30) do
+      assert_includes Game.upcoming, game
+      assert_not_includes Game.past, game
+      assert game.game_day?
+    end
+  end
+
   test "cup_round is nil for ordinary and playoff games" do
     assert_nil build_game(game_type: "regular").cup_round
     assert_nil build_game(game_type: "preseason").cup_round

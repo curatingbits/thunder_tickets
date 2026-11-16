@@ -60,6 +60,16 @@ class Game < ApplicationRecord
     remaining_to_break_even / tickets_available
   end
 
+  # Whole days from today (Oklahoma City's date) to the game: 0 on game day,
+  # negative once it's past.
+  def days_until(today = Date.current)
+    (game_date - today).to_i
+  end
+
+  def game_day?(today = Date.current)
+    days_until(today).zero?
+  end
+
   def tickets_sold_count
     tickets.count
   end

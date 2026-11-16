@@ -165,3 +165,22 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------
+ * App-shell spacing. iPhones report the home-indicator and notch
+ * areas through env(safe-area-inset-*) once the viewport meta has
+ * viewport-fit=cover, so fixed bars pad themselves clear of them.
+ * @utility (not plain classes) so these work with lg: and friends.
+ * --------------------------------------------------------------- */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Room under page content for the fixed bottom tab bar (4rem tall). */
+@utility pb-nav {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}

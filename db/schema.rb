@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_16_182700) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -60,6 +60,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_182700) do
     t.string "playoff_round"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "tipoff_at"
     t.index ["opponent_id"], name: "index_games_on_opponent_id"
     t.index ["season_id"], name: "index_games_on_season_id"
   end

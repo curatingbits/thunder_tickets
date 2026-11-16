@@ -1,15 +1,20 @@
 <!DOCTYPE html>
-<html class="h-full">
+<html class="h-full" lang="en">
   <head>
     <title><%= content_for(:title) || "MADR TICKETS" %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%# viewport-fit=cover exposes the iPhone safe areas the fixed bars pad around. %>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MADR">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#16161e">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
     <%= yield :head %>
 
+    <link rel="manifest" href="<%= pwa_manifest_path(format: :json) %>">
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
@@ -20,143 +25,22 @@
 
   <body class="h-full bg-canvas text-content">
     <% if logged_in? %>
-      <!-- Navigation -->
-      <nav class="bg-surface border-b border-subtle sticky top-0 z-50" data-controller="mobile-menu">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex items-center">
-              <!-- Logo -->
-              <div class="flex-shrink-0 flex items-center">
-                <%= link_to root_path, class: "text-xl sm:text-2xl font-bold" do %>
-                  <span class="text-accent">MADR</span> <span class="text-accent-alt">TICKETS</span>
-                <% end %>
-              </div>
+      <%= render "layouts/sidebar" %>
+      <%= render "layouts/top_bar" %>
 
-              <!-- Desktop Navigation Links -->
-              <div class="hidden md:ml-8 md:flex md:space-x-8">
-                <%= link_to "Dashboard", root_path, class: "inline-flex items-center px-3 py-2 text-sm font-medium #{current_page?(root_path) ? 'text-accent border-b-2 border-accent' : 'text-content hover:text-content-strong'}" %>
-                <%= link_to "Games", games_path, class: "inline-flex items-center px-3 py-2 text-sm font-medium #{current_page?(games_path) ? 'text-accent border-b-2 border-accent' : 'text-content hover:text-content-strong'}" %>
-                <%= link_to "Buyers", buyers_path, class: "inline-flex items-center px-3 py-2 text-sm font-medium #{current_page?(buyers_path) ? 'text-accent border-b-2 border-accent' : 'text-content hover:text-content-strong'}" %>
-                <%= link_to "Users", users_path, class: "inline-flex items-center px-3 py-2 text-sm font-medium #{current_page?(users_path) ? 'text-accent border-b-2 border-accent' : 'text-content hover:text-content-strong'}" %>
-                <%= link_to "Settings", settings_path, class: "inline-flex items-center px-3 py-2 text-sm font-medium #{current_page?(settings_path) ? 'text-accent border-b-2 border-accent' : 'text-content hover:text-content-strong'}" %>
-              </div>
-            </div>
-
-            <!-- Right side items - Desktop Only -->
-            <div class="hidden md:flex items-center space-x-4">
-              <% if current_season %>
-                <span class="text-sm text-content-dim">Season: <span class="<%= viewing_current_season? ? 'text-accent' : 'text-warning' %> font-semibold"><%= viewed_season.year %></span><%= " (viewing)" unless viewing_current_season? %></span>
-              <% end %>
-              <span class="text-sm text-content-dim">Welcome, <span class="text-content-strong"><%= current_user.name %></span></span>
-              <%= button_to "Logout", logout_path, method: :delete, class: "btn-secondary text-xs" %>
-            </div>
-
-            <!-- Mobile menu button -->
-            <div class="flex items-center md:hidden">
-              <button type="button" data-action="click->mobile-menu#toggle" class="inline-flex items-center justify-center p-2 rounded-md text-content-dim hover:text-content-strong hover:bg-surface focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent">
-                <span class="sr-only">Open main menu</span>
-                <!-- Hamburger icon -->
-                <svg class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile menu overlay -->
-        <div data-mobile-menu-target="overlay" data-action="click->mobile-menu#close" class="fixed inset-0 bg-canvas/80 z-40 hidden md:hidden"></div>
-
-        <!-- Mobile menu panel -->
-        <div data-mobile-menu-target="menu" class="fixed top-0 right-0 bottom-0 w-64 bg-canvas transform translate-x-full transition-transform duration-300 ease-in-out z-50 md:hidden">
-          <div class="flex flex-col h-full">
-            <!-- Close button -->
-            <div class="flex items-center justify-between p-4 border-b border-subtle">
-              <span class="text-lg font-bold">
-                <span class="text-accent">MADR</span> <span class="text-accent-alt">TICKETS</span>
-              </span>
-              <button type="button" data-action="click->mobile-menu#close" class="p-2 rounded-md text-content-dim hover:text-content-strong hover:bg-surface">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- User info -->
-            <div class="p-4 border-b border-subtle">
-              <p class="text-sm text-content-dim">Welcome,</p>
-              <p class="text-content-strong font-semibold"><%= current_user.name %></p>
-              <% if current_season %>
-                <p class="text-xs text-muted mt-2">Season: <span class="<%= viewing_current_season? ? 'text-accent' : 'text-warning' %>"><%= viewed_season.year %></span><%= " (viewing)" unless viewing_current_season? %></p>
-              <% end %>
-            </div>
-
-            <!-- Navigation links -->
-            <nav class="flex-1 px-2 py-4 space-y-1">
-              <%= link_to root_path, data: { action: "click->mobile-menu#closeMenu" }, class: "flex items-center px-3 py-3 text-base font-medium rounded-lg #{current_page?(root_path) ? 'bg-surface text-accent' : 'text-content hover:bg-surface hover:text-content-strong'}" do %>
-                <svg class="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
-                Dashboard
-              <% end %>
-              <%= link_to games_path, data: { action: "click->mobile-menu#closeMenu" }, class: "flex items-center px-3 py-3 text-base font-medium rounded-lg #{current_page?(games_path) ? 'bg-surface text-accent' : 'text-content hover:bg-surface hover:text-content-strong'}" do %>
-                <svg class="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-                Games
-              <% end %>
-              <%= link_to buyers_path, data: { action: "click->mobile-menu#closeMenu" }, class: "flex items-center px-3 py-3 text-base font-medium rounded-lg #{current_page?(buyers_path) ? 'bg-surface text-accent' : 'text-content hover:bg-surface hover:text-content-strong'}" do %>
-                <svg class="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                Buyers
-              <% end %>
-              <%= link_to users_path, data: { action: "click->mobile-menu#closeMenu" }, class: "flex items-center px-3 py-3 text-base font-medium rounded-lg #{current_page?(users_path) ? 'bg-surface text-accent' : 'text-content hover:bg-surface hover:text-content-strong'}" do %>
-                <svg class="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-                Users
-              <% end %>
-              <%= link_to settings_path, data: { action: "click->mobile-menu#closeMenu" }, class: "flex items-center px-3 py-3 text-base font-medium rounded-lg #{current_page?(settings_path) ? 'bg-surface text-accent' : 'text-content hover:bg-surface hover:text-content-strong'}" do %>
-                <svg class="mr-3 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                Settings
-              <% end %>
-            </nav>
-
-            <!-- Logout button -->
-            <div class="p-4 border-t border-subtle">
-              <%= button_to logout_path, method: :delete, class: "w-full btn-danger flex items-center justify-center" do %>
-                <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-                Logout
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </nav>
-    <% end %>
-
-    <!-- Flash Messages -->
-    <% if flash.any? %>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-        <% flash.each do |type, message| %>
-          <div class="rounded-lg p-4 mb-4 <%= type == 'notice' ? 'bg-positive/15 border border-positive/40 text-positive' : 'bg-negative/15 border border-negative/40 text-negative' %>">
-            <div class="flex items-center">
-              <span class="flex-1"><%= message %></span>
-              <button onclick="this.parentElement.parentElement.remove()" class="text-content-dim hover:text-content-strong ml-4">×</button>
-            </div>
-          </div>
-        <% end %>
+      <div class="lg:pl-64">
+        <%= render "layouts/flash" %>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 pb-nav lg:pb-8">
+          <%= yield %>
+        </main>
       </div>
-    <% end %>
 
-    <!-- Main Content -->
-    <main class="<%= logged_in? ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' %>">
-      <%= yield %>
-    </main>
+      <%= render "layouts/bottom_nav" %>
+    <% else %>
+      <%= render "layouts/flash" %>
+      <main>
+        <%= yield %>
+      </main>
+    <% end %>
   </body>
 </html>

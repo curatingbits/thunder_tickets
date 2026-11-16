@@ -1,0 +1,16 @@
+<%# Phone tab bar (below lg). Fixed to the bottom and padded clear of the
+    iPhone home indicator; <main> reserves the space with pb-nav. %>
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur border-t border-subtle pb-safe" aria-label="Main" data-shell="bottom-nav">
+  <ul class="flex">
+    <% (primary_nav_items + [ more_nav_item ]).each do |item| %>
+      <li class="flex-1">
+        <%= link_to item.path,
+              class: "flex flex-col items-center justify-center gap-1 h-16 text-xs font-medium #{item.active ? "text-accent" : "text-content-dim hover:text-content-strong"}",
+              aria: { current: (item.active ? "page" : nil) } do %>
+          <%= icon(item.icon, "h-6 w-6") %>
+          <span><%= item.label %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</nav>

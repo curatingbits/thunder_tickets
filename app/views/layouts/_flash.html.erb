@@ -1,0 +1,16 @@
+<%# data-turbo-temporary keeps a dismissed or shown message out of Turbo's page
+    cache, so Back doesn't bring it back. %>
+<% if flash.any? %>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4" data-turbo-temporary>
+    <% flash.each do |type, message| %>
+      <% notice = type.to_s == "notice" %>
+      <div class="rounded-lg p-4 mb-2 flex items-start gap-3 <%= notice ? "bg-positive/15 border border-positive/40 text-positive" : "bg-negative/15 border border-negative/40 text-negative" %>"
+           role="<%= notice ? "status" : "alert" %>" data-controller="flash">
+        <span class="flex-1"><%= message %></span>
+        <button type="button" data-action="flash#dismiss" class="shrink-0 text-content-dim hover:text-content-strong" aria-label="Dismiss message">
+          <%= icon(:x, "h-5 w-5") %>
+        </button>
+      </div>
+    <% end %>
+  </div>
+<% end %>

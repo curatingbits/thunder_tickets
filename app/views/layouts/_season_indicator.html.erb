@@ -1,0 +1,7 @@
+<%# The season the pages are showing. data-season-indicator says whether that's
+    the current season or a past one picked on the dashboard. %>
+<% if viewed_season %>
+  <span class="text-sm text-content-dim" data-season-indicator="<%= viewing_current_season? ? "current" : "viewing-past" %>">
+    Season: <span class="<%= viewing_current_season? ? "text-accent" : "text-warning" %> font-semibold"><%= viewed_season.year %></span><%= " (viewing)" unless viewing_current_season? %>
+  </span>
+<% end %>

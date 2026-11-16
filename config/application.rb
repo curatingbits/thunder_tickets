@@ -26,7 +26,10 @@ module ThunderTickets
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    # Every game is at Paycom Center, so "today", "upcoming" and countdowns
+    # follow Oklahoma City's clock. On UTC a game turned "past" around 6pm
+    # Central on game day. Times are still stored in UTC.
+    config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
   end
 end

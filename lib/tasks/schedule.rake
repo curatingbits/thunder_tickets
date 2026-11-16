@@ -1,7 +1,7 @@
 require Rails.root.join("lib/schedule_importer")
 
 namespace :schedule do
-  desc "Import OKC home games. Usage: rake schedule:import YEAR=2026-27 TOTAL=20842.80 PARKING=8.70 SEATS=3 SECTION=101 [PRESEASON=1] [BILLED_GAMES=41] [DRY_RUN=1]"
+  desc "Import OKC home games. Usage: rake schedule:import YEAR=2026-27 TOTAL=20842.80 PARKING=8.70 SEATS=3 SECTION=101 [PRESEASON=1] [BILLED_GAMES=n] [DRY_RUN=1]"
   task import: :environment do
     year = ENV.fetch("YEAR")
     total = ENV.fetch("TOTAL")
@@ -56,6 +56,20 @@ namespace :schedule do
     result = importer.call
     puts "\nSeason #{result.season.year}: #{result.created} games created, #{result.updated} updated"
     puts "Computed season cost: $#{result.season.total_cost}  (invoice: $#{result.season.total_season_cost})"
+  end
+
+  desc "Fill blank tipoff times from the cached ESPN schedule. Usage: rake schedule:backfill_tipoffs YEAR=2026-27 [PRESEASON=1]"
+  task backfill_tipoffs: :environment do
+    year = ENV.fetch("YEAR")
+    sources = default_sources(year)
+    missing = sources.reject { |p| File.exist?(p) }
+    abort "Schedule file(s) not found: #{missing.join(', ')}" if missing.any?
+
+    result = ScheduleImporter.new(season_year: year, source_paths: sources).backfill_tipoffs
+    puts "Season #{year}: #{result.filled} tipoffs filled, #{result.already_set} already set"
+    result.unmatched.each do |g|
+      puts "  no game on #{g[:date]} vs #{g[:opponent]} (tipoff #{g[:tipoff].strftime('%-l:%M %p %Z')})"
+    end
   end
 
   # Preseason is opt-in: a plan that only covers the regular season shouldn't

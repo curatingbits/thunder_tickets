@@ -169,6 +169,46 @@ class ScheduleImporterTest < ActiveSupport::TestCase
     assert_equal BigDecimal("495.00"), game.cost_per_ticket
   end
 
+  test "stores each game's tipoff time" do
+    games = importer.call.season.games.order(:game_number)
+
+    assert_equal Time.utc(2026, 10, 23, 1, 30), games.first.tipoff_at
+    assert_equal "2026-10-22 20:30 CDT", games.first.tipoff_at.strftime("%Y-%m-%d %H:%M %Z")
+  end
+
+  test "importing needs the cost arguments" do
+    error = assert_raises(ScheduleImporter::Error) do
+      ScheduleImporter.new(season_year: "2099-00", source_paths: [ @regular_path ]).call
+    end
+    assert_match(/required to price games/, error.message)
+  end
+
+  test "backfill_tipoffs fills blank tipoffs and leaves set ones alone" do
+    season = importer.call.season
+    nuggets, clippers = season.games.order(:game_number).to_a
+    nuggets.update_columns(tipoff_at: nil)
+    corrected = Time.utc(2026, 10, 26, 1, 0)
+    clippers.update_columns(tipoff_at: corrected)
+
+    result = ScheduleImporter.new(season_year: "2099-00", source_paths: [ @regular_path ]).backfill_tipoffs
+
+    assert_equal 1, result.filled
+    assert_equal 1, result.already_set
+    assert_empty result.unmatched
+    assert_equal Time.utc(2026, 10, 23, 1, 30), nuggets.reload.tipoff_at
+    assert_equal corrected, clippers.reload.tipoff_at
+  end
+
+  test "backfill_tipoffs reports schedule games it can't find" do
+    season = importer.call.season
+    season.games.order(:game_number).first.update_columns(game_date: Date.new(2026, 10, 21), tipoff_at: nil)
+
+    result = ScheduleImporter.new(season_year: "2099-00", source_paths: [ @regular_path ]).backfill_tipoffs
+
+    assert_equal 0, result.filled
+    assert_equal [ "Denver Nuggets" ], result.unmatched.map { |g| g[:opponent] }
+  end
+
   test "maps ESPN display names onto this app's team records" do
     clippers = importer.call.season.games.order(:game_number).last
     assert_equal "Los Angeles Clippers", clippers.opponent.name

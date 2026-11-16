@@ -43,13 +43,16 @@ class ScheduleImporter
   # billed_games  - games the invoice covers, when that differs from the games
   #                 currently published (the NBA Cup window leaves two late
   #                 season dates TBD). Defaults to the number of games imported.
-  def initialize(season_year:, source_paths:, total_cost:, parking_cost:, num_seats:,
+  #
+  # The cost arguments are only needed to import (#call); #backfill_tipoffs
+  # reads the schedule alone.
+  def initialize(season_year:, source_paths:, total_cost: nil, parking_cost: nil, num_seats: nil,
                  seat_section: nil, billed_games: nil, make_current: true)
     @season_year = season_year
     @source_paths = Array(source_paths)
-    @total_cost = BigDecimal(total_cost.to_s)
-    @parking_cost = BigDecimal(parking_cost.to_s)
-    @num_seats = Integer(num_seats)
+    @total_cost = total_cost && BigDecimal(total_cost.to_s)
+    @parking_cost = parking_cost && BigDecimal(parking_cost.to_s)
+    @num_seats = num_seats && Integer(num_seats)
     @seat_section = seat_section
     @billed_games = billed_games&.to_i
     @make_current = make_current
@@ -76,7 +79,8 @@ class ScheduleImporter
           cost_per_ticket: cost_per_ticket,
           parking_cost: @parking_cost,
           game_type: g[:game_type],
-          playoff_round: g[:nba_cup] ? "Group Play" : nil
+          playoff_round: g[:nba_cup] ? "Group Play" : nil,
+          tipoff_at: g[:tipoff]
         )
         record.save!
       end
@@ -89,6 +93,10 @@ class ScheduleImporter
   # Per-ticket cost implied by the season invoice, after backing out parking.
   # total = (cost_per_ticket * num_seats * games) + (parking * games)
   def derive_cost_per_ticket(game_count = nil)
+    unless @total_cost && @parking_cost && @num_seats
+      raise Error, "total_cost, parking_cost and num_seats are required to price games"
+    end
+
     games = @billed_games || game_count or raise Error, "game count required"
     ticket_portion = @total_cost - (@parking_cost * games)
     if ticket_portion <= 0
@@ -120,6 +128,32 @@ class ScheduleImporter
     @source_paths.flat_map { |path| parse_file(path) }
                  .select { |g| g[:home] && g[:venue] != HOME_VENUE }
                  .sort_by { |g| g[:tipoff] }
+  end
+
+  BackfillResult = Struct.new(:filled, :already_set, :unmatched, keyword_init: true)
+
+  # Fills games.tipoff_at for a season imported before tipoffs were stored.
+  # Each cached home game is matched to the season's game on the same
+  # Central date against the same opponent. Only blanks are filled, so a time
+  # corrected by hand is never overwritten.
+  def backfill_tipoffs
+    season = Season.find_by(year: @season_year) or raise Error, "No season #{@season_year}"
+    filled = already_set = 0
+    unmatched = []
+
+    home_games.each do |g|
+      game = season.games.find_by(game_date: g[:date], opponent: find_team!(g[:opponent]))
+      if game.nil?
+        unmatched << g
+      elsif game.tipoff_at.present?
+        already_set += 1
+      else
+        game.update!(tipoff_at: g[:tipoff])
+        filled += 1
+      end
+    end
+
+    BackfillResult.new(filled: filled, already_set: already_set, unmatched: unmatched)
   end
 
   private
