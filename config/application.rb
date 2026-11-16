@@ -9,7 +9,12 @@ Bundler.require(*Rails.groups)
 module ThunderTickets
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 8.0
+    config.load_defaults 8.1
+
+    # Receipts are shown at original size and nothing builds resized
+    # variants, so skip the image_processing gem (and libvips in the image).
+    # Rails 8.1 warns on every boot when a processor is configured but missing.
+    config.active_storage.variant_processor = :disabled
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
