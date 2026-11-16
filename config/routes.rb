@@ -5,7 +5,7 @@ Rails.application.routes.draw do
   delete "logout", to: "sessions#destroy"
 
   # Password reset routes
-  resources :password_resets, only: [:new, :create, :edit, :update]
+  resources :password_resets, only: [ :new, :create, :edit, :update ]
 
   # User management routes
   resources :users do
@@ -28,8 +28,8 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index"
 
   # Games and tickets
-  resources :games, only: [:index, :show, :edit, :update, :new, :create] do
-    resources :tickets, only: [:create, :edit, :update, :destroy] do
+  resources :games, only: [ :index, :show, :edit, :update, :new, :create ] do
+    resources :tickets, only: [ :create, :edit, :update, :destroy ] do
       collection do
         post :bulk_create
       end
@@ -37,7 +37,7 @@ Rails.application.routes.draw do
   end
 
   # Seasons history
-  resources :seasons, only: [:index]
+  resources :seasons, only: [ :index ]
 
   # Season settings
   get "settings", to: "seasons#edit", as: :settings

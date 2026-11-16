@@ -98,7 +98,7 @@ CSV.foreach(csv_file, headers: true) do |row|
   )
 
   # Create tickets for sold seats
-  [1, 2, 3].each do |seat_num|
+  [ 1, 2, 3 ].each do |seat_num|
     sold_price = row["Sold Ticket #{seat_num}"]
     next if sold_price.nil? || sold_price.strip.empty?
 

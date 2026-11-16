@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :require_login
-  before_action :set_user, only: [:edit, :update, :destroy, :toggle_active]
+  before_action :set_user, only: [ :edit, :update, :destroy, :toggle_active ]
   before_action :prevent_self_deactivation, only: [ :destroy, :toggle_active ]
 
   def index

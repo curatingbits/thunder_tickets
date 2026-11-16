@@ -62,8 +62,8 @@ namespace :schedule do
   # silently pick up exhibition games.
   def default_sources(year)
     regular = Rails.root.join("db/schedules/#{year}.json").to_s
-    return [regular] unless ENV["PRESEASON"].present?
+    return [ regular ] unless ENV["PRESEASON"].present?
 
-    [Rails.root.join("db/schedules/#{year}-preseason.json").to_s, regular]
+    [ Rails.root.join("db/schedules/#{year}-preseason.json").to_s, regular ]
   end
 end

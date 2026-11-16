@@ -11,8 +11,8 @@ class Game < ApplicationRecord
   validates :parking_cost, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :game_type, inclusion: { in: %w[preseason regular playoff nba_cup] }
 
-  PLAYOFF_ROUNDS = ["First Round", "Conference Semifinals", "Conference Finals", "NBA Finals"].freeze
-  NBA_CUP_ROUNDS = ["Group Play", "Knockout Round", "Quarterfinals", "Semifinals", "Championship"].freeze
+  PLAYOFF_ROUNDS = [ "First Round", "Conference Semifinals", "Conference Finals", "NBA Finals" ].freeze
+  NBA_CUP_ROUNDS = [ "Group Play", "Knockout Round", "Quarterfinals", "Semifinals", "Championship" ].freeze
   validate :receipt_image_size
 
   scope :preseason, -> { where(game_type: "preseason") }

@@ -8,38 +8,38 @@ class ScheduleImporterTest < ActiveSupport::TestCase
       {
         "date" => "2026-10-23T01:30Z",
         "seasonType" => { "abbreviation" => "reg" },
-        "competitions" => [{
+        "competitions" => [ {
           "notes" => [],
           "venue" => { "fullName" => "Paycom Center" },
           "competitors" => [
             { "id" => "25", "homeAway" => "home", "team" => { "displayName" => "Oklahoma City Thunder" } },
             { "id" => "7",  "homeAway" => "away", "team" => { "displayName" => "Denver Nuggets" } }
           ]
-        }]
+        } ]
       },
       {
         "date" => "2026-10-26T00:00Z",
         "seasonType" => { "abbreviation" => "reg" },
-        "competitions" => [{
+        "competitions" => [ {
           "notes" => [ { "type" => "event", "headline" => "NBA Cup - Group Play" } ],
           "venue" => { "fullName" => "Paycom Center" },
           "competitors" => [
             { "id" => "25", "homeAway" => "home", "team" => { "displayName" => "Oklahoma City Thunder" } },
             { "id" => "12", "homeAway" => "away", "team" => { "displayName" => "LA Clippers" } }
           ]
-        }]
+        } ]
       },
       {
         "date" => "2026-10-28T00:00Z",
         "seasonType" => { "abbreviation" => "reg" },
-        "competitions" => [{
+        "competitions" => [ {
           "notes" => [],
           "venue" => { "fullName" => "Toyota Center" },
           "competitors" => [
             { "id" => "25", "homeAway" => "away", "team" => { "displayName" => "Oklahoma City Thunder" } },
             { "id" => "10", "homeAway" => "home", "team" => { "displayName" => "Houston Rockets" } }
           ]
-        }]
+        } ]
       }
     ]
   }.freeze
@@ -51,26 +51,26 @@ class ScheduleImporterTest < ActiveSupport::TestCase
       {
         "date" => "2026-10-07T00:00Z",
         "seasonType" => { "abbreviation" => "pre" },
-        "competitions" => [{
+        "competitions" => [ {
           "notes" => [],
           "venue" => { "fullName" => "BOK Center" },
           "competitors" => [
             { "id" => "25", "homeAway" => "home", "team" => { "displayName" => "Oklahoma City Thunder" } },
             { "id" => "3",  "homeAway" => "away", "team" => { "displayName" => "Dallas Mavericks" } }
           ]
-        }]
+        } ]
       },
       {
         "date" => "2026-10-08T00:00Z",
         "seasonType" => { "abbreviation" => "pre" },
-        "competitions" => [{
+        "competitions" => [ {
           "notes" => [],
           "venue" => { "fullName" => "Paycom Center" },
           "competitors" => [
             { "id" => "25", "homeAway" => "home", "team" => { "displayName" => "Oklahoma City Thunder" } },
             { "id" => "10", "homeAway" => "away", "team" => { "displayName" => "Houston Rockets" } }
           ]
-        }]
+        } ]
       }
     ]
   }.freeze

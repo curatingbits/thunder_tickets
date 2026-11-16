@@ -1,5 +1,5 @@
 class BuyersController < ApplicationController
-  before_action :set_buyer, only: [:show, :edit, :update, :destroy]
+  before_action :set_buyer, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @buyers = Buyer.by_name.includes(:tickets)
