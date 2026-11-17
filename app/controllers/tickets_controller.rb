@@ -1,6 +1,6 @@
 class TicketsController < ApplicationController
   before_action :set_game
-  before_action :set_ticket, only: [ :edit, :update, :destroy ]
+  before_action :set_ticket, only: [ :edit, :update, :destroy, :transfer ]
 
   def create
     @ticket = @game.tickets.build(ticket_params)
@@ -27,8 +27,8 @@ class TicketsController < ApplicationController
     Ticket.transaction do
       available_seats.each do |seat|
         @game.tickets.create!(
-          section: "101",
-          row: "DD",
+          section: @game.season.seat_section,
+          row: @game.season.seat_row,
           seat_number: seat,
           sale_price: price_per_ticket,
           buyer_id: params[:buyer_id].presence,
@@ -58,6 +58,12 @@ class TicketsController < ApplicationController
   def destroy
     @ticket.destroy
     redirect_to @game, notice: "Ticket sale removed"
+  end
+
+  # The buyer has the tickets (Ticketmaster resale does this on its own).
+  def transfer
+    @ticket.update!(transferred_at: Time.current) unless @ticket.transferred?
+    redirect_back_or_to @game, notice: "Seat #{@ticket.seat_number} marked delivered."
   end
 
   private

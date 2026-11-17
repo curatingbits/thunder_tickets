@@ -33,8 +33,24 @@ Rails.application.routes.draw do
       collection do
         post :bulk_create
       end
+      member do
+        patch :transfer
+      end
+    end
+    # Our own listings and holds (never synced with Ticketmaster).
+    resources :listings, only: [ :new, :create, :edit, :update ] do
+      member do
+        post :verify
+        post :close
+      end
+      collection do
+        post :verify_unlisted
+      end
     end
   end
+
+  # Weekly checklist: confirm what's listed, and at what price.
+  resource :listing_review, only: :show
 
   # Seasons history
   resources :seasons, only: [ :index ]

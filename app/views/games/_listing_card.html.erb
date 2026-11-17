@@ -1,0 +1,80 @@
+<%# Listing status, what's up and at what price, quick confirmations, and the
+    decision history. Everything here is what we record; nothing syncs with
+    Ticketmaster. %>
+<% status = game.listing_status %>
+<% upcoming = game.game_date >= Date.current %>
+<div class="card space-y-4" data-listing-card>
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 class="text-lg font-bold text-content-strong">Listing</h2>
+      <p class="text-sm text-content-dim mt-0.5"><%= listing_status_detail(status) %></p>
+    </div>
+    <%= listing_status_chip(status) %>
+  </div>
+
+  <% active = game.listings.select(&:active?) %>
+  <% if active.any? %>
+    <ul class="space-y-3">
+      <% active.each do |listing| %>
+        <li class="bg-canvas rounded-lg p-4 border border-subtle" data-listing="<%= listing.id %>">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <% if listing.hold? %>
+                <p class="font-semibold text-content-strong"><%= seat_list(listing.open_seats) %> held</p>
+              <% else %>
+                <p class="font-semibold text-content-strong">
+                  <%= seat_list(listing.open_seats) %> at <%= number_to_currency(listing.ask_price) %><%= " all-in" if listing.all_in_price? %>
+                </p>
+                <p class="text-xs text-muted mt-0.5">
+                  <%= listing.platform_name %><%= " · #{listing.account_user.name}'s account" if listing.account_user %>
+                  · <%= listing.verified_at ? "checked #{time_ago_in_words(listing.verified_at)} ago" : "never checked" %>
+                </p>
+              <% end %>
+              <% if listing.notes.present? %>
+                <p class="text-xs text-content-dim mt-1"><%= listing.notes %></p>
+              <% end %>
+            </div>
+          </div>
+          <% if upcoming %>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <% if listing.listing? %>
+                <%= button_to "Still listed", verify_game_listing_path(game, listing), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+                <%= link_to "Change price", edit_game_listing_path(game, listing), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+                <%= button_to "Taken down", close_game_listing_path(game, listing), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]",
+                      form: { data: { turbo_confirm: "Mark this listing as taken down?" } } %>
+              <% else %>
+                <%= button_to "Release hold", close_game_listing_path(game, listing), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+              <% end %>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <% if upcoming && status.unlisted_seats.any? %>
+    <div class="flex flex-wrap gap-2">
+      <%= link_to "List seats", new_game_listing_path(game), class: "btn-primary text-sm" %>
+      <%= link_to "Hold seats", new_game_listing_path(game, kind: "hold"), class: "btn-secondary text-sm" %>
+      <% if status.status != :not_listed %>
+        <%= button_to "Not listed", verify_unlisted_game_listings_path(game), class: "btn-secondary text-sm",
+              title: "Confirm none of the open seats are listed anywhere" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% events = game.listing_events.sort_by(&:occurred_at).reverse.first(6) %>
+  <% if events.any? %>
+    <div class="pt-3 border-t border-subtle">
+      <p class="section-label mb-2">History</p>
+      <ul class="space-y-1.5 text-sm">
+        <% events.each do |event| %>
+          <li class="flex justify-between gap-3">
+            <span class="text-content"><%= listing_event_text(event) %></span>
+            <span class="text-xs text-muted whitespace-nowrap"><%= event.occurred_at.strftime("%b %-d") %><%= " · #{event.user.name.split.first}" if event.user %></span>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>

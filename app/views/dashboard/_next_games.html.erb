@@ -16,7 +16,10 @@
           <%= countdown_chip(game) %>
         </div>
         <div class="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-subtle">
-          <%= inventory_chip(game) %>
+          <div class="flex flex-wrap gap-1.5">
+            <%= inventory_chip(game) %>
+            <%= listing_status_chip(game.listing_status) if game.tickets_available.positive? %>
+          </div>
           <% if (price = game.break_even_price_for_remaining) %>
             <span class="text-xs text-muted">Break even <span class="text-content figure">$<%= number_with_delimiter(price.round) %></span>/seat</span>
           <% elsif game.fully_sold? %>

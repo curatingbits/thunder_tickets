@@ -1,0 +1,16 @@
+<% content_for :title, "#{@listing.hold? ? "Hold" : "List"} seats · MADR TICKETS" %>
+
+<div class="max-w-xl mx-auto space-y-6">
+  <div>
+    <%= link_to "← #{@game.opponent.name}", game_path(@game), class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-2xl sm:text-3xl font-bold text-content-strong mt-2"><%= @listing.hold? ? "Hold seats" : "Record a listing" %></h1>
+    <p class="text-sm text-content-dim mt-1">vs <%= @game.opponent.name %> · <%= game_when(@game) %></p>
+    <% unless @listing.hold? %>
+      <p class="text-sm text-muted mt-2">Record what you listed. This doesn't change anything on Ticketmaster.</p>
+    <% end %>
+  </div>
+
+  <div class="card">
+    <%= render "form", listing: @listing %>
+  </div>
+</div>

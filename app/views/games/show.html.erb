@@ -70,6 +70,8 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Left Column: Ticket Sales Management + Receipt -->
     <div class="space-y-6">
+      <%= render "listing_card", game: @game %>
+
       <div class="card">
       <h2 class="text-2xl font-bold text-content-strong mb-4">Manage Tickets</h2>
 
@@ -95,6 +97,14 @@
                   <% if ticket.notes.present? %>
                     <p class="text-xs text-content-dim mt-1"><%= ticket.notes %></p>
                   <% end %>
+                  <div class="mt-2">
+                    <% if ticket.transferred? %>
+                      <%= status_chip("Delivered", tone: :positive, icon_name: :check) %>
+                    <% else %>
+                      <%= button_to "Mark delivered", transfer_game_ticket_path(@game, ticket), method: :patch,
+                            class: "text-xs text-accent hover:brightness-125" %>
+                    <% end %>
+                  </div>
                 </div>
                 <div class="text-right">
                   <p class="text-sm <%= ticket.sale_price > @game.cost_per_ticket ? 'text-positive' : 'text-negative' %>">
@@ -151,12 +161,12 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-content mb-2">Section</label>
-                  <%= f.text_field :section, value: "101", class: "input-field" %>
+                  <%= f.text_field :section, value: @season.seat_section, class: "input-field" %>
                 </div>
 
                 <div>
                   <label class="block text-sm font-medium text-content mb-2">Row</label>
-                  <%= f.text_field :row, value: "DD", class: "input-field" %>
+                  <%= f.text_field :row, value: @season.seat_row, class: "input-field" %>
                 </div>
 
                 <div>

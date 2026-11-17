@@ -103,4 +103,22 @@ class TicketsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
     assert_equal 130, @ticket.reload.sale_price
   end
+  test "marking a sale delivered" do
+    ticket = tickets(:cur_past_1)
+    ticket.update_columns(transferred_at: nil)
+
+    patch transfer_game_ticket_path(ticket.game, ticket)
+
+    assert_redirected_to game_path(ticket.game)
+    assert ticket.reload.transferred?
+  end
+
+  test "bulk sales take the seat location from the season" do
+    seasons(:current).update!(seat_section: "115", seat_row: "G")
+    game = games(:current_future)
+
+    post bulk_create_game_tickets_path(game), params: { total_amount: 300 }
+
+    assert_equal [ [ "115", "G" ] ], game.tickets.pluck(:section, :row).uniq
+  end
 end

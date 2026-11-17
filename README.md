@@ -89,6 +89,20 @@ The main dashboard displays:
 - Click any game to view details and manage ticket sales
 - Add playoff games as they're scheduled
 
+### Listings
+Record what you've listed on each game's page (**List seats**), or hold seats
+you're keeping. Each game shows a listing status: Listed, Partially sold, Not
+listed, Reserved, Sold, Transferred, or **Needs verification**. A listing nobody
+has confirmed in 7 days needs verification, and "Not listed" only appears after
+someone confirms it, so the app never guesses. **Review listings** (on Games,
+or from Home) is the weekly checklist: check Ticketmaster, then tap "Still
+listed", "Change price" or "Not listed". Every change is kept in the game's
+listing history. Nothing here changes anything on Ticketmaster.
+
+Sales through Ticketmaster count as delivered when they sell; mark private
+sales **delivered** once the buyer has the tickets. Home flags undelivered
+tickets in the last three days before a game.
+
 ### Recording Ticket Sales
 1. Navigate to a specific game
 2. Scroll to "Manage Tickets" section

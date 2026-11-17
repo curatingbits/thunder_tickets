@@ -11,7 +11,10 @@
                  selected: @season,
                  path: ->(s) { games_path(season_id: s.id, filter: params[:filter]) } %>
       <% if viewing_current_season? %>
-        <%= link_to "Add Game", new_game_path, class: "btn-primary w-full sm:w-auto text-center" %>
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <%= link_to "Review listings", listing_review_path, class: "btn-secondary w-full sm:w-auto text-center" %>
+          <%= link_to "Add Game", new_game_path, class: "btn-primary w-full sm:w-auto text-center" %>
+        </div>
       <% end %>
     </div>
   </div>
@@ -54,6 +57,7 @@
             <th scope="col">Date</th>
             <th scope="col">Opponent</th>
             <th scope="col">Type</th>
+            <th scope="col">Listing</th>
             <th scope="col" class="num">Sold</th>
             <th scope="col" class="num">Cost</th>
             <th scope="col" class="num">Revenue</th>
@@ -85,6 +89,7 @@
                   <span class="text-muted text-xs">Regular</span>
                 <% end %>
               </td>
+              <td><%= listing_status_chip(game.listing_status) %></td>
               <td class="num">
                 <span class="<%= game.fully_sold? ? 'text-positive' : game.partially_sold? ? 'text-warning' : 'text-muted' %>">
                   <%= game.tickets_sold_count %>/<%= @season.num_seats %>
@@ -110,7 +115,7 @@
         </tbody>
         <tfoot>
           <tr class="bg-surface-raised border-t-2 border-strong font-semibold">
-            <td colspan="3" class="text-content-dim uppercase text-xs tracking-wider">
+            <td colspan="4" class="text-content-dim uppercase text-xs tracking-wider">
               Season total · <%= @games.size %> games
             </td>
             <td class="num text-content"><%= totals[:sold] %>/<%= totals[:seats] %></td>
@@ -143,9 +148,10 @@
               </div>
               <div class="border-l border-subtle pl-3 min-w-0">
                 <h3 class="font-bold text-content-strong truncate"><%= game.opponent.name %></h3>
-                <% if (chip = countdown_chip(game)) %>
-                  <div class="mt-1"><%= chip %></div>
-                <% end %>
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  <%= countdown_chip(game) %>
+                  <%= listing_status_chip(game.listing_status) %>
+                </div>
                 <p class="text-xs text-muted mt-0.5">
                   <% if game.playoff? %>
                     <%= game.playoff_round.presence || "Playoff" %>

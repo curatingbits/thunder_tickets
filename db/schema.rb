@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_010300) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -65,6 +65,51 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
     t.index ["season_id"], name: "index_games_on_season_id"
   end
 
+  create_table "listing_events", force: :cascade do |t|
+    t.integer "game_id", null: false
+    t.integer "listing_id"
+    t.string "action", null: false
+    t.decimal "price_before", precision: 10, scale: 2
+    t.decimal "price_after", precision: 10, scale: 2
+    t.string "recommended_strategy"
+    t.decimal "recommended_list_price", precision: 10, scale: 2
+    t.text "note"
+    t.integer "user_id"
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["game_id", "occurred_at"], name: "index_listing_events_on_game_id_and_occurred_at"
+    t.index ["game_id"], name: "index_listing_events_on_game_id"
+    t.index ["listing_id"], name: "index_listing_events_on_listing_id"
+    t.index ["user_id"], name: "index_listing_events_on_user_id"
+    t.check_constraint "action IN ('listed', 'price_changed', 'verified', 'verified_unlisted', 'held', 'ended')", name: "listing_events_action"
+  end
+
+  create_table "listings", force: :cascade do |t|
+    t.integer "game_id", null: false
+    t.string "kind", default: "listing", null: false
+    t.json "seat_numbers", default: [], null: false
+    t.string "platform"
+    t.integer "account_user_id"
+    t.decimal "ask_price", precision: 10, scale: 2
+    t.string "ask_price_basis", default: "seller_list", null: false
+    t.string "status", default: "active", null: false
+    t.string "end_reason"
+    t.datetime "verified_at"
+    t.integer "verified_by_id"
+    t.datetime "ended_at"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_user_id"], name: "index_listings_on_account_user_id"
+    t.index ["game_id", "status"], name: "index_listings_on_game_id_and_status"
+    t.index ["game_id"], name: "index_listings_on_game_id"
+    t.index ["verified_by_id"], name: "index_listings_on_verified_by_id"
+    t.check_constraint "ask_price IS NULL OR ask_price > 0", name: "listings_ask_price_positive"
+    t.check_constraint "ask_price_basis IN ('seller_list', 'buyer_all_in')", name: "listings_ask_price_basis"
+    t.check_constraint "kind IN ('listing', 'hold')", name: "listings_kind"
+    t.check_constraint "status IN ('active', 'ended')", name: "listings_status"
+  end
+
   create_table "market_prices", force: :cascade do |t|
     t.integer "game_id", null: false
     t.string "section"
@@ -90,6 +135,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "seat_section"
+    t.string "seat_row", default: "DD"
     t.index ["year"], name: "index_seasons_on_year", unique: true
   end
 
@@ -113,8 +159,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
     t.string "section"
     t.string "row"
     t.integer "buyer_id"
+    t.datetime "transferred_at"
+    t.integer "listing_id"
+    t.decimal "list_price_at_sale", precision: 10, scale: 2
     t.index ["buyer_id"], name: "index_tickets_on_buyer_id"
     t.index ["game_id"], name: "index_tickets_on_game_id"
+    t.index ["listing_id"], name: "index_tickets_on_listing_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -139,7 +189,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_234320) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "games", "seasons"
   add_foreign_key "games", "teams", column: "opponent_id"
+  add_foreign_key "listing_events", "games"
+  add_foreign_key "listing_events", "listings"
+  add_foreign_key "listing_events", "users"
+  add_foreign_key "listings", "games"
+  add_foreign_key "listings", "users", column: "account_user_id"
+  add_foreign_key "listings", "users", column: "verified_by_id"
   add_foreign_key "market_prices", "games"
   add_foreign_key "tickets", "buyers"
   add_foreign_key "tickets", "games"
+  add_foreign_key "tickets", "listings"
 end

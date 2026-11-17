@@ -1,0 +1,52 @@
+<% content_for :title, "Review listings · MADR TICKETS" %>
+
+<div class="space-y-6">
+  <div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-content-strong">Review listings</h1>
+    <p class="text-content-dim mt-2">
+      Check each listing on Ticketmaster, then tap what's true. Listings unchecked for
+      <%= (Listings::GameStatus::VERIFICATION_MAX_AGE / 1.day).to_i %> days need verification again.
+    </p>
+  </div>
+
+  <% if @rows.any? %>
+    <ul class="space-y-3">
+      <% @rows.each do |game, status| %>
+        <li class="card" data-review-game="<%= game.id %>">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <%= link_to game_path(game), class: "font-bold text-content-strong hover:text-accent" do %>
+                vs <%= game.opponent.name %>
+              <% end %>
+              <p class="text-sm text-content-dim mt-0.5"><%= game_when(game) %></p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <%= listing_status_chip(status) %>
+              <%= countdown_chip(game) %>
+            </div>
+          </div>
+          <p class="text-sm text-content mt-3"><%= listing_status_detail(status) %></p>
+
+          <div class="flex flex-wrap gap-2 mt-3">
+            <% status.listings.each do |listing| %>
+              <%= button_to "Still listed at #{number_to_currency(listing.ask_price)}", verify_game_listing_path(game, listing),
+                    class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+              <%= link_to "Change price", edit_game_listing_path(game, listing), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+            <% end %>
+            <% if status.unlisted_seats.any? %>
+              <%= link_to "List seats", new_game_listing_path(game), class: "btn-primary text-sm py-1.5 px-3 min-h-[36px]" %>
+            <% end %>
+            <% if status.status != :not_listed && (status.unlisted_seats.any? || status.listings.any?) %>
+              <%= button_to "Not listed", verify_unlisted_game_listings_path(game), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]",
+                    form: { data: { turbo_confirm: (status.listings.any? ? "That ends the listing recorded here. Nothing is listed?" : nil) } } %>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="card text-center py-12">
+      <p class="text-content-dim text-lg">Every upcoming game is sold or held.</p>
+    </div>
+  <% end %>
+</div>

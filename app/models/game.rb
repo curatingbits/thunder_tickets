@@ -2,6 +2,8 @@ class Game < ApplicationRecord
   belongs_to :season
   belongs_to :opponent, class_name: "Team"
   has_many :tickets, dependent: :destroy
+  has_many :listings, dependent: :destroy
+  has_many :listing_events, dependent: :delete_all
   has_one :market_price, dependent: :destroy
   has_one_attached :receipt_image
 
@@ -82,6 +84,10 @@ class Game < ApplicationRecord
 
   def fully_sold?
     tickets_available.zero?
+  end
+
+  def listing_status(now: Time.current)
+    Listings::GameStatus.for(self, now: now)
   end
 
   def partially_sold?

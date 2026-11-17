@@ -1,0 +1,65 @@
+<%# Seats, price and where they're listed. Holds only need seats and a note. %>
+<% open = (1..@game.season.num_seats).to_a - @game.tickets.pluck(:seat_number) %>
+<% seats = (open | listing.seat_numbers).sort %>
+
+<%= form_with model: [ @game, listing ], class: "space-y-5" do |f| %>
+  <% if listing.errors.any? %>
+    <div class="rounded-lg p-4 bg-negative/15 border border-negative/40 text-negative text-sm" role="alert">
+      <%= listing.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <%= f.hidden_field :kind %>
+
+  <fieldset>
+    <legend class="block text-sm font-medium text-content mb-2">Seats</legend>
+    <div class="flex flex-wrap gap-2">
+      <%= f.collection_check_boxes :seat_numbers, seats, :itself, ->(seat) { "Seat #{seat}" } do |b| %>
+        <label class="inline-flex items-center gap-2 px-4 min-h-[44px] rounded-lg border border-subtle bg-canvas text-content cursor-pointer has-[:checked]:border-accent has-[:checked]:text-content-strong">
+          <%= b.check_box class: "accent-accent h-4 w-4" %>
+          <%= b.text %>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <% if listing.listing? %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <%= f.label :platform, "Listed on", class: "block text-sm font-medium text-content mb-2" %>
+        <%= f.select :platform, Listing::PLATFORMS.invert, {}, class: "input-field" %>
+      </div>
+      <div>
+        <%= f.label :account_user_id, "Whose account", class: "block text-sm font-medium text-content mb-2" %>
+        <%= f.collection_select :account_user_id, User.active.order(:name), :id, :name, { include_blank: "Not sure" }, class: "input-field" %>
+      </div>
+    </div>
+
+    <div>
+      <%= f.label :ask_price, "Asking price per ticket", class: "block text-sm font-medium text-content mb-2" %>
+      <%= f.number_field :ask_price, step: 0.01, min: 0.01, inputmode: "decimal", class: "input-field", placeholder: number_to_currency(@game.break_even_price_per_ticket, unit: "") %>
+      <p class="mt-1 text-xs text-muted">Break even is <%= number_to_currency(@game.break_even_price_per_ticket) %> a seat.</p>
+    </div>
+
+    <fieldset>
+      <legend class="block text-sm font-medium text-content mb-2">That price is</legend>
+      <div class="space-y-2">
+        <label class="flex items-start gap-3 text-sm text-content">
+          <%= f.radio_button :ask_price_basis, "seller_list", class: "mt-1" %>
+          <span>The list price we set <span class="text-muted">(before Ticketmaster adds buyer fees)</span></span>
+        </label>
+        <label class="flex items-start gap-3 text-sm text-content">
+          <%= f.radio_button :ask_price_basis, "buyer_all_in", class: "mt-1" %>
+          <span>The all-in price buyers see <span class="text-muted">(fees included)</span></span>
+        </label>
+      </div>
+    </fieldset>
+  <% end %>
+
+  <div>
+    <%= f.label :notes, class: "block text-sm font-medium text-content mb-2" %>
+    <%= f.text_area :notes, rows: 2, class: "input-field", placeholder: listing.hold? ? "Who it's for" : "Anything worth remembering" %>
+  </div>
+
+  <%= f.submit listing.persisted? ? "Save" : (listing.hold? ? "Hold seats" : "Record listing"), class: "btn-primary w-full" %>
+<% end %>
