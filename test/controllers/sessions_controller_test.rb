@@ -4,6 +4,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   test "should get login page" do
     get login_path
     assert_response :success
+    assert_select "h1 svg[role=img][aria-label=?]", "MADR Tickets", 1, "the stacked logo heads the page"
   end
 
   test "should log in with valid credentials" do

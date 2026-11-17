@@ -1,8 +1,8 @@
 <%# Desktop navigation (lg and up). Phones get _top_bar and _bottom_nav instead. %>
 <aside class="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 bg-surface border-r border-subtle z-40" data-shell="sidebar">
   <div class="h-16 shrink-0 flex items-center px-6 border-b border-subtle">
-    <%= link_to root_path, class: "text-xl font-bold" do %>
-      <span class="text-accent">MADR</span> <span class="text-accent-alt">TICKETS</span>
+    <%= link_to root_path, class: "block" do %>
+      <%= render "shared/logo", class: "h-11 w-auto" %>
     <% end %>
   </div>
 

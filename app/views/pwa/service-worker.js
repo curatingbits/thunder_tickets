@@ -7,7 +7,7 @@
 //
 // Bump VERSION to drop old caches. To retire the worker entirely, ship one
 // whose activate handler calls self.registration.unregister().
-const VERSION = "v1"
+const VERSION = "v2"
 const CACHE = `madr-${VERSION}`
 const OFFLINE_URL = "/offline.html"
 

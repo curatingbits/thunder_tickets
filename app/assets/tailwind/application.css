@@ -48,7 +48,8 @@
   --color-negative: #f7768e;
   --color-warning: #e0af68;
   --color-accent: #7aa2f7;
-  --color-accent-alt: #ff9e64;      /* brand second word, expired badges */
+  --color-accent-alt: #ff9e64;      /* expired badges */
+  --color-brand-orange: #ff9e64;    /* TICKETS in the logo */
 
   /* Categorical colors with no money meaning. */
   --color-highlight: #bb9af7;       /* NBA Cup tags, invitation-link actions */
@@ -131,6 +132,7 @@
     --color-warning: #875a0f;
     --color-accent: #2a5bc9;
     --color-accent-alt: #9c4c0a;
+    --color-brand-orange: #d95926;
     --color-highlight: #7340bd;
     --color-info: #0b6a87;
     --color-chart-positive: #549a39;
@@ -169,6 +171,7 @@
       --color-warning: #875a0f;
       --color-accent: #2a5bc9;
       --color-accent-alt: #9c4c0a;
+      --color-brand-orange: #d95926;
       --color-highlight: #7340bd;
       --color-info: #0b6a87;
       --color-chart-positive: #549a39;

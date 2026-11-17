@@ -10,7 +10,7 @@ class PwaTest < ActionDispatch::IntegrationTest
     assert_equal "standalone", manifest["display"]
     assert_equal "/", manifest["start_url"]
     assert_equal [ "192x192", "512x512" ], manifest["icons"].map { |i| i["sizes"] }.uniq
-    assert manifest["icons"].any? { |i| i["purpose"] == "maskable" }
+    assert_equal [ "/icon-maskable.png" ], manifest["icons"].select { |i| i["purpose"] == "maskable" }.map { |i| i["src"] }
     manifest["icons"].each do |i|
       assert File.exist?(Rails.root.join("public", i["src"].delete_prefix("/"))), "missing #{i["src"]}"
     end
@@ -32,5 +32,18 @@ class PwaTest < ActionDispatch::IntegrationTest
     assert_select "link[rel=manifest][href=?]", "/manifest.json"
     assert_select "meta[name=theme-color][content=?]", "#16161e"
     assert_select "meta[name=viewport][content*=?]", "viewport-fit=cover"
+  end
+
+  test "pages carry the logo, favicon and home-screen icon" do
+    sign_in
+    get root_path
+
+    assert_select "link[rel=icon][type='image/svg+xml'][href=?]", "/favicon.svg"
+    assert_select "link[rel=icon][type='image/png'][href=?]", "/favicon-32.png"
+    assert_select "link[rel=apple-touch-icon][href=?]", "/apple-touch-icon.png"
+    %w[favicon.svg favicon-32.png apple-touch-icon.png].each { |f| assert File.exist?(Rails.root.join("public", f)), "missing #{f}" }
+    assert_select "[data-shell=sidebar] a[href='/'] svg[aria-label=?]", "MADR Tickets"
+    assert_select "[data-shell=top-bar] a[href='/'] svg[aria-label=?]", "MADR Tickets"
+    assert_select "svg[aria-label='MADR Tickets'] [id]", false, "the logo has no ids, so it can appear twice on a page"
   end
 end
