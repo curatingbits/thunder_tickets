@@ -111,7 +111,9 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ @game.id, *later.first(2).map(&:id) ], shown, "soonest first, skipping the sold-out game"
     assert_select "[data-dashboard-section='next-unsold'] tr[data-pricing-game='#{@game.id}']", text: /List \$#{@snapshot.recommended_list_price.round}/
     assert_select "[data-dashboard-section='next-unsold'] a[data-seat-map-game-link='#{@game.id}']", 2, "the 3D button, in the table and on the phone card"
-    assert_select "[data-dashboard-section='pricing']", text: /Our prices vs the market/
+    assert_select "[data-dashboard-section='next-unsold'] h2", "Next unsold games & Pricing"
+    section = css_select("[data-dashboard-section='next-unsold']").first.to_html
+    assert_operator section.index("Our prices vs the market"), :<, section.index("data-pricing-game"), "how we compare, above the games"
     assert_no_match "What our unsold seats are worth", response.body
 
     get pricing_path

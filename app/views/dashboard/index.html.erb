@@ -30,12 +30,14 @@
   <% end %>
 
   <% if @board %>
-    <%# The top of Pricing's Unsold list, in the same format. %>
+    <%# How our prices compare, then the top of Pricing's Unsold list in the
+        same format. %>
     <section class="space-y-3" data-dashboard-section="next-unsold">
       <div class="flex items-center justify-between">
-        <h2 class="section-label">Next unsold games</h2>
+        <h2 class="section-label">Next unsold games &amp; Pricing</h2>
         <%= link_to "All on Pricing →", pricing_path, class: "text-xs text-accent hover:brightness-125" %>
       </div>
+      <%= render "pricing/vs_market_tile", counts: @pricing_counts %>
       <% if @next_unsold.any? %>
         <%= render "pricing/board", rows: @next_unsold %>
       <% else %>
@@ -43,13 +45,15 @@
       <% end %>
     </section>
 
-    <section class="space-y-3" data-dashboard-section="pricing">
-      <h2 class="section-label">Pricing and payouts</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        <%= render "pricing/vs_market_tile", counts: @pricing_counts %>
-        <%= render "settlements/tile", summary: @settlement_summary if @settlement_summary %>
-      </div>
-    </section>
+    <% if @settlement_summary %>
+      <section class="space-y-3" data-dashboard-section="payouts">
+        <div class="flex items-center justify-between">
+          <h2 class="section-label">Payouts</h2>
+          <%= link_to "Money →", money_path, class: "text-xs text-accent hover:brightness-125" %>
+        </div>
+        <%= render "settlements/tile", summary: @settlement_summary %>
+      </section>
+    <% end %>
   <% end %>
 
   <% if @next_rows.present? %>

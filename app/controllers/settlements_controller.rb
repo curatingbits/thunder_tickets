@@ -5,6 +5,6 @@ class SettlementsController < ApplicationController
   def show
     @summary = Settlements::Summary.new
     @cost_shares = Season.where(settlement_tracked: true).order(:year).filter_map { |season| Settlements::CostShare.for(season) }
-    @recent = PartnerPayment.recent_first.where.not(status: "ignored").includes(allocations: { game: :opponent }).limit(8)
+    @recent = @summary.recent(8)
   end
 end

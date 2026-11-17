@@ -14,6 +14,12 @@ module Settlements
     def last_sync_at = ImportRun.where(kind: "payment_sync", status: "completed").maximum(:finished_at)
     def synced? = Settlements.synced?
 
+    # The latest payments, newest first, leaving out the ones set aside as
+    # unrelated. Money lists eight; Home's Payouts shows three.
+    def recent(limit)
+      PartnerPayment.recent_first.where.not(status: "ignored").includes(allocations: { game: :opponent }).limit(limit)
+    end
+
     # The finance feed serves at most 400 days per request.
     MAX_WINDOW_DAYS = 395
 

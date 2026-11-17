@@ -94,7 +94,7 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-dashboard-section='attention']", count: 0
     assert_select "[data-dashboard-section='next-games']", count: 0
     assert_select "[data-dashboard-section='next-unsold']", count: 0
-    assert_select "[data-dashboard-section='pricing']", count: 0
+    assert_select "[data-dashboard-section='payouts']", count: 0
   end
 
   test "with every upcoming game sold, the next unsold games say so" do

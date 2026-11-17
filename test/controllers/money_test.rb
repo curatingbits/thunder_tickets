@@ -131,6 +131,24 @@ class MoneyTest < ActionDispatch::IntegrationTest
     assert_select "[data-attention-kind='payout_overdue']", text: /owes \$300\.00 for 1 game/
   end
 
+  test "home's Payouts lists the three latest payments under the games not fully paid" do
+    post_import(transactions: [ tx("1", "100.00", "Thunder one", date: (Date.current - 12).iso8601),
+                                tx("2", "100.00", "Thunder two", date: (Date.current - 9).iso8601),
+                                tx("3", "-20", "🍿", date: (Date.current - 2).iso8601),
+                                tx("4", "100.00", "Thunder three", date: (Date.current - 6).iso8601),
+                                tx("5", "100.00", "Thunder four", date: (Date.current - 3).iso8601) ])
+    assert_equal "ignored", PartnerPayment.find_by!(external_id: "3").status
+    sign_in
+    get root_path
+
+    assert_select "[data-dashboard-section='payouts'] [data-settlement-tile]" do
+      memos = css_select("[data-recent-payments] li").map { |li| li.text[/“(.+)”/, 1] }
+      assert_equal [ "Thunder four", "Thunder three", "Thunder two" ], memos, "newest first, leaving out the one set aside"
+    end
+    tile = css_select("[data-settlement-tile]").first.to_html
+    assert_operator tile.index("not fully paid"), :<, tile.index("data-recent-payments")
+  end
+
   test "the Money tab tracks Duggan's half of the season invoice" do
     @season.update!(year: "2026-27", total_season_cost: 20_842.80)
     post_import(transactions: [ tx("c1", "-1042.14", "Thunder 26/27", date: "2026-08-18") ])
