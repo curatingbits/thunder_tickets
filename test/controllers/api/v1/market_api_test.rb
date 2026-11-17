@@ -44,6 +44,18 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  test "the mid-week rescan asks for the next week's games only" do
+    soon = seasons(:current).games.create!(game_number: 950, game_date: Date.current + 3, opponent: teams(:rockets),
+                                           cost_per_ticket: 100, parking_cost: 10, game_type: "regular")
+    get api_v1_research_targets_path, params: { within_days: 7 }, headers: auth
+    assert_equal [ @game.id, soon.id ], response.parsed_body["games"].map { |g| g["id"] }
+    get api_v1_research_targets_path, headers: auth
+    assert_operator response.parsed_body["games"].size, :>, 2
+
+    get api_v1_research_targets_path, params: { within_days: "lots" }, headers: auth
+    assert_response :unprocessable_entity
+  end
+
   test "research targets: upcoming games, the sections and how to start" do
     get api_v1_research_targets_path, headers: auth
 

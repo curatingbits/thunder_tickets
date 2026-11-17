@@ -41,7 +41,8 @@ class MoneyTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = response.parsed_body
     assert_equal 30_000, body["outstanding_cents"]
-    assert_equal (@season.games.minimum(:game_date) - 90).iso8601, body["window_from"]
+    starts = [ Settlements.tracking_starts_on, Settlements.cost_share_starts_on ].min
+    assert_equal [ starts, Date.current - 395 ].max.iso8601, body["window_from"]
     assert_equal [ "unpaid" ], body["games"].map { |g| g["status"] }
     assert_equal false, body["synced"]
   end
@@ -128,6 +129,16 @@ class MoneyTest < ActionDispatch::IntegrationTest
     assert_select "[data-settlement-tile]", text: /owes/
     assert_select "[data-attention-kind='settlement_review']"
     assert_select "[data-attention-kind='payout_overdue']", text: /owes \$300\.00 for 1 game/
+  end
+
+  test "the Money tab tracks Duggan's half of the season invoice" do
+    @season.update!(year: "2026-27", total_season_cost: 20_842.80)
+    post_import(transactions: [ tx("c1", "-1042.14", "Thunder 26/27", date: "2026-08-18") ])
+
+    sign_in
+    get money_path
+    assert_select "[data-money-section='cost-share']", text: /1,042\.14.*of.*10,421\.40.*paid/m
+    assert_select "[data-cost-share-remaining]", text: /\$9,379\.26 left/
   end
 
   test "a sale's payout can be marked as having gone to the owner" do

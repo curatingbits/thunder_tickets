@@ -1,0 +1,38 @@
+<%# Duggan's half of the season-ticket invoice and the installments paid to Mark. %>
+<% partner = Settlements.partner_first_name %>
+<% owner = Settlements.owner_name %>
+<section class="space-y-3" data-money-section="cost-share">
+  <h2 class="section-label">Season tickets · <%= share.season.year %></h2>
+  <div class="card space-y-3">
+    <p class="text-sm text-content-dim">
+      <%= owner %>'s half of the <span class="figure"><%= cents(share.invoice_cents) %></span> invoice, paid to <%= partner %> in installments.
+    </p>
+    <div class="flex items-baseline justify-between gap-3">
+      <p class="text-content-strong">
+        <span class="text-xl font-bold figure"><%= cents(share.paid_cents, signed: true) %></span>
+        <span class="text-sm text-content-dim">of <span class="figure"><%= cents(share.share_cents) %></span> paid</span>
+      </p>
+      <p class="text-sm text-content whitespace-nowrap" data-cost-share-remaining>
+        <% if share.remaining_cents.abs <= 1 %>Paid in full<% elsif share.remaining_cents.positive? %><span class="figure"><%= cents(share.remaining_cents) %></span> left<% else %><span class="figure"><%= cents(share.remaining_cents) %></span> overpaid<% end %>
+      </p>
+    </div>
+    <div class="h-2 rounded-full bg-surface-raised overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="<%= share.paid_pct %>" aria-label="<%= share.paid_pct %>% of <%= owner %>'s half paid">
+      <div class="h-full rounded-full bg-chart-series-1" style="width: <%= share.paid_pct %>%"></div>
+    </div>
+    <% if share.payments.any? %>
+      <ul class="text-sm divide-y divide-subtle -mx-4 sm:-mx-6 border-t border-subtle">
+        <% share.payments.each do |payment| %>
+          <li>
+            <%= link_to partner_payment_path(payment), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-2 hover:bg-surface-raised" do %>
+              <span class="text-content-dim truncate"><%= payment.occurred_on.strftime("%b %-d, %Y") %> · “<%= payment.memo.to_s.truncate(40) %>”</span>
+              <span class="text-content figure whitespace-nowrap"><%= payment.incoming? ? "refund " : "" %><%= cents(payment.amount_cents) %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-sm text-content-dim">No installments recorded yet. They come in with the Venmo sync, or add one by hand.</p>
+    <% end %>
+  </div>
+</section>

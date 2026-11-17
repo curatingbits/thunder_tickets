@@ -30,6 +30,9 @@ class PartnerPayment < ApplicationRecord
   def amount = amount_cents / 100.0
 
   # Cents from Duggan's side: + when Mark paid him, - when he paid Mark.
+  # Toward Duggan's season-ticket share: what he paid Mark, less refunds.
+  def signed_for_cost_share = incoming? ? -amount_cents : amount_cents
+
   def signed_cents
     incoming? ? amount_cents : -amount_cents
   end

@@ -4,7 +4,8 @@ module Settlements
   # review, never overwritten. Pending transactions are skipped (the finance
   # app replaces them when they post). Then the matcher runs.
   class Importer
-    Summary = Data.define(:received, :created, :unchanged, :changed, :skipped_pending, :duplicates, :missing, :matched, :review, :ignored, :waiting)
+    Summary = Data.define(:received, :created, :unchanged, :changed, :skipped_pending, :out_of_scope, :duplicates, :missing,
+                          :matched, :review, :ignored, :waiting)
 
     def initialize(run:, transactions:, source: "finance_api", window: nil, complete: false, api_token: nil)
       @run = run
@@ -26,6 +27,8 @@ module Settlements
 
           id = tx["id"].to_s.presence or raise ArgumentError, "a transaction has no id"
           seen << id
+          next counts[:out_of_scope] += 1 if out_of_scope?(id, tx)
+
           outcome = upsert(id, tx)
           counts[outcome] += 1
         end
@@ -33,12 +36,25 @@ module Settlements
       end
       outcomes = Matcher.new.run.tally
       Summary.new(received: @transactions.size, created: counts[:created], unchanged: counts[:unchanged], changed: counts[:changed],
-                  skipped_pending: counts[:skipped_pending], duplicates: counts[:duplicate], missing: counts[:missing],
+                  skipped_pending: counts[:skipped_pending], out_of_scope: counts[:out_of_scope],
+                  duplicates: counts[:duplicate], missing: counts[:missing],
                   matched: outcomes[:auto].to_i, review: outcomes[:review].to_i, ignored: outcomes[:ignored].to_i,
                   waiting: outcomes[:waiting].to_i)
     end
 
     private
+
+    # Before tracking began, only season-ticket installments are kept: older
+    # game payments belong to seasons that aren't tracked. A payment already
+    # stored is always updated.
+    def out_of_scope?(id, tx)
+      @tracking_starts_on = Settlements.tracking_starts_on unless defined?(@tracking_starts_on)
+      return false if @tracking_starts_on.nil? || Date.iso8601(tx.fetch("date").to_s) >= @tracking_starts_on
+      return false if PartnerPayment.exists?(source: @source, external_id: id)
+
+      direction = BigDecimal(tx.fetch("amount").to_s).positive? ? "incoming" : "outgoing"
+      PaymentClassifier.call(PartnerPayment.new(direction: direction), MemoParser.parse(tx["name"].to_s)) != "cost_share"
+    end
 
     def upsert(id, tx)
       date = Date.iso8601(tx.fetch("date").to_s)

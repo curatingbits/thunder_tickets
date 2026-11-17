@@ -97,6 +97,10 @@
     <% end %>
   </section>
 
+  <% @cost_shares.each do |share| %>
+    <%= render "settlements/cost_share", share: share %>
+  <% end %>
+
   <% if @recent.any? %>
     <section class="space-y-3">
       <div class="flex items-center justify-between">

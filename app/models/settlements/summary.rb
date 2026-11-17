@@ -17,11 +17,12 @@ module Settlements
     # The finance feed serves at most 400 days per request.
     MAX_WINDOW_DAYS = 395
 
-    # Fetch window for the skill: from 90 days before the first tracked game
-    # (payments often come before the game), but no more than MAX_WINDOW_DAYS back.
+    # Fetch window for the sync: back to whichever starts first, game
+    # payments (Settlements.tracking_starts_on) or season-ticket installments
+    # (Settlements.cost_share_starts_on), but no more than MAX_WINDOW_DAYS.
     def window_from
-      first = Game.joins(:season).where(seasons: { settlement_tracked: true }).minimum(:game_date)
-      [ (first || Date.current) - 90, Date.current - MAX_WINDOW_DAYS ].max
+      starts = [ Settlements.tracking_starts_on, Settlements.cost_share_starts_on ].compact.min || Date.current - 90
+      [ starts, Date.current - MAX_WINDOW_DAYS ].max
     end
   end
 end

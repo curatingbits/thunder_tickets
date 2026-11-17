@@ -85,7 +85,9 @@ print(f"Venmo sync {until} (payments {since} to {until})")
 if r.get("replayed"):
     print("  Same transactions as an earlier run today - nothing new to import.")
 else:
-    print(f"  From Venmo: {st.get('received', 0)} - {st.get('created', 0)} new, {st.get('unchanged', 0)} already in, {st.get('changed', 0)} changed")
+    skipped = st.get('out_of_scope') or 0
+    print(f"  From Venmo: {st.get('received', 0)} - {st.get('created', 0)} new, {st.get('unchanged', 0)} already in, {st.get('changed', 0)} changed"
+          + (f", {skipped} from before tracking skipped" if skipped else ""))
     print(f"  Settled automatically: {st.get('matched', 0)} - to review: {st.get('review', 0)} - set aside: {st.get('ignored', 0)} - waiting for a sale: {st.get('waiting', 0)}")
 print(f"  {balance}. Owed so far {money(s['owed_cents'])}, paid {money(s['paid_cents'])}.")
 for g in open_games:

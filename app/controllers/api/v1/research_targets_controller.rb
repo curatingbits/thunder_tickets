@@ -2,13 +2,20 @@ module Api
   module V1
     # What the research skill should scan: every upcoming game this season,
     # with what's already known about its Ticketmaster event.
+    # ?within_days=7 limits it to the next week's games (the mid-week rescan).
     class ResearchTargetsController < BaseController
       before_action { require_scope!("market:write") }
 
       def index
         season = Season.find_by!(is_current: true)
         settings = Market::Settings.for(season)
-        games = season.games.upcoming.includes(:opponent, :tickets, :listings, :listing_events).to_a
+        games = season.games.upcoming.includes(:opponent, :tickets, :listings, :listing_events)
+        if (days = params[:within_days].presence)
+          return render_error(:unprocessable_entity, "invalid", "within_days must be 1 to 60") unless days.to_s.match?(/\A\d+\z/) && days.to_i.between?(1, 60)
+
+          games = games.where(game_date: ..Date.current + days.to_i)
+        end
+        games = games.to_a
         latest = MarketSnapshot.latest_by_game(games.map(&:id))
 
         render json: {

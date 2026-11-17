@@ -151,6 +151,12 @@ payments are set aside. Every change is kept: undoing an allocation needs a
 reason, and nothing is ever deleted. If a sale's payout went to Duggan's account
 instead, set **Payout went to** on the sale; then Duggan owes Mark half.
 
+The **Season tickets** card tracks the other direction: Duggan's half of the
+season invoice, which he pays Mark in installments. An installment counts toward
+the season its note names ("26/27", "2026/2027"), or else the season whose spring
+it falls in. The sync reads back to March 1 for these. Older game payments
+belong to seasons that aren't tracked, so they're skipped.
+
 ### Listings
 Record what you've listed on each game's page (**List seats**), or hold seats
 you're keeping. Each game shows a listing status: Listed, Partially sold, Not

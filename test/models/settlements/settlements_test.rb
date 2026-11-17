@@ -82,12 +82,43 @@ class SettlementsTest < ActiveSupport::TestCase
     assert_equal(-20_000, balance(g).expected_cents)
   end
 
-  test "the sync window starts 90 days before the first tracked game, at most 395 days back" do
+  test "the sync window reaches back to game payments or season installments, whichever starts first" do
+    @season.update!(year: "2026-27")
     game("ATL", "2026-10-07")
     first = Game.joins(:season).where(seasons: { settlement_tracked: true }).minimum(:game_date)
+    assert_equal first - 90, Settlements.tracking_starts_on
+    assert_equal Date.new(2026, 3, 1), Settlements.cost_share_starts_on
 
-    travel_to(first + 30) { assert_equal first - 90, Settlements::Summary.new.window_from }
-    travel_to(first + 600) { assert_equal first + 600 - 395, Settlements::Summary.new.window_from }
+    travel_to(Date.new(2026, 11, 16)) do
+      assert_equal [ [ first - 90, Date.new(2026, 3, 1) ].min, Date.new(2026, 11, 16) - 395 ].max, Settlements::Summary.new.window_from
+    end
+    travel_to(Date.new(2028, 6, 1)) { assert_equal Date.new(2028, 6, 1) - 395, Settlements::Summary.new.window_from }
+  end
+
+  test "from before tracking began, only season installments are imported" do
+    start = Settlements.tracking_starts_on
+    summary = import([ (start - 10).iso8601, "-1042.14", "Thunder 26/27" ],
+                     [ (start - 10).iso8601, "150.00", "Thunder vs hawks 4/2" ],
+                     [ (start - 5).iso8601, "-20.00", "🍿" ],
+                     [ (start + 5).iso8601, "-20.00", "🍿 again" ])
+
+    assert_equal 2, summary.out_of_scope
+    assert_equal [ "Thunder 26/27", "🍿 again" ], PartnerPayment.order(:occurred_on).pluck(:memo)
+  end
+
+  test "season installments count toward the season they name, or the spring they fall in" do
+    @season.update!(year: "2026-27", total_season_cost: 20_842.80)
+    import([ "2026-04-21", "-1042.14", "April 2026 payment - 2026/2027 Thunder Season tickets" ],
+           [ "2026-05-15", "-1042.14", "26/27 Thunder" ],
+           [ "2026-07-15", "-1042.14", "Thunder season tickets payment ⚡" ],
+           [ "2026-08-18", "-1042.14", "Thunder 25/26" ],
+           [ "2026-08-20", "-60.00", "🍿" ])
+
+    share = Settlements::CostShare.for(@season)
+    assert_equal [ 2_084_280, 1_042_140, 312_642, 729_498, 30 ],
+                 [ share.invoice_cents, share.share_cents, share.paid_cents, share.remaining_cents, share.paid_pct ]
+    assert_equal %w[2026-04-21 2026-05-15 2026-07-15], share.payments.map { |p| p.occurred_on.iso8601 }
+    assert_nil Settlements::CostShare.for(seasons(:past_season))
   end
 
   # --- matching ---------------------------------------------------------------
@@ -152,7 +183,7 @@ class SettlementsTest < ActiveSupport::TestCase
   end
 
   test "outgoing payments are never settled automatically" do
-    import([ "2026-08-18", "-1042.14", "Thunder 26/27" ], [ "2026-03-20", "-200", "Celtics" ])
+    import([ "2026-08-18", "-1042.14", "Thunder 26/27" ], [ "2026-10-20", "-200", "Celtics" ])
 
     assert_equal [ "ignored", "cost_share" ], payment("Thunder 26/27").slice(:status, :category).values
     assert_equal [ "needs_review", "settlement" ], payment("Celtics").slice(:status, :category).values

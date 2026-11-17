@@ -10,6 +10,7 @@ Ticketmaster listing, or moves money.
 | Job | What it does | Proposed schedule | Status |
 |---|---|---|---|
 | `/ticketmaster-pricing` | Reads resale listings in sections 101, 102 and 120 for every upcoming home game (logged out, "MADR Research" profile) and posts them; the app prices our seats | Mondays 6:30am Central | Installed, **not enabled** |
+| `/ticketmaster-pricing soon` | Rescans only the next seven days' games, where prices move fastest | Thursdays 6:30am Central | Installed, **not enabled** (enable after the Monday run is reliable) |
 | Venmo settlement sync (`venmo-sync`, `/venmo-settlement`) | Reads Mark's posted Venmo payments from financial.dar.haus (read-only) and posts them; the app matches them to sold games. The timer runs the script directly (no browser, no AI); the skill runs it on request and explains anything to review | Mondays 7:30am Central | Installed, **not enabled** |
 
 ## Install
@@ -57,6 +58,7 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 systemctl --user list-timers 'madr-*'                         # what's scheduled
 systemctl --user edit madr-ticketmaster-pricing.timer          # change OnCalendar
 systemctl --user disable --now madr-ticketmaster-pricing.timer # stop it
+systemctl --user disable --now madr-ticketmaster-midweek.timer
 systemctl --user disable --now madr-venmo-settlement.timer
 ```
 

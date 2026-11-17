@@ -23,7 +23,7 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
 2. **Logged out, research profile only.** Use the connected browser named **MADR Research**. If Ticketmaster shows anyone signed in ("My Account", a first name in the header) instead of "Sign In/Register", stop and tell Duggan to sign out of Ticketmaster in that profile.
 3. **Never get past a block.** CAPTCHA, "Pardon the Interruption", "Your browsing activity has been paused", a queue or waiting room, access denied: stop the whole run. Don't retry, reload repeatedly, or switch profiles to get around it.
 4. **Never show the token.** Don't `cat` the header file, echo it, or put it anywhere but `bin/madr-api`.
-5. **One game at a time, about 30 seconds apart.** At most one scheduled run a week.
+5. **One game at a time, about 30 seconds apart.** At most two scheduled runs a week: Monday's full run and, if Duggan enables it, Thursday's rescan of the next week's games.
 6. **Advisory only.** Never change a listing or price anywhere. MADR's recommendations are for Duggan and Mark to act on.
 
 ## Before you start
@@ -39,6 +39,14 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
    - The key is the ISO week: `tm-$(date +%G-W%V)`.
    - POST `/api/v1/import_runs` with `{"kind":"market_research","source":"ticketmaster_browser","key":KEY,"client_id":ID,"agent_version":"ticketmaster-pricing/1"}`.
    - **201** is a new run. **200** is a resumed run: skip every game in `scanned_game_ids`. **409** means another run holds it, or this week's run already completed: stop and report, don't start a second one.
+
+## Mid-week rescan (`/ticketmaster-pricing soon`)
+
+If you were started with the argument `soon`, rescan only the games in the next seven days. Prices move fastest then.
+- **Targets:** `bin/madr-api GET "/api/v1/research_targets?within_days=7"`. If it lists no games, report "nothing in the next week" and stop.
+- **Run key:** `tm-$(date +%G-W%V)-soon`, so it doesn't collide with Monday's run.
+- **Report:** in the vault Log line, write "mid-week rescan" in place of the seat value, because only some games were scanned.
+- Everything else is the same: the hard rules, the routine and block handling.
 
 ## The routine
 
