@@ -6,7 +6,10 @@
 #
 default: &default
   adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # Puma's threads plus Solid Queue's, which share Puma's process in async
+  # mode (config/puma.rb): 3 job threads, a dispatcher, a scheduler and the
+  # supervisor's heartbeat.
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 }.to_i + 6 %>
   timeout: 5000
 
 development:
