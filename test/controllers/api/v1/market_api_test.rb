@@ -110,6 +110,18 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
     assert_equal "not_holder", response.parsed_body.dig("error", "code")
   end
 
+  test "the seat numbers the reader read decide whether a Row DD listing is ours" do
+    run = start_run
+    scan = @scan.deep_dup
+    scan[:listings] << { position: 998, section: "101", row: "DD", price: 151.88, ticket_type: "verified_resale", seats: [ 6, 7 ] }
+    scan[:listings] << { position: 999, section: "101", row: "DD", price: 194.40, ticket_type: "verified_resale", seats: [ 1, 2 ] }
+    post_scan(run["id"], scan: scan)
+
+    assert_response :created
+    assert_equal [ "listed", 194.4, [ 1, 2 ] ], response.parsed_body["our_listing"].values_at("outcome", "price", "seen_seats")
+    assert_equal BigDecimal("194.4"), @game.listings.sole.ask_price
+  end
+
   test "a different scan for the same game, or the wrong night, is refused" do
     run = start_run
     post_scan(run["id"])

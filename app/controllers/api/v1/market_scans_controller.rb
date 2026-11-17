@@ -25,7 +25,8 @@ module Api
 
       def scan_params
         params.permit(:event_id, :event_url, :event_title, :event_date, :event_total_listings, :scroll_complete,
-                      :captured_at, :quantity_filter, listings: [ :position, :section, :row, :price, :ticket_type, :raw_label ])
+                      :captured_at, :quantity_filter,
+                      listings: [ :position, :section, :row, :price, :ticket_type, :raw_label, { seats: [] } ])
               .to_h
       end
     end

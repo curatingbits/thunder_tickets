@@ -11,9 +11,15 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 
 - Our seats: **Section 101, Row DD, seats 1–3** at Paycom Center. Comparables: sections **101, 102, 120**.
 - Ticketmaster's default quantity is **2**, which is what we price. Prices on the page are **all-in per ticket** (fees in, tax out). Don't change the quantity or the fee display.
-- **Our own listing.** You don't look for it separately. Any Section 101 Row DD listing you read goes up with the others, and the app records it as our listing at that price.
-  - Nothing in our row after a complete read means our seats aren't listed on Ticketmaster.
-  - Each scan's response reports this as `our_listing.outcome`: `listed`, `confirmed`, `repriced`, `not_listed`, `unclear` (two prices in our row, so the app doesn't guess), `incomplete`, or `nothing_to_sell`.
+- **Our own listing.** Our exact seats are **Section 101, Row DD, Seats 1, 2 and 3**, and only those count.
+  - The list doesn't show seat numbers, so the reader opens each Row DD listing in Section 101 and reads its panel ("You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."). Then it closes the panel.
+  - The app records our seats as listed at a price only if that listing has seats 1, 2 or 3. Someone else's Row DD seats, such as 6-7, don't count.
+  - No listing with our seats after a complete read means not listed.
+  - Each scan's response reports this as `our_listing.outcome`:
+    - `listed`, `confirmed`, `repriced` or `not_listed`;
+    - `unconfirmed`: a Row DD listing's seats couldn't be read, so nothing changed;
+    - `unclear`: our seats at two prices;
+    - `incomplete` or `nothing_to_sell`.
   - Report it; never change anything on Ticketmaster.
 - Results: https://madrtickets.com/pricing · run log: https://madrtickets.com/import_runs
 - Files in this skill folder (`~/.claude/skills/ticketmaster-pricing/`):
@@ -25,7 +31,12 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 
 ## Hard rules
 
-1. **Read only.** Never sign in, never type credentials, never click Buy, Sell, Checkout, Find Tickets with a purchase intent, or My Account. The only button you click is the "Accept & Continue" policy dialog (the reader does that).
+1. **Read only.** Never sign in, never type credentials, never click Buy, Sell, Checkout, "Reserve Tickets", Next, Find Tickets with a purchase intent, or My Account. Only the reader clicks, and only three things:
+   - the "Accept & Continue" policy dialog;
+   - in our row (Section 101, Row DD), each listing's card, to read its seat numbers;
+   - that panel's "Close Ticket Selection" button.
+
+   You don't click anything yourself.
 2. **Logged out, research profile only.** Use the connected browser named **MADR Research**. If Ticketmaster shows anyone signed in ("My Account", a first name in the header) instead of "Sign In/Register", stop and tell Duggan to sign out of Ticketmaster in that profile.
 3. **Never get past a block.** CAPTCHA, "Pardon the Interruption", "Your browsing activity has been paused", a queue or waiting room, access denied: stop the whole run. Don't retry, reload repeatedly, or switch profiles to get around it.
 4. **Never show the token.** Don't `cat` the header file, echo it, or put it anywhere but `bin/madr-api`.
@@ -72,15 +83,16 @@ If you were started with the argument `soon`, rescan only the games in the next 
 
 ### 2. Read each game (ascending date, skipping already-scanned games)
 1. Navigate the tab to the event URL from the page. Wait ~8 seconds.
-2. Run `window.__madrSections = ["101","102","120"]`, then run the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
+2. Run `window.__madrSections = ["101","102","120"]; window.__madrOurs = {section: "101", row: "DD"}` (from `our_seats` in the targets), then the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
 3. Poll `JSON.stringify({status: window.__madr?.status, read: window.__madr?.read})` every ~10 seconds, for up to 3 minutes. Each tool call must finish within 45 seconds.
 4. Act on the status:
    - **blocked**: go straight to *When Ticketmaster blocks you*.
+   - **stalled**: the list stopped loading well short of Ticketmaster's own results count (`read` of `event_total_listings`). That's Ticketmaster holding back. Post nothing for this game, and treat it as a block: go to *When Ticketmaster blocks you*.
    - **no_list**: look at the page. Sold out, no listings, or an error page means note it for this game and move on. Anything else that looks like a block is rule 3.
    - **error**: note it and move on. If 3 games end in errors, finish the run as partial.
    - **done**: tool output is cut off at around a thousand characters, so read the result in pieces.
      - Read `window.__madrMeta()` for the title, `event_total_listings` and `scroll_complete`.
-     - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`.
+     - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`. Each row is `[position, section, row, price, "R"|"S", label, seats]`; seats are filled only in our row.
      - Append each chunk, exactly as returned, as one line of `$W/rows-<game id>.txt`.
      - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` and refuses duplicated rows.
 5. `bin/madr-api POST /api/v1/import_runs/<run id>/market_scans $W/scan-<game id>.json`:
@@ -96,7 +108,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
 ## When Ticketmaster blocks you
 
 1. Stop. Post nothing more.
-2. PATCH the run with `"status": "blocked"` and a note of the page title, the game you were on, and the time. Everything already posted is kept.
+2. PATCH the run with `"status": "blocked"` and a note of the page title, the game you were on, the time, and what you saw (a block page, or the list stalling at N of M). Everything already posted is kept.
 3. `notify-send -u critical "MADR: Ticketmaster research blocked" "<n> of <m> games saved. Run again later, or add listings by hand on each game's page."`
 4. `hermes send -t telegram "MADR Ticketmaster research was blocked after <n> of <m> games. Partial results are saved: madrtickets.com/import_runs"`
 5. Don't retry this session. The app shows a "research was blocked" item on Home.

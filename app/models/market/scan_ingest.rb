@@ -85,8 +85,9 @@ module Market
         type = l[:ticket_type].presence || "verified_resale"
         raise Invalid, "listing #{i + 1} has an unknown ticket_type #{type}" unless TICKET_TYPES.include?(type)
 
+        seats = Array(l[:seats]).map(&:to_i).select(&:positive?).uniq.sort.presence
         { position: (l[:position] || i + 1).to_i, section: l[:section].to_s.strip.upcase, row: l[:row].to_s.strip.upcase.presence,
-          price: price.round(2), ticket_type: type, raw_label: l[:raw_label].to_s.first(300) }
+          price: price.round(2), ticket_type: type, raw_label: l[:raw_label].to_s.first(300) }.merge(seats ? { seats: seats } : {})
       end
     end
 

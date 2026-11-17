@@ -167,18 +167,21 @@ from Home) is the checklist: check Ticketmaster, then tap "Still listed",
 history. Nothing here changes anything on Ticketmaster.
 
 The Ticketmaster research (Mondays and Wednesdays) keeps this up to date on its
-own, from what buyers can see:
-- **A listing in our row (Section 101, Row DD):** our open seats are recorded as
-  listed at that price (all-in), or the price change is recorded.
-- **Nothing in our row after a complete read:** the seats are recorded as not
-  listed, and any Ticketmaster listing the app had ends.
-- **Two different prices in our row:** the app doesn't guess which is ours.
+own, from what buyers can see. Our seats are **Section 101, Row DD, Seats 1-3**,
+and only those count. Ticketmaster's list doesn't show seat numbers, so the
+research opens each Row DD listing and reads them ("Seats 6-7").
+- **A listing with seat 1, 2 or 3:** our open seats are recorded as listed at its
+  price (all-in), or the price change is recorded.
+- **No listing with our seats after a complete read:** the seats are recorded as
+  not listed, and any Ticketmaster listing the app had ends. Other people's Row
+  DD seats don't count.
+- **A Row DD listing whose seats couldn't be read, or our seats at two different
+  prices:** nothing changes.
 
 These changes appear in the listing history as made by the research.
 
 The research reads listings for a pair, so a listing that only sells all three
-seats together won't show. Another Row DD seat holder's listing would also look
-like ours.
+seats together won't show.
 
 Sales through Ticketmaster count as delivered when they sell; mark private
 sales **delivered** once the buyer has the tickets. Home flags undelivered
