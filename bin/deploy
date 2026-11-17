@@ -1,15 +1,90 @@
 #!/usr/bin/env bash
+# Deploys the last commit to production (madrtickets.com):
+#   1. stops if anything is uncommitted (Kamal builds the commit, not the
+#      working tree)
+#   2. backs up the production database next to it and checks the copy
+#   3. builds and pushes the image while the site is still up
+#   4. stops the app, then deploys: about 30 seconds down, because the 1 GB
+#      droplet can't run two app containers at once
+#   5. checks the site answers, the new version is the one running, and the
+#      data counts match the backup
+# If the deploy fails after the stop, it rolls back to the version that was
+# running. Takes no arguments. Claude Code is allowed to run it unprompted
+# (.claude/settings.local.json), so keep it to exactly these steps.
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-# Load environment variables from .env file
-if [ -f .env ]; then
-  echo "Loading secrets from .env file..."
-  export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
-else
-  echo "Warning: .env file not found. Secrets may not be loaded."
-  echo "Create a .env file with KAMAL_REGISTRY_PASSWORD and RESEND_API_KEY"
+# The Ruby in .ruby-version, even from a shell where rvm hasn't switched to
+# it (rvm's cd hook doesn't fire under Omarchy's cd): mise's copy.
+ruby_version=$(sed 's/^ruby-//' .ruby-version)
+if [ "$(ruby -e 'print RUBY_VERSION' 2>/dev/null)" != "$ruby_version" ]; then
+  ruby_dir=$(mise where "ruby@$ruby_version" 2>/dev/null) ||
+    { echo "Ruby $ruby_version isn't installed: mise install ruby@$ruby_version" >&2; exit 1; }
+  unset GEM_HOME GEM_PATH RUBY_VERSION MY_RUBY_HOME IRBRC
+  PATH="$ruby_dir/bin:$(tr ':' '\n' <<<"$PATH" | grep -v '/\.rvm/' | paste -sd:)"
+  export PATH
+fi
+
+if [ ! -f .env ]; then
+  echo "No .env file: create one with KAMAL_REGISTRY_PASSWORD and RESEND_API_KEY." >&2
+  exit 1
+fi
+# shellcheck disable=SC2046
+export $(grep -v '^#' .env | grep -v '^$' | xargs)
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Commit first. Kamal deploys the last commit, and these changes aren't in it:" >&2
+  git status --short >&2
   exit 1
 fi
 
-# Run kamal deploy with all arguments passed through
-echo "Running kamal deploy..."
-exec bin/kamal deploy "$@"
+version=$(git rev-parse HEAD)
+site=https://$(ruby -ryaml -e 'print YAML.load_file("config/deploy.yml").dig("proxy", "host").split(",").first')
+db=/rails/storage/production.sqlite3
+in_app() { bin/kamal app exec --reuse -q "$1" | tr -d '\r' | sed '/^$/d'; }
+counts() { in_app "sqlite3 -readonly $1 'SELECT (SELECT count(*) FROM tickets), (SELECT count(*) FROM games), (SELECT count(*) FROM users);'"; }
+
+echo "== Deploying $(git log --oneline -1) to $site"
+running=$(bin/kamal app version -q | tr -d '\r' | sed '/^$/d' | tail -1)
+echo "Running now: ${running:0:7}"
+
+echo "== Backing up the production database"
+backup="/rails/storage/production_pre-deploy-${version:0:7}_$(date -u +%Y%m%d-%H%M%S).sqlite3"
+in_app "sqlite3 $db '.backup $backup'"
+if [ "$(in_app "sqlite3 -readonly $backup 'PRAGMA integrity_check;'")" != "ok" ]; then
+  echo "The backup failed its integrity check. Not deploying." >&2
+  exit 1
+fi
+before=$(counts "$backup")
+echo "Backed up to $backup (sales|games|users: $before)"
+
+echo "== Building and pushing the image (the site stays up)"
+bin/kamal build push
+
+echo "== Stopping the app and deploying (about 30 seconds down)"
+bin/kamal app stop
+if ! bin/kamal deploy --skip-push; then
+  echo "!! The deploy failed. Rolling back to ${running:0:7}." >&2
+  bin/kamal rollback "$running"
+  exit 1
+fi
+
+echo "== Checking the site"
+problems=()
+for path in /up /login; do
+  code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 3 --retry-all-errors -f "$site$path" || true)
+  echo "$path: $code"
+  [ "$code" = 200 ] || problems+=("$path answered $code")
+done
+deployed=$(bin/kamal app version -q | tr -d '\r' | sed '/^$/d' | tail -1)
+[ "$deployed" = "$version" ] || problems+=("running ${deployed:0:7}, not ${version:0:7}")
+after=$(counts "$db")
+echo "Data (sales|games|users): $after, backup $before"
+[ "$after" = "$before" ] || echo "Note: the counts changed since the backup. Was something entered during the deploy?"
+
+if [ ${#problems[@]} -gt 0 ]; then
+  printf '!! %s\n' "${problems[@]}" >&2
+  echo "To go back: bin/kamal rollback $running" >&2
+  exit 1
+fi
+echo "== Deployed ${version:0:7}. The site is up."
