@@ -1,4 +1,8 @@
 <% content_for :title, "Pricing · MADR TICKETS" %>
+<%# No hover prefetching here: the seat map's switch and 3D buttons save a
+    setting when followed, so they mustn't run just because the pointer
+    passed over them, and a prefetch racing the 3D view could drop a click. %>
+<% content_for :head, tag.meta(name: "turbo-prefetch", content: "false") %>
 
 <div class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -59,14 +63,11 @@
             <% snap = row.snapshot %>
             <tr data-pricing-game="<%= row.game.id %>">
               <td class="whitespace-nowrap">
-                <%= link_to row.game.opponent.name, game_path(row.game), class: "text-content-strong font-medium hover:text-accent" %>
-                <div class="text-xs text-muted">
-                  <%= game_when(row.game) %>
-                  <% if @map && snap %>
-                    · <%= link_to "Map", pricing_path(map: "on", game_id: row.game.id, filter: (@filter unless @filter == PricingController::DEFAULT_FILTER)),
-                            class: "text-accent hover:brightness-125", data: { turbo_frame: PricingController::SEAT_MAP_FRAME, seat_map_game_link: row.game.id } %>
-                  <% end %>
+                <div class="flex items-center gap-2">
+                  <%= link_to row.game.opponent.name, game_path(row.game), class: "text-content-strong font-medium hover:text-accent" %>
+                  <%= seat_map_button(row.game, map_on: @map, current: @map && @map_game == row.game, filter: map_filter) if snap %>
                 </div>
+                <div class="text-xs text-muted"><%= game_when(row.game) %></div>
               </td>
               <td><%= listing_status_chip(row.status) %></td>
               <td class="num figure"><%= row.our_all_in ? dollars(row.our_all_in) : "—" %></td>
@@ -99,7 +100,7 @@
     <ul class="space-y-3 lg:hidden">
       <% @rows.each do |row| %>
         <% snap = row.snapshot %>
-        <li>
+        <li class="relative">
           <%= link_to game_path(row.game), class: "card block hover:border-accent transition-colors", data: { pricing_game: row.game.id } do %>
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
@@ -122,11 +123,15 @@
                 <p class="font-semibold text-content-strong figure"><%= dollars(snap&.recommended_list_price) %></p>
               </div>
             </div>
-            <div class="flex flex-wrap gap-1.5 mt-3">
+            <div class="flex flex-wrap gap-1.5 mt-3 <%= "pr-16" if snap %>">
               <%= listing_status_chip(row.status) %>
               <%= confidence_chip(row.confidence) if snap %>
               <%= freshness_chip(snap) %>
             </div>
+          <% end %>
+          <%# Beside the card's link, not in it: a link can't hold another. %>
+          <% if snap %>
+            <div class="absolute bottom-4 right-4"><%= seat_map_button(row.game, map_on: @map, current: @map && @map_game == row.game, filter: map_filter) %></div>
           <% end %>
         </li>
       <% end %>

@@ -90,6 +90,23 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "<html", response.body
   end
 
+  test "each game with market data has a 3D button that opens it on the seat map" do
+    get pricing_path
+    href = pricing_path(map: "on", game_id: @game.id, anchor: "seat-map")
+    assert_select "a[data-seat-map-game-link='#{@game.id}'][href=?]", href, 2, "in the table and on the phone card"
+    assert_select "a[data-seat-map-game-link][data-turbo-frame]", { count: 0 }, "with the map off, a page visit switches it on"
+
+    get pricing_path(map: "on")
+    assert_select "a[data-seat-map-game-link='#{@game.id}'][data-turbo-frame='seat_map_listings'][aria-current='true']", 2
+  end
+
+  test "hovering never changes the remembered map setting" do
+    get pricing_path(map: "on"), headers: { "X-Sec-Purpose" => "prefetch" }
+    get pricing_path
+    assert_select "#seat-map", { count: 0 }, "a prefetch didn't switch the map on"
+    assert_select "meta[name='turbo-prefetch'][content='false']"
+  end
+
   test "three.js is pinned for the seat map but never preloaded" do
     get pricing_path(map: "on")
 

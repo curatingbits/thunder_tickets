@@ -44,6 +44,23 @@ module PricingHelper
     contiguous ? "Seats #{seats.first}–#{seats.last}" : "Seats #{seats.join(', ')}"
   end
 
+  # The 3D button on a game in the board: opens that game on the seat map,
+  # switching the map on first when it's off. With the map already on it
+  # only swaps the map's frame (seat_map_controller.js scrolls up to it);
+  # the game on the map is marked current.
+  def seat_map_button(game, map_on:, current:, filter: nil)
+    data = { seat_map_game_link: game.id }
+    data[:turbo_frame] = PricingController::SEAT_MAP_FRAME if map_on
+    link_to pricing_path(map: "on", game_id: game.id, filter: filter, anchor: "seat-map"),
+            data: data, title: "Show on the 3D seat map",
+            aria: { label: "Show #{seat_map_game_label(game)} on the 3D seat map", current: ("true" if current) },
+            class: "inline-flex min-h-8 items-center gap-1 rounded-md border border-subtle px-2 text-xs font-semibold " \
+                   "text-content-dim hover:border-accent hover:text-accent aria-[current=true]:border-accent " \
+                   "aria-[current=true]:bg-accent/15 aria-[current=true]:text-accent" do
+      safe_join([ icon(:cube, "h-4 w-4"), "3D" ])
+    end
+  end
+
   # "Sun, Dec 13 · Toronto Raptors"
   def seat_map_game_label(game)
     "#{game.game_date.strftime('%a, %b %-d')} · #{game.opponent.name}"

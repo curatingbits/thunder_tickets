@@ -32,9 +32,14 @@ class PricingController < ApplicationController
 
   private
 
-  # The 3D seat map switch: ?map=on|off, remembered on this device.
+  # The board's filter, carried into the seat map's links (the default stays out of the address).
+  def map_filter = (@filter unless @filter == DEFAULT_FILTER)
+  helper_method :map_filter
+
+  # The 3D seat map switch: ?map=on|off, remembered on this device. A
+  # prefetch (Turbo on hover) never changes what's remembered.
   def map_on?
-    if %w[on off].include?(params[:map])
+    if %w[on off].include?(params[:map]) && request.headers["X-Sec-Purpose"] != "prefetch"
       cookies.permanent[:pricing_map] = { value: params[:map], httponly: true, same_site: :lax }
     end
     (params[:map].presence_in(%w[on off]) || cookies[:pricing_map]) == "on"

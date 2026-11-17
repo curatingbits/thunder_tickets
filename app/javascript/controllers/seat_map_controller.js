@@ -62,6 +62,7 @@ export default class extends Controller {
     this.selected = []
     if (this.hasStatusTarget) this.statusTarget.textContent = ""
     this.paintSwatches()
+    this.markGame()
     this.viewer?.setData(this.gameData)
     if (this.viewer) this.showControls(true)
     if (this.generation != null && !this.viewer) this.start()
@@ -175,6 +176,14 @@ export default class extends Controller {
   frameLoaded() {
     if (this.element.getBoundingClientRect().top < 0) {
       this.element.scrollIntoView({ behavior: this.reducedMotion.matches ? "auto" : "smooth", block: "start" })
+    }
+  }
+
+  // The board's 3D buttons sit outside the frame: the one for the game on the map is current.
+  markGame() {
+    for (const link of document.querySelectorAll("[data-seat-map-game-link]")) {
+      if (link.dataset.seatMapGameLink === String(this.gameData.game)) link.setAttribute("aria-current", "true")
+      else link.removeAttribute("aria-current")
     }
   }
 

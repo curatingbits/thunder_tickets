@@ -91,6 +91,25 @@ class SeatMapTest < ApplicationSystemTestCase
     assert_equal 0, page.evaluate_script("window.__seatMapCount")
   end
 
+  test "a game's 3D button switches the map on and opens it to that game" do
+    sign_in_via_form
+    visit pricing_path
+    page.execute_script("document.querySelector('tr[data-pricing-game]').scrollIntoView({ block: 'center' })")
+    screenshot("board")
+    within("tr[data-pricing-game='#{@other.id}']") { click_on "3D" }
+
+    assert_map_ready
+    assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
+    assert_selector "tr[data-pricing-game='#{@other.id}'] a[data-seat-map-game-link][aria-current='true']"
+
+    within("tr[data-pricing-game='#{@game.id}']") { click_on "3D" }
+    assert_selector "#seat-map-game option[selected][value='#{@game.id}']"
+    assert_selector "tr[data-pricing-game='#{@game.id}'] a[data-seat-map-game-link][aria-current='true']"
+    assert_selector "tr[data-pricing-game='#{@other.id}'] a[data-seat-map-game-link]:not([aria-current])"
+    assert_map_ready
+    assert_equal 1, page.evaluate_script("window.__seatMapCount"), "the same 3D view, not a second one"
+  end
+
   test "without the switch nothing 3D loads" do
     sign_in_via_form
     visit pricing_path
@@ -104,6 +123,18 @@ class SeatMapMobileTest < MobileSystemTestCase
   include SeatMapSetup
 
   setup { build_games }
+
+  test "on a phone a game card's 3D button opens that game on the map" do
+    sign_in_via_form
+    visit pricing_path
+    page.execute_script("document.querySelector('li.relative').scrollIntoView({ block: 'center' })")
+    screenshot("phone_cards")
+    find("a[data-seat-map-game-link='#{@other.id}']").click
+
+    assert_map_ready
+    assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
+    screenshot("phone_button")
+  end
 
   test "on a phone the 3D view fits under the page head and the list follows it" do
     sign_in_via_form
