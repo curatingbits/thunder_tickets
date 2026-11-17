@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Talks to the MADR Tickets API with the saved workstation token.
+#
+#   madr-api GET   /api/v1/research_targets
+#   madr-api POST  /api/v1/import_runs           body.json
+#   madr-api PATCH /api/v1/import_runs/12        body.json
+#
+# The token lives only in a chmod-600 header file (one line:
+# "Authorization: Bearer madr_..."), passed to curl with -H @file, so it never
+# appears on a command line, in a transcript, or in the browser.
+#   MADR_API_BASE    defaults to https://madrtickets.com (http://localhost:3000 to rehearse)
+#   MADR_API_HEADER  defaults to ~/.config/madrtickets/market-research.header
+set -euo pipefail
+
+method=${1:?usage: madr-api METHOD PATH [BODY_FILE]}
+path=${2:?usage: madr-api METHOD PATH [BODY_FILE]}
+body=${3:-}
+base=${MADR_API_BASE:-https://madrtickets.com}
+header=${MADR_API_HEADER:-$HOME/.config/madrtickets/market-research.header}
+
+if [[ ! -r $header ]]; then
+  echo "madr-api: no token header at $header (see the skill's Setup section)" >&2
+  exit 2
+fi
+if [[ $(stat -c %a "$header") != 600 ]]; then
+  echo "madr-api: $header should be chmod 600" >&2
+  exit 2
+fi
+
+args=(--silent --show-error --fail-with-body --max-time 90 -X "$method" -H @"$header" -H "Accept: application/json")
+if [[ -n $body ]]; then
+  args+=(-H "Content-Type: application/json" --data-binary @"$body")
+fi
+exec curl "${args[@]}" "$base$path"

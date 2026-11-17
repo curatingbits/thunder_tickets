@@ -1,0 +1,8 @@
+# Telegram alert when a MADR automation unit fails to launch (OnFailure).
+# The skills report their own problems (blocked runs etc.) the same way.
+[Unit]
+Description=MADR Tickets - alert that %i failed
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/hermes send -t telegram "MADR automation %i failed to start. Details: journalctl --user -u %i"

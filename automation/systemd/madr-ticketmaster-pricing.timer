@@ -1,0 +1,12 @@
+# Proposed: Monday 6:30am Central, a few minutes' jitter. Finalize after a
+# supervised run, then: systemctl --user enable --now madr-ticketmaster-pricing.timer
+[Unit]
+Description=MADR Tickets - weekly Ticketmaster pricing research
+
+[Timer]
+OnCalendar=Mon *-*-* 06:30:00 America/Chicago
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

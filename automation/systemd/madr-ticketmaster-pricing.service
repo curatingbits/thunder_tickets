@@ -1,0 +1,14 @@
+# Weekly Ticketmaster pricing research for MADR Tickets. Same shape as the
+# fantasy-football units: open the research browser profile, then launch an
+# interactive Claude window running the skill in its own transient unit (so
+# a window left open doesn't keep this oneshot "running" and skip next week).
+[Unit]
+Description=MADR Tickets - weekly Ticketmaster pricing research
+OnFailure=madr-automation-alert@%n.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/madrtickets/research.env
+ExecStartPre=/usr/bin/systemd-run --user --quiet --collect /usr/bin/chromium --profile-directory=${MADR_RESEARCH_PROFILE}
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/systemd-run --user --quiet --collect --working-directory=%h/Repositories/Agents/thunder_tickets /usr/bin/alacritty --title "MADR - Ticketmaster pricing" --working-directory %h/Repositories/Agents/thunder_tickets -e %h/.local/share/mise/shims/claude "/ticketmaster-pricing"
