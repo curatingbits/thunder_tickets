@@ -37,6 +37,15 @@ class ExtractListingsTest < ApplicationSystemTestCase
     assert_no_selector "#panel"
   end
 
+  test "finds the quantity button by its text when it has no aria-label" do
+    meta = read_page("?label=text&start=3")
+
+    assert_equal [ "done", 12, 11 ], meta.values_at("status", "event_total_listings", "kept")
+    check = meta["quantity_check"]
+    assert_equal [ 3, true ], check.values_at("quantity", "complete")
+    assert_equal [ [ 309.83, [ 1, 2, 3 ] ] ], check["listings"].map { |l| l.values_at("price", "seats") }
+  end
+
   test "with two open seats, the pair view is the only look needed" do
     meta = read_page(our_quantity: 2)
 

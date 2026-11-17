@@ -48,12 +48,14 @@
     return match ? parseInt(match[1].replace(/,/g, ""), 10) : null
   }
 
-  // "Open quantity filters, current quantity: 2 Tickets"
+  // "Open quantity filters, current quantity: 2 Tickets": the button's
+  // aria-label, or its text (Ticketmaster moved it there on 2026-11-16).
+  const quantityLabel = (b) => (b?.getAttribute("aria-label") || b?.textContent || "").trim()
   const quantityButton = () => [ ...document.querySelectorAll("button") ]
-    .find((b) => /^Open quantity filters/i.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0)
+    .find((b) => /^Open quantity filters/i.test(quantityLabel(b)) && b.getBoundingClientRect().width > 0)
 
   const currentQuantity = () => {
-    const match = (quantityButton()?.getAttribute("aria-label") || "").match(/current quantity:\s*(\d+)/i)
+    const match = quantityLabel(quantityButton()).match(/current quantity:\s*(\d+)/i)
     return match ? Number(match[1]) : null
   }
 

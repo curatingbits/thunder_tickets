@@ -8,7 +8,9 @@
 <body>
   <!-- A stand-in for a Ticketmaster event page: just the parts
        automation/skills/ticketmaster-pricing/extract_listings.js relies on.
-       ?stall=4 stops loading after 4 listings; ?start=3 opens at 3 tickets. -->
+       ?stall=4 stops loading after 4 listings; ?start=3 opens at 3 tickets;
+       ?label=text labels the quantity button in its text, not aria-label
+       (Ticketmaster's markup since 2026-11-16). -->
   <button id="quantity" aria-label="">2 Tickets</button>
   <div id="menu" hidden>
     <h3>Quantity</h3>
@@ -37,8 +39,13 @@
 
     const render = () => {
       const all = lists[quantity] || []
-      button.setAttribute("aria-label", `Open quantity filters, current quantity: ${quantity} Tickets`)
-      button.textContent = `${quantity} Tickets`
+      if (params.get("label") === "text") {
+        button.removeAttribute("aria-label")
+        button.innerHTML = `<span hidden-text>Open quantity filters, current quantity: </span><span>${quantity} Tickets</span>`
+      } else {
+        button.setAttribute("aria-label", `Open quantity filters, current quantity: ${quantity} Tickets`)
+        button.textContent = `${quantity} Tickets`
+      }
       document.getElementById("count").textContent = `${all.length} Results`
       list.innerHTML = ""
       shown = 0
