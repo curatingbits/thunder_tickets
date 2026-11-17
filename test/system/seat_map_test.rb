@@ -94,9 +94,6 @@ class SeatMapTest < ApplicationSystemTestCase
     select "Wed, Dec 16 · #{@other.opponent.name}", from: "seat-map-game"
     assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
     assert_current_path(/game_id=#{@other.id}/)
-    # Turbo moves the address on with a visit of its own; clicking away before it ends can lose the click.
-    assert_no_selector "html[aria-busy]"
-    assert_no_selector "turbo-frame[aria-busy]"
     assert_selector "[data-seat-map-target='item']", count: @other.market_snapshots.sole.observations.count
     assert_map_ready
     assert_equal 1, page.evaluate_script("window.__seatMapCount"), "the same 3D view, not a second one"

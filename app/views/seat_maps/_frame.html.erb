@@ -2,7 +2,7 @@
     The 3D stage survives the swap (data-turbo-permanent), so it isn't rebuilt.
     The list is the real control: every listing is a button, and the 3D view
     follows it (seat_map_controller.js). It works without the 3D view too. %>
-<%= turbo_frame_tag SeatMapsController::FRAME, data: { turbo_action: "advance" } do %>
+<%= turbo_frame_tag SeatMapsController::FRAME do %>
   <% if @seat_map %>
     <% snap = @seat_map.snapshot %>
     <% ours = @seat_map.ours %>

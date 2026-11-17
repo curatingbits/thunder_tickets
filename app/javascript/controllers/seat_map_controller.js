@@ -1,10 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 // The seat map page (seat_maps/show, opened from a game's 3D button on Pricing). The list of listings is the real
-// control and works on its own; the 3D
-// view (arena3d/viewer, loaded here by a dynamic import so no other page pays for three.js) follows it, and a tap on a
-// seat picks the matching listings in the list. Choosing a game swaps a frame inside this element; the 3D stage is
-// data-turbo-permanent, so the same view takes the new game's data instead of being rebuilt.
+// control and works on its own; the 3D view (arena3d/viewer, loaded here by a dynamic import so no other page pays for
+// three.js) follows it, and a tap on a seat picks the matching listings in the list. Choosing a game swaps a frame
+// inside this element; the 3D stage is data-turbo-permanent, so the same view takes the new game's data instead of
+// being rebuilt.
 //
 // As with Invintory's 3D fridge, the WebGL context is let go whenever the page isn't on screen and made again when it's
 // back, Turbo's preview of a cached page never starts one, and without WebGL the list carries on alone with a note.
@@ -18,14 +18,23 @@ export default class extends Controller {
     this.selected ||= []
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
     this.scheme = window.matchMedia("(prefers-color-scheme: light)")
-    // Choosing a game swaps a frame and moves the address on (data-turbo-action="advance"), which caches the page as
-    // if leaving it. The 3D view stays through that; it goes when a visit leaves this page.
+    // A visit to this same page (from the nav, say) renders it afresh, and the controller that comes with it starts
+    // its own view; any other visit leaves the page, and the 3D view goes with it.
     this.listen(document, "turbo:visit", (event) => {
       this.staying = new URL(event.detail.url, location.href).pathname === location.pathname
     })
     this.listen(document, "turbo:before-cache", () => {
       if (!this.staying) this.stop()
       this.staying = false
+    })
+    // Choosing a game loads a plain frame; the address follows it by replaceState rather than Turbo's
+    // data-turbo-action="advance", whose page visit raced a quick click on the nav and lost it (seen in the system
+    // tests). Turbo's history state is kept, so Back still works.
+    this.listen(this.element, "turbo:frame-load", (event) => {
+      const src = event.target.getAttribute("src")
+      if (!src) return
+      const url = new URL(src, location.href)
+      if (url.href !== location.href) history.replaceState(history.state, "", url.pathname + url.search)
     })
     this.listen(document, "visibilitychange", () => {
       if (document.visibilityState === "visible") this.start()
