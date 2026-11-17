@@ -1,0 +1,48 @@
+<%# Q1 "what are our tickets worth" and Q2/Q3 "what to list at / too high or
+    low", as two tiles. Shared by Home and the Pricing page. %>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" data-pricing-tiles>
+  <div class="card">
+    <p class="section-label">What our unsold seats are worth</p>
+    <% if value.games_covered.positive? %>
+      <p class="text-3xl font-bold text-content-strong figure mt-1"><%= dollars(value.all_in) %></p>
+      <p class="text-sm text-content-dim mt-1">
+        all-in at today's market · about <span class="text-content figure"><%= dollars(value.list) %></span> in list prices
+        <% if value.payout %>
+          · about <span class="text-content figure"><%= dollars(value.payout) %></span> paid out (<%= value.payout_source %>)
+        <% end %>
+      </p>
+      <p class="text-xs text-muted mt-2">
+        <%= pluralize(value.seats_covered, "seat") %> in <%= pluralize(value.games_covered, "game") %>
+        <% if (missing = value.games_open - value.games_covered).positive? %>
+          · <%= pluralize(missing, "game") %> without market data <%= missing == 1 ? "isn't" : "aren't" %> counted
+        <% end %>
+        <% if value.low_confidence.positive? %>
+          · <%= value.low_confidence %> low-confidence
+        <% end %>
+        <% if value.oldest_captured_at %>
+          · oldest scan <%= time_ago_in_words(value.oldest_captured_at) %> ago
+        <% end %>
+      </p>
+    <% else %>
+      <p class="text-sm text-content-dim mt-2">No market data yet. The weekly Ticketmaster research fills this in, or add a game's listings by hand from its page.</p>
+    <% end %>
+  </div>
+
+  <div class="card">
+    <p class="section-label">Our prices vs the market</p>
+    <% if counts.any? %>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <% [ [ "overpriced", "overpriced" ], [ "underpriced", "underpriced" ], [ "competitive", nil ],
+             [ "not_listed", "not_listed" ], [ "needs_verification", "verify" ], [ "insufficient_data", nil ], [ "no_data", nil ] ].each do |assessment, filter| %>
+          <% next unless counts[assessment].to_i.positive? %>
+          <%= link_to (filter ? pricing_path(filter: filter) : pricing_path), class: "inline-flex items-center gap-1.5" do %>
+            <%= assessment_chip(assessment) %><span class="text-sm font-semibold text-content-strong figure"><%= counts[assessment] %></span>
+          <% end %>
+        <% end %>
+      </div>
+      <p class="text-xs text-muted mt-3">Advisory only. Nothing here changes a Ticketmaster listing.</p>
+    <% else %>
+      <p class="text-sm text-content-dim mt-2">Nothing to sell right now.</p>
+    <% end %>
+  </div>
+</div>

@@ -28,21 +28,27 @@ class AppSetting < ApplicationRecord
   validates :key, presence: true, uniqueness: true, inclusion: { in: DEFINITIONS.keys }
 
   def self.get(key)
-    definition = DEFINITIONS.fetch(key)
-    raw = stored_values[key]
-    raw.nil? ? definition.default : cast(definition, raw)
+    values.fetch(key)
+  end
+
+  # Every setting with defaults filled in, from one small query. Not cached:
+  # callers that need several (Market::Settings) read this once.
+  def self.values
+    stored = stored_values
+    DEFINITIONS.transform_values do |definition|
+      raw = stored[definition.key]
+      raw.nil? ? definition.default : cast(definition, raw)
+    end
   end
 
   def self.set(key, value, user: nil)
     definition = DEFINITIONS.fetch(key)
     setting = find_or_initialize_by(key: key)
     setting.update!(value: value.to_s.strip.presence && cast(definition, value).to_s, updated_by: user)
-    Current.app_settings = nil
   end
 
-  # Every stored value in one query, cached for the request.
   def self.stored_values
-    Current.app_settings ||= pluck(:key, :value).to_h
+    pluck(:key, :value).to_h
   end
 
   def self.cast(definition, value)

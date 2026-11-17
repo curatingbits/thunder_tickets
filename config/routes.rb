@@ -47,7 +47,13 @@ Rails.application.routes.draw do
         post :verify_unlisted
       end
     end
+    # Hand-entered market data, for when automated research can't run.
+    resources :manual_scans, only: [ :new, :create ]
   end
+
+  # Market value and recommended prices; research run log.
+  get "pricing", to: "pricing#index", as: :pricing
+  resources :import_runs, only: [ :index, :show ]
 
   # Weekly checklist: confirm what's listed, and at what price.
   resource :listing_review, only: :show
@@ -58,6 +64,8 @@ Rails.application.routes.draw do
   # Season settings
   get "settings", to: "seasons#edit", as: :settings
   patch "settings", to: "seasons#update"
+  patch "settings/pricing", to: "app_settings#update", as: :pricing_settings
+  resources :api_tokens, only: [ :destroy ]
 
   # JSON API for the workstation skills (bearer tokens; see Api::V1::BaseController).
   namespace :api do

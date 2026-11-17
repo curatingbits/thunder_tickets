@@ -1,56 +1,74 @@
-<div class="max-w-2xl mx-auto">
-  <!-- Header -->
-  <div class="mb-6">
+<% content_for :title, "Settings · MADR TICKETS" %>
+
+<div class="max-w-2xl mx-auto space-y-6">
+  <div>
     <h1 class="text-2xl sm:text-3xl font-bold text-content-strong">Settings</h1>
-    <p class="text-content-dim mt-2">Configure your season ticket preferences</p>
+    <p class="text-content-dim mt-2"><%= @season.year %> season · <%= pluralize(@season.num_seats, "seat") %></p>
   </div>
 
-  <!-- Settings Form -->
   <div class="card">
-    <%= form_with model: @season, url: settings_path, method: :patch, class: "space-y-6" do |f| %>
-      <!-- Season Info -->
-      <div class="bg-surface-raised border border-subtle rounded-lg p-4">
-        <h3 class="text-sm font-medium text-content mb-3">Current Season</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <span class="text-content-dim">Year:</span>
-            <span class="ml-2 text-content-strong font-semibold"><%= @season.year %></span>
-          </div>
-          <div>
-            <span class="text-content-dim">Number of Seats:</span>
-            <span class="ml-2 text-content-strong font-semibold"><%= @season.num_seats %></span>
-          </div>
+    <h2 class="text-lg font-bold text-content-strong mb-4">Our seats</h2>
+    <%= form_with model: @season, url: settings_path, method: :patch, class: "space-y-4" do |f| %>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <%= f.label :seat_section, "Section", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.text_field :seat_section, class: "input-field" %>
+        </div>
+        <div>
+          <%= f.label :seat_row, "Row", class: "block text-sm font-medium text-content mb-2" %>
+          <%= f.text_field :seat_row, class: "input-field" %>
         </div>
       </div>
+      <p class="text-sm text-muted">Used on new sales and to find comparable listings.</p>
+      <%= f.submit "Save seats", class: "btn-primary w-full sm:w-auto" %>
+    <% end %>
+  </div>
 
-      <!-- Seat Section -->
-      <div>
-        <%= f.label :seat_section, "Seat Section", class: "block text-sm font-medium text-content mb-2" %>
-        <%= f.text_field :seat_section, class: "input-field", placeholder: "e.g., 115, 220, 330", autofocus: true %>
-        <% if @season.errors[:seat_section].any? %>
-          <p class="mt-1 text-sm text-negative"><%= @season.errors[:seat_section].first %></p>
+  <div class="card">
+    <h2 class="text-lg font-bold text-content-strong mb-1">Pricing</h2>
+    <p class="text-sm text-muted mb-4">Leave a field blank to use its default.</p>
+    <%= form_with url: pricing_settings_path, method: :patch, class: "space-y-4" do |f| %>
+      <% AppSetting::DEFINITIONS.each_value do |definition| %>
+        <% stored = AppSetting.stored_values[definition.key] %>
+        <div>
+          <%= label_tag "settings_#{definition.key.parameterize(separator: "_")}", definition.label, class: "block text-sm font-medium text-content mb-2" %>
+          <%= text_field_tag "settings[#{definition.key}]", stored, id: "settings_#{definition.key.parameterize(separator: "_")}",
+                             class: "input-field", inputmode: (definition.type == :string ? "text" : "decimal"),
+                             placeholder: definition.default.nil? ? "unknown" : "default #{definition.default.is_a?(BigDecimal) ? definition.default.to_s("F") : definition.default}" %>
+          <% if definition.help %><p class="mt-1 text-xs text-muted"><%= definition.help %></p><% end %>
+        </div>
+      <% end %>
+      <%= f.submit "Save pricing settings", class: "btn-primary w-full sm:w-auto" %>
+    <% end %>
+  </div>
+
+  <div class="card">
+    <h2 class="text-lg font-bold text-content-strong mb-1">Workstation access</h2>
+    <p class="text-sm text-muted mb-4">
+      Tokens the weekly skills use to send results here. Create one with
+      <code class="text-content">bin/rails api_tokens:create</code>; it's shown once, there, and never on this page.
+    </p>
+    <% if @tokens.any? %>
+      <ul class="divide-y divide-subtle">
+        <% @tokens.each do |token| %>
+          <li class="py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-medium text-content-strong"><%= token.name %> <span class="text-xs text-muted font-mono"><%= token.token_prefix %>…</span></p>
+              <p class="text-xs text-muted">
+                <%= token.scope_list.join(", ") %> ·
+                <%= token.last_used_at ? "used #{time_ago_in_words(token.last_used_at)} ago" : "never used" %>
+                <%= " · revoked #{token.revoked_at.to_date}" if token.revoked_at %>
+              </p>
+            </div>
+            <% unless token.revoked_at %>
+              <%= button_to "Revoke", api_token_path(token), method: :delete, class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]",
+                    form: { data: { turbo_confirm: "Revoke #{token.name}? The skill using it will stop working." } } %>
+            <% end %>
+          </li>
         <% end %>
-        <p class="mt-1 text-sm text-muted">Enter your seat section number for reference and future features</p>
-      </div>
-
-      <!-- Info -->
-      <div class="bg-accent/10 border border-accent/40 rounded-lg p-4">
-        <div class="flex items-start gap-3">
-          <svg class="h-5 w-5 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <div class="text-sm text-accent">
-            <p class="font-medium mb-1">Seat Section Configuration</p>
-            <p class="text-accent">Your seat section is saved for reference and could be used for future pricing or analytics features.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-subtle">
-        <%= f.submit "Save Settings", class: "btn-primary w-full sm:w-auto" %>
-        <%= link_to "Cancel", root_path, class: "btn-secondary w-full sm:w-auto text-center" %>
-      </div>
+      </ul>
+    <% else %>
+      <p class="text-sm text-content-dim">No tokens yet.</p>
     <% end %>
   </div>
 </div>

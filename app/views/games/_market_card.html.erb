@@ -1,0 +1,102 @@
+<%# What Ticketmaster's market says about this game's seats (latest research). %>
+<% snap = game.market_snapshots.valid.latest_first.first %>
+<% status = game.listing_status %>
+<div class="card space-y-4" data-market-card>
+  <div>
+    <h2 class="text-lg font-bold text-content-strong">Market</h2>
+    <p class="text-sm text-content-dim mt-0.5">Ticketmaster, sections 101, 102 and 120, priced for pairs.</p>
+    <div class="flex flex-wrap gap-1.5 mt-2">
+      <%= freshness_chip(snap) %>
+      <%= confidence_chip(snap.confidence_now) if snap %>
+    </div>
+  </div>
+
+  <% if snap.nil? %>
+    <p class="text-sm text-content-dim">No market data yet. The weekly research fills this in.</p>
+  <% elsif snap.insufficient? %>
+    <p class="text-sm text-content-dim">Not enough listings near our seats to price them (<%= pluralize(snap.section_count, "listing") %> in section 101).</p>
+  <% else %>
+    <% m = snap.buyer_fee_multiplier %>
+    <% ours = Market::Assessment.our_all_in(status, m.to_f) %>
+    <% assessment = Market::Assessment.call(listing_status: status, our_all_in: ours, market_value: snap.market_value.to_f,
+                                            confidence: snap.confidence_now, settings: Market::Settings.for(game.season)) %>
+
+    <%# Price band: competitive, market, premium, all-in per ticket. %>
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <% { "competitive" => snap.competitive_price, "market" => snap.market_value, "premium" => snap.premium_price }.each do |strategy, price| %>
+        <div class="rounded-lg p-3 border <%= snap.recommended_strategy == strategy ? "border-accent bg-accent/10" : "border-subtle bg-canvas" %>"
+             data-price="<%= strategy %>">
+          <p class="text-xs text-muted"><%= strategy_label(strategy) %></p>
+          <p class="text-lg font-bold text-content-strong figure"><%= dollars(price) %></p>
+          <p class="text-xs text-content-dim figure"><%= dollars(price / m) %> list</p>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="rounded-lg p-4 bg-canvas border border-subtle">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-sm text-content-dim">Recommended</p>
+          <p class="text-xl font-bold text-content-strong">
+            List at <span class="figure"><%= dollars(snap.recommended_list_price) %></span>
+            <span class="text-sm font-medium text-content-dim">(<%= strategy_label(snap.recommended_strategy).downcase %>)</span>
+          </p>
+        </div>
+        <%= assessment_chip(assessment) %>
+      </div>
+      <% if ours %>
+        <p class="text-sm text-content mt-2">
+          Ours: <span class="figure font-semibold"><%= dollars(ours) %></span> all-in,
+          <%= ((ours / snap.market_value.to_f - 1) * 100).round.then { |pct| pct.zero? ? "right at market" : "#{pct.abs}% #{pct.positive? ? "above" : "below"} market" } %>.
+        </p>
+      <% end %>
+      <ul class="mt-3 space-y-1 text-sm text-content-dim list-disc pl-5">
+        <% snap.rationale.each do |line| %>
+          <li><%= line %></li>
+        <% end %>
+      </ul>
+    </div>
+
+    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dt class="text-muted">Section 101 asks</dt>
+      <dd class="text-content figure"><%= snap.section_count %> · <%= dollars(snap.section_min) %>–<%= dollars(snap.section_max) %>, median <%= dollars(snap.section_median) %></dd>
+      <dt class="text-muted">Comparables</dt>
+      <dd class="text-content"><%= snap.tier1_count %> our row · <%= snap.tier2_count %> nearby rows · <%= snap.tier3_count %> next door</dd>
+      <% if snap.market_value_change_pct %>
+        <dt class="text-muted">Since last scan</dt>
+        <dd class="text-content figure"><%= snap.market_value_change_pct.positive? ? "+" : "" %><%= snap.market_value_change_pct.round(1) %>%</dd>
+      <% end %>
+      <% if snap.primary_min_price %>
+        <dt class="text-muted">Team's own seats</dt>
+        <dd class="text-content figure">from <%= dollars(snap.primary_min_price) %></dd>
+      <% end %>
+      <dt class="text-muted">Buyer fees</dt>
+      <dd class="text-content">
+        all-in = list × <%= m.round(3) %>
+        <%= snap.fee_verified ? "(confirmed in #{(snap.fee_evidence_share.to_f * 100).round}% of prices)" : "(not confirmed this scan)" %>
+      </dd>
+    </dl>
+
+    <details class="text-sm">
+      <summary class="cursor-pointer text-accent">All <%= snap.captured_count %> listings read</summary>
+      <table class="data-table mt-2">
+        <thead><tr><th scope="col">Where</th><th scope="col" class="num">Price</th><th scope="col">Used as</th></tr></thead>
+        <tbody>
+          <% snap.observations.sort_by { |o| [ o.tier || 9, o.price ] }.each do |o| %>
+            <tr>
+              <td class="whitespace-nowrap">Sec <%= o.section %> · Row <%= o.row || "?" %></td>
+              <td class="num figure"><%= number_to_currency(o.price) %></td>
+              <td class="text-xs <%= o.kept? ? "text-content-dim" : "text-muted" %>">
+                <%= o.kept? ? (MarketObservation::TIER_LABELS[o.tier] || "context") : "set aside: #{MarketObservation::EXCLUSION_LABELS[o.excluded_reason]}" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </details>
+  <% end %>
+
+  <% if game.game_date >= Date.current %>
+    <%= link_to "Add market data by hand", new_game_manual_scan_path(game), class: "text-sm text-accent hover:brightness-125" %>
+  <% end %>
+</div>

@@ -28,8 +28,18 @@
     <%= render "attention", items: @attention %>
   <% end %>
 
-  <% if @next_games.present? %>
-    <%= render "next_games", games: @next_games, season: @season %>
+  <% if @inventory_value %>
+    <section class="space-y-3" data-dashboard-section="worth">
+      <div class="flex items-center justify-between">
+        <h2 class="section-label">Worth and pricing</h2>
+        <%= link_to "Pricing →", pricing_path, class: "text-xs text-accent hover:brightness-125" %>
+      </div>
+      <%= render "pricing/value_tiles", value: @inventory_value, counts: @pricing_counts %>
+    </section>
+  <% end %>
+
+  <% if @next_rows.present? %>
+    <%= render "next_games", rows: @next_rows %>
   <% end %>
 
   <!-- ============================== -->

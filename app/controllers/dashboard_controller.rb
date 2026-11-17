@@ -28,7 +28,10 @@ class DashboardController < ApplicationController
     # they only show while viewing it.
     if viewing_current_season?
       @attention = Attention::Feed.new(@season).items
-      @next_games = @season.games.upcoming.includes(:opponent, :tickets, :listings, :listing_events).limit(3)
+      @board = Market::Board.new(@season)
+      @inventory_value = Market::InventoryValue.from(@board.rows)
+      @pricing_counts = @board.rows.filter_map(&:assessment).tally
+      @next_rows = @board.rows.first(3)
     end
 
     # Past games, most recent first (used for the recap "Final Results" list)

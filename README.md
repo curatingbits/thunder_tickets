@@ -89,6 +89,22 @@ The main dashboard displays:
 - Click any game to view details and manage ticket sales
 - Add playoff games as they're scheduled
 
+### Pricing
+The **Pricing** tab answers what our unsold seats are worth, what to list them
+at, and whether our current asking prices are too high or low. Each upcoming
+game shows the market value on Ticketmaster (the all-in price buyers see), a
+recommended list price with its strategy (competitive / market / premium) and
+the reasons, how our confirmed listing compares, a confidence score, and how
+old the data is. Each game's page has the full breakdown, including every
+listing read and why any were set aside.
+
+Market data comes from the weekly Ticketmaster research (sections 101, 102 and
+120, priced for pairs). When that can't run, paste a game's listings on its page
+(**Add market data by hand**). Every scan is kept, so prices can be compared
+over time. Recommendations are advisory: nothing here changes a Ticketmaster
+listing. Thresholds and fee assumptions live in Settings; the seller fee is left
+unknown until it's set there or measured from sales linked to listings.
+
 ### Listings
 Record what you've listed on each game's page (**List seats**), or hold seats
 you're keeping. Each game shows a listing status: Listed, Partially sold, Not

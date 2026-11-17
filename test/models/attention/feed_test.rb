@@ -78,6 +78,45 @@ class Attention::FeedTest < ActiveSupport::TestCase
     assert_empty feed_items.select { |i| i.game == listed }
   end
 
+  def snapshot_for(game, market:, captured_at: @now - 1.day, change: nil, status: "completed")
+    run = ImportRun.create!(kind: "market_research", source: "ticketmaster_browser", key: "r-#{game.id}-#{captured_at.to_i}",
+                            status: status, started_at: captured_at)
+    MarketSnapshot.create!(import_run: run, game: game, captured_at: captured_at, days_to_game: game.days_until(captured_at.to_date),
+                           payload_digest: SecureRandom.hex, engine_version: "1", buyer_fee_multiplier: 1.215, fee_verified: true,
+                           market_value: market, competitive_price: market * 0.9, premium_price: market * 1.1,
+                           recommended_strategy: "market", recommended_list_price: (market / 1.215).round,
+                           confidence: 80, market_value_change_pct: change, section_count: 8,
+                           confidence_breakdown: { "depth" => 40, "proximity" => 15, "consistency" => 10, "anchor" => 10, "coverage" => 10 })
+  end
+
+  test "a confirmed listing well above market within two weeks needs repricing" do
+    game = game_on(@today + 10)
+    game.listings.create!(seat_numbers: [ 1, 2, 3 ], platform: "ticketmaster", ask_price: 300, verified_at: @now - 1.day)
+    snapshot_for(game, market: 250)
+
+    item = feed_items(:reprice).sole
+    assert_equal [ game, "overpriced", 2 ], [ item.game, item.assessment, item.priority ]
+  end
+
+  test "a falling market is flagged" do
+    game = game_on(@today + 12)
+    snapshot_for(game, market: 200, change: -14)
+
+    assert_equal [ game ], feed_items(:market_drop).map(&:game)
+  end
+
+  test "old market data and a blocked run are season-wide items" do
+    game = game_on(@today + 10)
+    snapshot_for(game, market: 200, captured_at: @now - 10.days)
+    assert_equal 1, feed_items(:research_stale).size
+
+    ImportRun.create!(kind: "market_research", source: "ticketmaster_browser", key: "blocked", status: "blocked",
+                      started_at: @now - 2.hours)
+    blocked = feed_items(:research_blocked).sole
+    assert_nil blocked.game
+    assert_equal :research_blocked, feed_items.first.kind
+  end
+
   test "no season, no items" do
     assert_empty Attention::Feed.new(nil).items
   end

@@ -16,7 +16,7 @@ class ListingsController < ApplicationController
     Listing.transaction do
       @listing.save!
       @listing.events.create!(game: @game, user: current_user, action: @listing.hold? ? "held" : "listed",
-                              price_after: @listing.ask_price, note: @listing.notes.presence)
+                              price_after: @listing.ask_price, note: @listing.notes.presence, **recommendation)
     end
     redirect_to @game, notice: @listing.hold? ? "Seats held." : "Listing recorded at #{price(@listing.ask_price)}."
   rescue ActiveRecord::RecordInvalid
@@ -35,7 +35,7 @@ class ListingsController < ApplicationController
     Listing.transaction do
       @listing.save!
       @listing.events.create!(game: @game, user: current_user, action: repriced ? "price_changed" : "verified",
-                              price_before: before, price_after: @listing.ask_price)
+                              price_before: before, price_after: @listing.ask_price, **recommendation)
     end
     redirect_to @game, notice: repriced ? "Price changed to #{price(@listing.ask_price)}." : "Listing updated."
   rescue ActiveRecord::RecordInvalid
@@ -82,6 +82,16 @@ class ListingsController < ApplicationController
 
   def set_listing
     @listing = @game.listings.find(params[:id])
+  end
+
+  # What the app recommended when the decision was made, so the history can
+  # later show whether following it paid off.
+  def recommendation
+    snapshot = @game.market_snapshots.valid.latest_first.first
+    return {} unless snapshot&.recommended_list_price
+
+    { market_snapshot: snapshot, recommended_strategy: snapshot.recommended_strategy,
+      recommended_list_price: snapshot.recommended_list_price }
   end
 
   def unlisted_open_seats

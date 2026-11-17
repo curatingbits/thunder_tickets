@@ -53,6 +53,13 @@ module ListingStatusHelper
   end
 
   def listing_event_text(event)
+    text = listing_event_action_text(event)
+    return text unless event.recommended_list_price && event.action.in?(%w[listed price_changed])
+
+    "#{text} (app suggested #{number_to_currency(event.recommended_list_price, precision: 0)})"
+  end
+
+  def listing_event_action_text(event)
     case event.action
     when "listed" then "Listed at #{number_to_currency(event.price_after)}"
     when "price_changed" then "Price #{number_to_currency(event.price_before)} → #{number_to_currency(event.price_after)}"

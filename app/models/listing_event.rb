@@ -7,6 +7,7 @@ class ListingEvent < ApplicationRecord
   belongs_to :game
   belongs_to :listing, optional: true
   belongs_to :user, optional: true
+  belongs_to :market_snapshot, optional: true
 
   before_validation { self.occurred_at ||= Time.current }
 

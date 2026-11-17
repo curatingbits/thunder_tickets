@@ -1,0 +1,23 @@
+<% content_for :title, "Add market data · MADR TICKETS" %>
+
+<div class="max-w-2xl mx-auto space-y-6">
+  <div>
+    <%= link_to "← #{@game.opponent.name}", game_path(@game), class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-2xl sm:text-3xl font-bold text-content-strong mt-2">Add market data</h1>
+    <p class="text-sm text-content-dim mt-1">vs <%= @game.opponent.name %> · <%= game_when(@game) %></p>
+  </div>
+
+  <div class="card space-y-3 text-sm text-content-dim">
+    <p>On the game's Ticketmaster page, set the quantity to <strong class="text-content">2</strong>, filter to sections
+      <strong class="text-content">101, 102 and 120</strong> if you can, then select the listing panel, copy and paste it here.
+      Prices should be the all-in prices Ticketmaster shows.</p>
+    <p>Or type one listing per line as <code class="text-content">section,row,price</code>, like <code class="text-content">101,EE,298.08</code>.</p>
+  </div>
+
+  <%= form_with url: game_manual_scans_path(@game), class: "card space-y-4" do |f| %>
+    <%= f.label :listings_text, "Listings", class: "block text-sm font-medium text-content" %>
+    <%= f.text_area :listings_text, rows: 12, class: "input-field font-mono text-sm", value: params[:listings_text],
+                                    placeholder: "Sec 101 • Row EE\nVerified Resale Ticket\n$298.08" %>
+    <%= f.submit "Add listings", class: "btn-primary w-full" %>
+  <% end %>
+</div>

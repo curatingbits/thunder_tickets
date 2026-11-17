@@ -28,7 +28,7 @@ class GamesController < ApplicationController
     # A game carries its own season, so past-season games render correctly
     # even when the session is pointed at the current year.
     @season = @game.season
-    ActiveRecord::Associations::Preloader.new(records: [ @game ], associations: [ :tickets, :listings, { listing_events: :user } ]).call
+    ActiveRecord::Associations::Preloader.new(records: [ @game ], associations: [ :tickets, :listings, { listing_events: :user }, :season ]).call
     @available_seats = (1..@season.num_seats).to_a - @game.tickets.pluck(:seat_number)
     @buyers = Buyer.by_name
   end

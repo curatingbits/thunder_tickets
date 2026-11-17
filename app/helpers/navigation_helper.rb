@@ -7,8 +7,8 @@ module NavigationHelper
   def primary_nav_items
     [
       nav_item(:home, "Home", root_path, :home, controllers: %w[dashboard]),
-      nav_item(:games, "Games", games_path, :ticket, controllers: %w[games tickets]),
-      nav_item(:buyers, "Buyers", buyers_path, :user_group, controllers: %w[buyers])
+      nav_item(:games, "Games", games_path, :ticket, controllers: %w[games tickets listings listing_reviews manual_scans]),
+      nav_item(:pricing, "Pricing", pricing_path, :chart, controllers: %w[pricing import_runs])
     ]
   end
 
@@ -16,6 +16,7 @@ module NavigationHelper
   # phones.
   def secondary_nav_items
     [
+      nav_item(:buyers, "Buyers", buyers_path, :user_group, controllers: %w[buyers]),
       nav_item(:seasons, "Seasons", seasons_path, :calendar, controllers: %w[seasons], actions: %w[index]),
       nav_item(:users, "Users", users_path, :users, controllers: %w[users]),
       nav_item(:settings, "Settings", settings_path, :cog, controllers: %w[seasons], actions: %w[edit update])

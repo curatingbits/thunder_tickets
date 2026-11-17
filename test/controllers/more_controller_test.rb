@@ -12,6 +12,7 @@ class MoreControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", "More"
+    assert_select "main a[href=?]", buyers_path
     assert_select "main a[href=?]", seasons_path
     assert_select "main a[href=?]", users_path
     assert_select "main a[href=?]", settings_path

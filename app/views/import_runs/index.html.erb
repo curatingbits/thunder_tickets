@@ -1,0 +1,32 @@
+<% content_for :title, "Research runs · MADR TICKETS" %>
+
+<div class="space-y-6">
+  <div>
+    <%= link_to "← Pricing", pricing_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-3xl sm:text-4xl font-bold text-content-strong mt-2">Research runs</h1>
+    <p class="text-content-dim mt-2">Every Ticketmaster research run and hand-entered scan, newest first.</p>
+  </div>
+
+  <% if @runs.any? %>
+    <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+      <% @runs.each do |run| %>
+        <li>
+          <%= link_to import_run_path(run), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-4 hover:bg-surface-raised" do %>
+            <div class="min-w-0">
+              <p class="font-semibold text-content-strong truncate"><%= run.key %></p>
+              <p class="text-sm text-content-dim">
+                <%= run.source.humanize %> · <%= run.started_at.strftime("%a %b %-d, %-l:%M %p") %>
+                · <%= pluralize(@snapshot_counts[run.id].to_i, "game") %>
+                <%= " · #{pluralize(run.error_log.size, "note")}" if run.error_log.any? %>
+              </p>
+            </div>
+            <%= status_chip(run.status.humanize, tone: { "completed" => :positive, "running" => :accent, "partial" => :warning,
+                                                        "blocked" => :alt, "failed" => :negative, "abandoned" => :neutral }.fetch(run.status)) %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="card text-center py-12"><p class="text-content-dim text-lg">No research has run yet.</p></div>
+  <% end %>
+</div>

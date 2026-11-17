@@ -1,0 +1,44 @@
+<% content_for :title, "#{@run.key} · MADR TICKETS" %>
+
+<div class="space-y-6">
+  <div>
+    <%= link_to "← Research runs", import_runs_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-2xl sm:text-3xl font-bold text-content-strong mt-2 break-all"><%= @run.key %></h1>
+    <p class="text-content-dim mt-1">
+      <%= @run.source.humanize %> · <%= @run.status.humanize %> · started <%= @run.started_at.strftime("%a %b %-d, %-l:%M %p") %>
+      <%= " · finished #{@run.finished_at.strftime("%-l:%M %p")}" if @run.finished_at %>
+      <%= " · agent #{@run.agent_version}" if @run.agent_version %>
+    </p>
+  </div>
+
+  <% if @run.notes.present? || @run.error_log.any? %>
+    <div class="card space-y-2 text-sm">
+      <% if @run.notes.present? %><p class="text-content whitespace-pre-line"><%= @run.notes %></p><% end %>
+      <% @run.error_log.each do |entry| %>
+        <p class="text-warning"><%= Time.zone.parse(entry["at"].to_s)&.strftime("%-l:%M %p") %> · <%= entry["message"] %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @snapshots.any? %>
+    <div class="card p-0 overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Game</th><th scope="col" class="num">Read</th><th scope="col" class="num">Market</th>
+              <th scope="col">Recommend</th><th scope="col">Confidence</th></tr>
+        </thead>
+        <tbody>
+          <% @snapshots.each do |s| %>
+            <tr>
+              <td class="whitespace-nowrap"><%= link_to "#{s.game.game_date.strftime("%b %-d")} #{s.game.opponent.name}", game_path(s.game), class: "text-content-strong hover:text-accent" %></td>
+              <td class="num figure"><%= s.captured_count %></td>
+              <td class="num figure"><%= dollars(s.market_value) %></td>
+              <td class="whitespace-nowrap"><%= s.recommended_list_price ? "List #{dollars(s.recommended_list_price)} (#{strategy_label(s.recommended_strategy).downcase})" : "—" %></td>
+              <td><%= confidence_chip(s.confidence_now) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>
