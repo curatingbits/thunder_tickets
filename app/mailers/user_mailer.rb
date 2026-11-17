@@ -1,4 +1,8 @@
 class UserMailer < ApplicationMailer
+  DIGEST_ATTENTION_ITEMS = 5
+
+  # The digest's "Needs attention" lines use the same wording as Home.
+  helper AttentionHelper, PricingHelper, StatusChipHelper, ListingStatusHelper, SettlementsHelper
   def invitation_email
     @user = params[:user]
     @invitation_url = params[:invitation_url]
@@ -24,6 +28,8 @@ class UserMailer < ApplicationMailer
   def daily_digest
     @user = params[:user]
     @games = Game.upcoming.limit(3)
+    season = Season.find_by(is_current: true)
+    @attention = season ? Attention::Feed.new(season).items.first(DIGEST_ATTENTION_ITEMS) : []
 
     mail(
       to: @user.email,

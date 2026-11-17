@@ -65,6 +65,10 @@ Rails.application.routes.draw do
     member { post :void }
   end
 
+  # Patterns in the market data, and the weekly report.
+  get "insights", to: "insights#show", as: :insights
+  get "reports/weekly", to: "reports#weekly", as: :weekly_report
+
   # Market value and recommended prices; research run log.
   get "pricing", to: "pricing#index", as: :pricing
   resources :import_runs, only: [ :index, :show ]
@@ -90,6 +94,7 @@ Rails.application.routes.draw do
       end
       resources :payment_imports, only: [ :create ]
       resource :settlement_summary, only: [ :show ]
+      resource :weekly_report, only: [ :show ]
     end
   end
 

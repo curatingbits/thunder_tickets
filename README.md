@@ -105,6 +105,36 @@ over time. Recommendations are advisory: nothing here changes a Ticketmaster
 listing. Thresholds and fee assumptions live in Settings; the seller fee is left
 unknown until it's set there or measured from sales linked to listings.
 
+Each game's market card charts its **price history** once it has two scans:
+market value, the competitive-to-premium range, and our price when we had one
+listed, with the numbers in a table underneath.
+
+### Insights
+**Insights** (from Pricing, or More) shows what moves the market near our seats:
+- how value changes with days to the game;
+- weekends against weeknights;
+- each opponent against the typical game;
+- how many listings each scan saw;
+- what we listed sold seats at against the market at the time.
+
+Each comparison is against the typical game in the same scan, and says how many
+games and scans it rests on. These are asking prices, not sales. A listing that
+disappears may have sold, been taken down or been repriced, so fewer listings
+doesn't mean more sales.
+
+### Weekly report
+**Weekly report** (from Home, or More) rebuilds any week from stored history:
+- the research that ran;
+- games whose market moved 10% or more;
+- sales;
+- listing decisions;
+- Venmo payments, with today's balance.
+
+The current week also lists what needs attention and the games in the next two
+weeks with seats to sell. Past weeks come out the same every time, because
+scans, listing events, sales and payments aren't rewritten. The daily digest
+email now opens with the top five attention items.
+
 ### Money
 The **Money** tab answers which sold games have been paid out and what's still
 owed. Mark pays Duggan half of each sale's payout over Venmo. Each sold game in a

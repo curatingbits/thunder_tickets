@@ -121,6 +121,24 @@
     .view-button:hover {
       background-color: #1d4ed8;
     }
+    .attention-item {
+      display: block;
+      background-color: #334155;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border-left: 4px solid #f59e0b;
+      text-decoration: none;
+    }
+    .attention-title {
+      color: #f1f5f9;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .attention-detail {
+      color: #cbd5e1;
+      font-size: 14px;
+    }
     .no-games {
       text-align: center;
       padding: 32px;
@@ -168,6 +186,18 @@
     <!-- Main Card -->
     <div class="card">
       <div class="greeting">Good morning, <%= @user.name %>!</div>
+
+      <% if @attention.any? %>
+        <p class="intro-text" style="margin-bottom: 12px;">Needs attention:</p>
+        <div class="games-section">
+          <% @attention.each do |item| %>
+            <a href="<%= attention_url(item) %>" class="attention-item">
+              <div class="attention-title"><%= attention_title(item) %></div>
+              <div class="attention-detail"><%= strip_tags(attention_detail(item).to_s) %></div>
+            </a>
+          <% end %>
+        </div>
+      <% end %>
 
       <% if @games.any? %>
         <p class="intro-text">Here's a look at your next <%= @games.count %> upcoming games:</p>

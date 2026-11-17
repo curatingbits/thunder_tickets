@@ -2,6 +2,15 @@ MADR TICKETS - DAILY DIGEST
 ===============================
 
 Good morning, <%= @user.name %>!
+<% if @attention.any? %>
+
+NEEDS ATTENTION
+<% @attention.each do |item| %>
+- <%= attention_title(item) %>
+  <%= strip_tags(attention_detail(item).to_s) %>
+  <%= attention_url(item) %>
+<% end %>
+<% end %>
 
 <% if @games.any? %>
 Here's a look at your next <%= @games.count %> upcoming games:

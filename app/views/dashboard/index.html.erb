@@ -18,6 +18,7 @@
                  selected: @season,
                  path: ->(s) { dashboard_path(season_id: s.id) } %>
       <div class="flex items-center gap-3">
+        <%= link_to "Weekly report →", weekly_report_path, class: "text-xs text-accent hover:brightness-125" unless @is_recap %>
         <%= link_to "All seasons →", seasons_path, class: "text-xs text-accent hover:brightness-125" %>
         <span class="text-xs text-muted">Updated <%= Time.current.strftime("%b %d, %I:%M %p") %></span>
       </div>

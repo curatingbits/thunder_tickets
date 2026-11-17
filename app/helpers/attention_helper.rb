@@ -1,13 +1,20 @@
 module AttentionHelper
-  def attention_path(item)
-    case item.kind
-    when :verify_listing then listing_review_path
-    when :research_blocked then import_runs_path
-    when :research_stale then pricing_path
-    when :settlement_review then partner_payments_path(filter: "review")
-    when :payout_overdue then money_path
-    else game_path(item.game)
-    end
+  def attention_path(item) = attention_route(item, :path)
+
+  # For emails: mailers only have *_url route helpers.
+  def attention_url(item) = attention_route(item, :url)
+
+  def attention_route(item, form)
+    name, args =
+      case item.kind
+      when :verify_listing then [ :listing_review, [] ]
+      when :research_blocked then [ :import_runs, [] ]
+      when :research_stale then [ :pricing, [] ]
+      when :settlement_review then [ :partner_payments, [ { filter: "review" } ] ]
+      when :payout_overdue then [ :money, [] ]
+      else [ :game, [ item.game ] ]
+      end
+    public_send("#{name}_#{form}", *args)
   end
 
   def attention_title(item)

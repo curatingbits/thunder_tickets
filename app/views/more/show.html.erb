@@ -2,6 +2,20 @@
 
 <h1 class="text-2xl sm:text-3xl font-bold text-content-strong mb-6">More</h1>
 
+<div class="card p-0 overflow-hidden mb-6">
+  <ul class="divide-y divide-subtle">
+    <% [ [ "Weekly report", weekly_report_path, :calendar ], [ "Insights", insights_path, :chart ] ].each do |label, path, icon_name| %>
+      <li>
+        <%= link_to path, class: "flex items-center gap-3 px-4 sm:px-6 py-4 text-content hover:bg-surface-raised hover:text-content-strong" do %>
+          <%= icon(icon_name, "h-5 w-5 text-content-dim") %>
+          <span class="flex-1 font-medium"><%= label %></span>
+          <%= icon(:chevron_right, "h-5 w-5 text-muted") %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>
+
 <div class="card p-0 overflow-hidden">
   <ul class="divide-y divide-subtle">
     <% secondary_nav_items.each do |item| %>

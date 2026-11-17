@@ -57,6 +57,8 @@
       </ul>
     </div>
 
+    <%= render "games/price_history", game: game %>
+
     <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
       <dt class="text-muted">Section 101 asks</dt>
       <dd class="text-content figure"><%= snap.section_count %> · <%= dollars(snap.section_min) %>–<%= dollars(snap.section_max) %>, median <%= dollars(snap.section_median) %></dd>

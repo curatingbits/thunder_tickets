@@ -1,0 +1,185 @@
+<% content_for :title, "Weekly report · MADR TICKETS" %>
+<% r = @report %>
+
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <%= link_to "← Home", root_path, class: "text-accent hover:brightness-125 text-sm" %>
+      <h1 class="text-3xl sm:text-4xl font-bold text-content-strong mt-2">Week of <%= r.week_start.strftime("%b %-d") %></h1>
+      <p class="text-content-dim mt-2">
+        <%= r.week_start.strftime("%a, %b %-d") %> to <%= r.week_end.strftime("%a, %b %-d, %Y") %> ·
+        <%= r.current? ? "this week, so far" : "complete" %>
+      </p>
+    </div>
+    <nav class="flex flex-wrap gap-2 text-sm" aria-label="Weeks">
+      <%= link_to "← Previous week", weekly_report_path(week: r.previous_week.iso8601), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+      <% if r.next_week %>
+        <%= link_to "Next week →", weekly_report_path(week: r.next_week.iso8601), class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+      <% end %>
+      <% unless r.current? %>
+        <%= link_to "This week", weekly_report_path, class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+      <% end %>
+    </nav>
+  </div>
+
+  <% if r.current? %>
+    <%= render "dashboard/attention", items: r.attention %>
+  <% end %>
+
+  <% if r.quiet? && !r.current? %>
+    <div class="card text-center py-10" data-weekly-quiet>
+      <p class="text-lg font-semibold text-content-strong">A quiet week</p>
+      <p class="text-content-dim mt-1">No research, sales, listing changes or Venmo payments.</p>
+    </div>
+  <% end %>
+
+  <section class="space-y-3" data-weekly-section="research">
+    <h2 class="section-label">Ticketmaster research</h2>
+    <% if r.research_runs.any? %>
+      <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+        <% r.research_runs.each do |run| %>
+          <li>
+            <%= link_to import_run_path(run), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-surface-raised" do %>
+              <span class="text-content-strong"><%= run.started_at.strftime("%a, %b %-d, %-l:%M %p") %></span>
+              <span class="text-sm text-content-dim"><%= run.status %> · <%= pluralize(run.market_snapshots.size, "game") %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="card text-sm text-content-dim">No research ran this week.</div>
+    <% end %>
+  </section>
+
+  <section class="space-y-3" data-weekly-section="market">
+    <h2 class="section-label">Market</h2>
+    <div class="card space-y-3">
+      <% if r.snapshots.any? %>
+        <p class="text-sm text-content">
+          <%= pluralize(r.snapshots.size, "game") %> scanned.
+          <% if (median = r.median_change_pct) %>
+            Typical change since the previous scan: <span class="font-semibold figure"><%= median.positive? ? "+" : "" %><%= median %>%</span>.
+          <% else %>
+            No earlier scans to compare with.
+          <% end %>
+        </p>
+        <% if (moves = r.market_moves).any? %>
+          <ul class="divide-y divide-subtle -mx-4 sm:-mx-6 border-t border-subtle">
+            <% moves.each do |move| %>
+              <li>
+                <%= link_to game_path(move.game), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 hover:bg-surface-raised" do %>
+                  <span class="text-content-strong truncate"><%= move.game.game_date.strftime("%b %-d") %> · <%= move.game.opponent.name %></span>
+                  <span class="text-sm whitespace-nowrap">
+                    <span class="font-semibold text-content figure"><%= move.snapshot.market_value_change_pct.positive? ? "+" : "−" %><%= move.snapshot.market_value_change_pct.abs.round %>%</span>
+                    <span class="text-muted figure">to <%= dollars(move.snapshot.market_value) %></span>
+                  </span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-content-dim">No game moved <%= Reports::Weekly::MOVE_PCT %>% or more.</p>
+        <% end %>
+      <% else %>
+        <p class="text-sm text-content-dim">No market data was captured this week.</p>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="space-y-3" data-weekly-section="sales">
+    <h2 class="section-label">Sales</h2>
+    <% if r.sales.any? %>
+      <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+        <% r.sales.each do |line| %>
+          <li>
+            <%= link_to game_path(line.game), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-surface-raised" do %>
+              <span class="text-content-strong truncate"><%= line.game.game_date.strftime("%b %-d") %> · <%= line.game.opponent.name %></span>
+              <span class="text-sm text-content whitespace-nowrap"><%= pluralize(line.tickets.size, "ticket") %> · <span class="figure"><%= number_to_currency(line.payout) %></span></span>
+            <% end %>
+          </li>
+        <% end %>
+        <li class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-surface-raised/40">
+          <span class="font-semibold text-content-strong">Total payout</span>
+          <span class="font-semibold text-content-strong figure"><%= number_to_currency(r.sales.sum(&:payout)) %></span>
+        </li>
+      </ul>
+    <% else %>
+      <div class="card text-sm text-content-dim">No sales this week.</div>
+    <% end %>
+  </section>
+
+  <section class="space-y-3" data-weekly-section="listings">
+    <h2 class="section-label">Listing decisions</h2>
+    <% if r.listing_events.any? %>
+      <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+        <% r.listing_events.each do |event| %>
+          <li class="px-4 sm:px-6 py-3">
+            <p class="text-content-strong"><%= link_to "#{event.game.game_date.strftime("%b %-d")} · #{event.game.opponent.name}", game_path(event.game), class: "hover:text-accent" %></p>
+            <p class="text-sm text-content-dim"><%= listing_event_text(event) %> · <%= event.occurred_at.strftime("%a %-l:%M %p") %><%= " · #{event.user.name.split.first}" if event.user %></p>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="card text-sm text-content-dim">No listing changes recorded.</div>
+    <% end %>
+  </section>
+
+  <% if @season.settlement_tracked %>
+    <section class="space-y-3" data-weekly-section="money">
+      <h2 class="section-label">Venmo</h2>
+      <div class="card space-y-3">
+        <% if r.payments.any? %>
+          <ul class="divide-y divide-subtle -mx-4 sm:-mx-6 -mt-2">
+            <% r.payments.each do |payment| %>
+              <li>
+                <%= link_to partner_payment_path(payment), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 hover:bg-surface-raised" do %>
+                  <span class="min-w-0">
+                    <span class="text-content-strong figure"><%= cents(payment.amount_cents) %></span>
+                    <span class="text-sm text-content-dim"> · <%= payment.occurred_on.strftime("%b %-d") %> · “<%= payment.memo.to_s.truncate(36) %>”</span>
+                  </span>
+                  <%= payment_chip(payment) %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-content-dim">No ticket payments this week.</p>
+        <% end %>
+        <p class="text-sm text-content">
+          <% if r.settlement %>
+            Today: <span class="font-semibold"><%= owes_sentence(r.settlement.totals[:outstanding_cents]) %></span>.
+          <% else %>
+            Waiting for the first Venmo sync.
+          <% end %>
+          <%= link_to "Money →", money_path, class: "text-accent" %>
+        </p>
+      </div>
+    </section>
+  <% end %>
+
+  <% if r.current? %>
+    <section class="space-y-3" data-weekly-section="upcoming">
+      <h2 class="section-label">Next two weeks</h2>
+      <% if r.upcoming.any? %>
+        <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+          <% r.upcoming.each do |row| %>
+            <li>
+              <%= link_to game_path(row.game), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-surface-raised" do %>
+                <div class="min-w-0">
+                  <p class="font-medium text-content-strong truncate"><%= row.game.opponent.name %></p>
+                  <p class="text-xs text-muted">
+                    <%= game_when(row.game) %> · <%= pluralize(row.seats_to_sell, "seat") %> to sell
+                    <% if row.snapshot&.recommended_list_price %> · list at <span class="figure"><%= dollars(row.snapshot.recommended_list_price) %></span><% end %>
+                  </p>
+                </div>
+                <%= row.assessment ? assessment_chip(row.assessment) : listing_status_chip(row.status) %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="card text-sm text-content-dim">Nothing left to sell in the next two weeks.</div>
+      <% end %>
+    </section>
+  <% end %>
+</div>

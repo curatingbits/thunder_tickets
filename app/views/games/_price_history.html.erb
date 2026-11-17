@@ -1,0 +1,42 @@
+<%# The game's market over time (Market::PriceHistory), all-in per ticket. %>
+<% history = Market::PriceHistory.new(game) %>
+<% points = history.points %>
+<% if points.any? %>
+  <div class="space-y-2" data-price-history>
+    <p class="text-sm font-medium text-content">Price history</p>
+    <% if history.chartable? %>
+      <% first, last = points.first, points.last %>
+      <div class="h-52 sm:h-60" data-controller="price-history-chart">
+        <canvas data-price-history-chart-target="canvas" data-points="<%= history.chart_data.to_json %>" role="img"
+                aria-label="Market value over <%= points.size %> scans, from <%= dollars(first.market_value) %> on <%= first.captured_at.strftime("%b %-d") %> to <%= dollars(last.market_value) %> on <%= last.captured_at.strftime("%b %-d") %>, all-in per ticket."></canvas>
+      </div>
+      <details class="text-sm">
+        <summary class="cursor-pointer text-accent">The numbers</summary>
+        <div class="overflow-x-auto mt-2">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Scan</th><th scope="col" class="num">Days out</th><th scope="col" class="num">Market</th>
+                <th scope="col" class="num">Range</th><th scope="col" class="num">List at</th><th scope="col" class="num">Ours</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% points.each do |p| %>
+                <tr>
+                  <td class="whitespace-nowrap"><%= p.captured_at.strftime("%b %-d") %></td>
+                  <td class="num"><%= p.days_to_game %></td>
+                  <td class="num figure"><%= dollars(p.market_value) %></td>
+                  <td class="num figure whitespace-nowrap"><%= dollars(p.competitive) %>–<%= dollars(p.premium) %></td>
+                  <td class="num figure"><%= dollars(p.recommended_list) %></td>
+                  <td class="num figure"><%= dollars(p.our_all_in) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    <% else %>
+      <p class="text-xs text-muted">One scan so far (<%= points.first.captured_at.strftime("%b %-d") %>). The chart appears after the next one.</p>
+    <% end %>
+  </div>
+<% end %>

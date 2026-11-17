@@ -1,0 +1,19 @@
+<%# Groups of games against the typical game in the same scan. %>
+<% max = groups.map { |g| g.vs_typical_pct.abs }.max.to_i %>
+<ul class="card p-0 divide-y divide-subtle overflow-hidden">
+  <% groups.each do |g| %>
+    <li class="px-4 sm:px-6 py-3" data-insight-group="<%= g.key %>">
+      <div class="flex items-baseline justify-between gap-3">
+        <p class="font-medium text-content-strong min-w-0 truncate">
+          <%= g.label %>
+          <span class="text-xs font-normal text-muted"><%= pluralize(g.games, "game") %><%= ", #{pluralize(g.scans, "scan")}" if g.scans > 1 %></span>
+        </p>
+        <p class="text-sm text-content whitespace-nowrap">
+          <span class="figure"><%= dollars(g.median_value) %></span> ·
+          <span class="font-semibold figure"><%= vs_typical(g.vs_typical_pct) %></span>
+        </p>
+      </div>
+      <div class="mt-2"><%= diverging_bar(g.vs_typical_pct, max) %></div>
+    </li>
+  <% end %>
+</ul>

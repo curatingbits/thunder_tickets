@@ -73,6 +73,11 @@
   --color-chart-positive: #75a33e;
   --color-chart-negative: #be435e;
   --color-chart-neutral: #656e9d;
+  /* Categorical series (price history: market value, then our price). The
+   * dataviz palette's slots 1-2 for dark; validated on --color-surface:
+   * CVD dE 26.8, normal-vision dE 31.8, both >= 3:1. */
+  --color-chart-series-1: #3987e5;
+  --color-chart-series-2: #d95926;
 }
 
 /* ---------------------------------------------------------------
@@ -119,6 +124,9 @@
     --color-chart-positive: #549a39;
     --color-chart-negative: #a8203d;
     --color-chart-neutral: #6e78a8;
+    /* Light slots 1-2 on white: CVD dE 24.7, normal-vision dE 33.6, >= 3:1. */
+    --color-chart-series-1: #2a78d6;
+    --color-chart-series-2: #eb6834;
   }
 
   html[data-theme="system"] {
@@ -146,6 +154,8 @@
       --color-chart-positive: #549a39;
       --color-chart-negative: #a8203d;
       --color-chart-neutral: #6e78a8;
+      --color-chart-series-1: #2a78d6;
+      --color-chart-series-2: #eb6834;
     }
   }
 

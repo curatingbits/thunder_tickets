@@ -1,0 +1,124 @@
+<% content_for :title, "Insights · MADR TICKETS" %>
+
+<div class="space-y-6">
+  <div>
+    <%= link_to "← Pricing", pricing_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-3xl sm:text-4xl font-bold text-content-strong mt-2">Insights</h1>
+    <p class="text-content-dim mt-2">
+      What moves the market near our seats, from <%= pluralize(@insights.scan_count, "scan") %> of
+      <%= pluralize(@insights.game_count, "game") %>. Ticketmaster asking prices, all-in per ticket, not what tickets sold for.
+    </p>
+  </div>
+
+  <% if !@insights.enough? %>
+    <div class="card text-center py-12" data-insights-empty>
+      <p class="text-lg font-semibold text-content-strong">Not enough market data yet</p>
+      <p class="text-content-dim mt-1">
+        Insights need at least <%= Market::Insights::MIN_GAMES %> games with a market value. The weekly research fills them in.
+      </p>
+    </div>
+  <% else %>
+    <div class="grid grid-cols-2 gap-px bg-subtle rounded-xl overflow-hidden border border-subtle">
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label">Typical game</p>
+        <p class="text-xl font-bold text-content-strong figure mt-1"><%= dollars(@insights.typical_value) %></p>
+        <p class="text-xs text-muted mt-0.5">median market value, all-in</p>
+      </div>
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label">Based on</p>
+        <p class="text-xl font-bold text-content-strong mt-1"><%= pluralize(@insights.game_count, "game") %></p>
+        <p class="text-xs text-muted mt-0.5"><%= pluralize(@insights.scan_count, "scan") %> of Ticketmaster</p>
+      </div>
+    </div>
+
+    <section class="space-y-3" data-insight="days-out">
+      <div>
+        <h2 class="section-label">How far out</h2>
+        <p class="text-sm text-content-dim mt-1">Value by how many days before the game it was scanned, against the typical game in the same scan.</p>
+      </div>
+      <%= render "insights/comparison", groups: @insights.by_days_out %>
+      <% if @insights.scan_count < 2 %>
+        <p class="text-xs text-muted">With one scan, each bucket holds different games, so the opponent matters as much as the timing. It sharpens as weekly scans follow the same games closer to tipoff.</p>
+      <% end %>
+    </section>
+
+    <section class="space-y-3" data-insight="day-of-week">
+      <h2 class="section-label">Weekends and weeknights</h2>
+      <%= render "insights/comparison", groups: @insights.by_day_of_week %>
+    </section>
+
+    <section class="space-y-3" data-insight="opponents">
+      <div>
+        <h2 class="section-label">Opponents</h2>
+        <p class="text-sm text-content-dim mt-1">Each opponent's latest value against the typical game, highest first.</p>
+      </div>
+      <%= render "insights/comparison", groups: @insights.by_opponent %>
+    </section>
+
+    <section class="space-y-3" data-insight="supply">
+      <div>
+        <h2 class="section-label">Supply</h2>
+        <p class="text-sm text-content-dim mt-1">
+          Listings seen per game. A listing that stops appearing may have sold, been taken down or been repriced, so fewer listings doesn't mean more sales.
+        </p>
+      </div>
+      <% supply = @insights.supply %>
+      <% if supply.size < 2 %>
+        <% point = supply.first %>
+        <div class="card text-sm text-content-dim">
+          One scan so far (<%= point.captured_on.strftime("%b %-d") %>): about <span class="figure text-content"><%= point.listings_per_game.round %></span>
+          section 101 listings and <span class="figure text-content"><%= point.nearby_per_game.round %></span> near our row per game.
+          The trend appears after the next scan.
+        </div>
+      <% else %>
+        <div class="card p-0 overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Scan</th><th scope="col" class="num">Games</th><th scope="col" class="num">Section 101</th><th scope="col" class="num">Near our row</th></tr>
+            </thead>
+            <tbody>
+              <% supply.each do |point| %>
+                <tr>
+                  <td><%= link_to point.captured_on.strftime("%b %-d"), import_run_path(point.run), class: "text-accent" %></td>
+                  <td class="num"><%= point.games %></td>
+                  <td class="num figure"><%= point.listings_per_game %></td>
+                  <td class="num figure"><%= point.nearby_per_game %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </section>
+
+    <section class="space-y-3" data-insight="sales">
+      <div>
+        <h2 class="section-label">Our sales against the market</h2>
+        <p class="text-sm text-content-dim mt-1">What we listed sold seats at, against the market's list price in the scan before the sale.</p>
+      </div>
+      <% if (sales = @insights.sales_vs_market).any? %>
+        <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+          <% sales.each do |sale| %>
+            <li class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
+              <div class="min-w-0">
+                <p class="font-medium text-content-strong truncate"><%= sale.ticket.game.game_date.strftime("%b %-d") %> · <%= sale.ticket.game.opponent.name %></p>
+                <p class="text-xs text-muted">
+                  sold <%= sale.ticket.sold_at.strftime("%b %-d") %>, listed at <span class="figure"><%= dollars(sale.ticket.list_price_at_sale) %></span>;
+                  market <span class="figure"><%= dollars(sale.market_list) %></span> list
+                </p>
+              </div>
+              <span class="text-sm font-semibold text-content figure whitespace-nowrap"><%= vs_typical(sale.vs_market_pct).sub("typical", "at market") %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="card text-sm text-content-dim">
+          No sales to compare yet. A sale counts here once it's linked to a listing, so its list price is known, and the game was scanned before it sold.
+          <% if (uncompared = @insights.uncompared_sales_count).positive? %>
+            <%= pluralize(uncompared, "sale") %> since the first scan didn't record a list price.
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+</div>
