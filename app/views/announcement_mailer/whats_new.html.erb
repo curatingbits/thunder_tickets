@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Six new things in MADR Tickets</title>
+<style>
+  a { color: #7aa2f7; }
+  @media (max-width: 620px) {
+    .container { width: 100% !important; border-radius: 0 !important; }
+    .px { padding-left: 16px !important; padding-right: 16px !important; }
+    .inner { padding-left: 20px !important; padding-right: 20px !important; }
+    .fluid { width: 100% !important; height: auto !important; }
+    .single { width: 72% !important; height: auto !important; }
+    h1 { font-size: 26px !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#0f1016;">
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">Live pricing, a 3D seat map, the Money tab, a new home screen, and a new look.</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0f1016;">
+<tr><td align="center" style="padding:24px 0;">
+
+<table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background:#16161e; border-radius:20px; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;">
+
+  <!-- Header: the sign-in arena -->
+  <tr><td style="padding:0;"><img src="<%= @images %>/header.png" width="600" alt="MADR Tickets" class="fluid" style="display:block; width:600px; height:auto; border:0;"></td></tr>
+
+  <!-- Intro -->
+  <tr><td class="px" style="padding:30px 40px 6px;">
+    <p style="margin:0 0 10px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#ff9e64;">What's new · November 17</p>
+    <h1 style="margin:0; font-size:30px; line-height:36px; font-weight:800; color:#ffffff;">Six new things in MADR&nbsp;Tickets</h1>
+    <p style="margin:14px 0 0; font-size:16px; line-height:25px; color:#a9b1d6;">Mark, here's what landed in the app today. It's all live now at <a href="<%= root_url %>" style="color:#7aa2f7; text-decoration:none; font-weight:600;">madrtickets.com</a>.</p>
+  </td></tr>
+
+  <!-- 1. Pricing -->
+  <tr><td class="px" style="padding:28px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">01 · Pricing</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">Know what every game is worth</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">Every upcoming game shows three things:</p>
+        <p style="margin:10px 0 0; font-size:15px; line-height:23px; color:#c0caf5;"><b style="color:#ffffff;">Market</b> &nbsp;What buyers pay on Ticketmaster for seats near ours, all-in per ticket.</p>
+        <p style="margin:8px 0 0; font-size:15px; line-height:23px; color:#c0caf5;"><b style="color:#ffffff;">List at</b> &nbsp;The price to enter when we list, with the strategy behind it.</p>
+        <p style="margin:8px 0 0; font-size:15px; line-height:23px; color:#c0caf5;"><b style="color:#ffffff;">Vs the market</b> &nbsp;Whether our price is too high, too low, about right, or not listed yet, plus how solid and fresh the data is.</p>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#a9b1d6;">It opens on games we still have seats for, and the filters narrow it to what needs action. It only advises: nothing here changes a Ticketmaster listing.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;"><tr><td style="background:#24283b; border-radius:12px; padding:12px 16px; font-size:14px; line-height:20px; color:#ffffff;">
+          <span style="color:#ff9e64; font-weight:700;">Prices update every Monday and Wednesday</span> morning for now, from a read of Ticketmaster's listings in sections 101, 102 and 120.
+        </td></tr></table>
+      </td></tr>
+      <tr><td align="center" style="padding:10px 0 0;"><img src="<%= @images %>/pricing.png" width="290" alt="The Pricing page on an iPhone" class="single" style="display:block; width:290px; height:auto; border:0;"></td></tr>
+      <tr><td align="center" style="padding:6px 28px 28px;"><a href="<%= pricing_url %>" style="display:inline-block; background:#7aa2f7; color:#16161e; font-size:15px; font-weight:700; line-height:20px; text-decoration:none; padding:12px 22px; border-radius:12px;">Open Pricing →</a></td></tr>
+    </table>
+  </td></tr>
+
+  <!-- 2. 3D seat map -->
+  <tr><td class="px" style="padding:24px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">02 · 3D seat map</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">See where every listing sits</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">A 3D model of sections 119, 120, 101 and 102, behind the Thunder bench basket, with every listing the research read for a game.</p>
+        <p style="margin:10px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• Seats are colored by price, and ours (101, row DD, seats 1–3) glow orange.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• Tap a seat to see its listing, or tap a listing to light up its seats.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• Rows near ours show the exact seats; rows farther back light up as a whole.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• Drag to turn, pinch to zoom, and switch games from the menu.</p>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#a9b1d6;">Get there from the <b style="color:#ffffff;">3D</b> button next to any game on Pricing.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:12px 0 0;"><img src="<%= @images %>/map.png" width="552" alt="The 3D seat map on two iPhones: the whole bowl, and a listing picked in our row" class="fluid" style="display:block; width:552px; height:auto; border:0;"></td></tr>
+      <tr><td align="center" style="padding:6px 28px 28px;"><a href="<%= seat_map_url %>" style="display:inline-block; background:#7aa2f7; color:#16161e; font-size:15px; font-weight:700; line-height:20px; text-decoration:none; padding:12px 22px; border-radius:12px;">Open the seat map →</a></td></tr>
+    </table>
+  </td></tr>
+
+  <!-- 3. Money -->
+  <tr><td class="px" style="padding:24px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">03 · Money</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">Payouts, squared away</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">The Money tab keeps track of who owes what, game by game. Right now we're all square.</p>
+        <p style="margin:10px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Every sale:</b> what it sold for, my half of the payout, and what you've paid me.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Venmo:</b> your payments are pulled in from Venmo (read-only) and matched to the games they cover. Anything unclear waits for a quick review.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Season tickets:</b> my half of the season invoice, paid to you in installments, and what's left.</p>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#a9b1d6;">It's read-only: nothing on this page moves money.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:12px 0 0;"><img src="<%= @images %>/money.png" width="552" alt="The Money tab on two iPhones: the balance and games, and the season tickets and recent payments" class="fluid" style="display:block; width:552px; height:auto; border:0;"></td></tr>
+      <tr><td align="center" style="padding:6px 28px 28px;"><a href="<%= money_url %>" style="display:inline-block; background:#7aa2f7; color:#16161e; font-size:15px; font-weight:700; line-height:20px; text-decoration:none; padding:12px 22px; border-radius:12px;">Open Money →</a></td></tr>
+    </table>
+  </td></tr>
+
+  <!-- 4. Dashboard -->
+  <tr><td class="px" style="padding:24px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">04 · Dashboard</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">A home screen that leads with what matters</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Needs attention:</b> anything to sell, deliver or confirm this week.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Next unsold games &amp; pricing:</b> the next three games we have seats for, priced the same way as the Pricing page.</p>
+        <p style="margin:6px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">• <b style="color:#ffffff;">Payouts:</b> the balance and the three latest Venmo payments.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:12px 0 0;"><img src="<%= @images %>/dashboard.png" width="552" alt="The dashboard on two iPhones: next unsold games, and payouts" class="fluid" style="display:block; width:552px; height:auto; border:0;"></td></tr>
+      <tr><td align="center" style="padding:6px 28px 28px;"><a href="<%= root_url %>" style="display:inline-block; background:#7aa2f7; color:#16161e; font-size:15px; font-weight:700; line-height:20px; text-decoration:none; padding:12px 22px; border-radius:12px;">Open the dashboard →</a></td></tr>
+    </table>
+  </td></tr>
+
+  <!-- 5. New look -->
+  <tr><td class="px" style="padding:24px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">05 · New look</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">A new logo, and a sign-in page with some life</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">The new logo is a ticket with a basketball in the middle, in the app's own colors. On the sign-in page, the crowd does the wave around the arena, and our three seats glow orange in row DD.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:12px 0 28px;"><img src="<%= @images %>/signin.png" width="290" alt="The new sign-in page on an iPhone" class="single" style="display:block; width:290px; height:auto; border:0;"></td></tr>
+    </table>
+  </td></tr>
+
+  <!-- 6. Stay signed in -->
+  <tr><td class="px" style="padding:24px 24px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a1b26; border:1px solid #292e42; border-radius:18px;">
+      <tr><td class="inner" style="padding:26px 28px 4px;">
+        <p style="margin:0 0 8px; font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#7aa2f7;">06 · Stay signed in</p>
+        <h2 style="margin:0; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">Sign in once a year</h2>
+        <p style="margin:12px 0 0; font-size:15px; line-height:23px; color:#c0caf5;">Once you sign in on a device, the app remembers you for a year.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:14px 0 0;"><img src="<%= @images %>/icon.png" width="200" alt="The new MADR app icon" style="display:block; width:200px; height:auto; border:0;"></td></tr>
+      <tr><td class="inner" style="padding:8px 28px 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#24283b; border-radius:12px; padding:14px 16px; font-size:14px; line-height:21px; color:#c0caf5;">
+          <b style="color:#ffffff;">Put it on your iPhone's home screen:</b> open madrtickets.com in Safari, tap Share, then Add to Home Screen. Already have it there? Delete it and add it again to get the new icon (you'll sign in once more).
+        </td></tr></table>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- Sign-off -->
+  <tr><td class="px" style="padding:30px 40px 34px;">
+    <p style="margin:0; font-size:16px; line-height:25px; color:#c0caf5;">That's it for today. Tell me anything you'd change.</p>
+    <p style="margin:12px 0 0; font-size:16px; line-height:25px; color:#ffffff; font-weight:600;">Duggan</p>
+  </td></tr>
+  <tr><td style="padding:18px 40px 22px; border-top:1px solid #292e42; text-align:center; font-size:12px; line-height:18px; color:#7e88b8;">
+    <a href="<%= root_url %>" style="color:#7e88b8; text-decoration:none;">madrtickets.com</a> · Thunder season tickets, Section 101, Row DD
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
