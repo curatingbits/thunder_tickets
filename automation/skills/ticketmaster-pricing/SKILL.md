@@ -56,6 +56,7 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 3. **Start or resume the run.**
    - Make `$W/client_id` once with `echo "$(hostname)-$(date +%s)" > $W/client_id`. If you're resuming after a crash, reuse the old work folder's client id.
    - The key is the date: `tm-$(date +%F)`. Monday's and Wednesday's runs are separate, and a crashed run resumes the same day.
+   - If you were started with the argument `again`, this is a second full run the same day, which Duggan asked for. Use `tm-$(date +%F)-again`.
    - POST `/api/v1/import_runs` with `{"kind":"market_research","source":"ticketmaster_browser","key":KEY,"client_id":ID,"agent_version":"ticketmaster-pricing/1"}`.
    - **201** is a new run. **200** is a resumed run: skip every game in `scanned_game_ids`. **409** means another run holds it, or today's run already completed: stop and report, don't start a second one.
 
