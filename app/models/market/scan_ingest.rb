@@ -25,7 +25,7 @@ module Market
 
     def call
       listings = normalized_listings
-      digest = Digest::SHA256.hexdigest(JSON.generate([ listings, @payload[:event_id], quantity ]))
+      digest = Digest::SHA256.hexdigest(JSON.generate([ listings, @payload[:event_id], quantity, quantity_check ]))
 
       if (existing = @run.market_snapshots.find_by(game: @game))
         return Result.new(existing, true, nil) if existing.payload_digest == digest
@@ -61,7 +61,8 @@ module Market
       return unless captured_at >= @now - 1.day && @game.game_date >= captured_at.to_date
 
       sync = Listings::ResearchSync.new(game: @game, listings: listings, settings: Settings.for(@game.season),
-                                        scroll_complete: scroll_complete?, now: captured_at)
+                                        scroll_complete: scroll_complete?, now: captured_at,
+                                        quantity: quantity, quantity_check: quantity_check)
       sync.apply
       @game.listings.reset
       @game.listing_events.reset
@@ -70,6 +71,29 @@ module Market
 
     def quantity
       Integer(@payload[:quantity_filter] || 2)
+    end
+
+    # The reader's second look at our row, at the quantity of our open seats:
+    # a listing of all three that only sells together is hidden at 2 (Dec 13,
+    # 2026-11-16). Only our listing uses it; it never enters pricing.
+    def quantity_check
+      return @quantity_check if defined?(@quantity_check)
+
+      check = @payload[:quantity_check]
+      @quantity_check =
+        if check.is_a?(Hash) && check[:quantity].to_i.positive?
+          settings = Settings.for(@game.season)
+          rows = Array(check[:listings]).filter_map do |l|
+            l = l.to_h.symbolize_keys
+            price = Float(l[:price].to_s.delete("$,"), exception: false)
+            next unless price&.positive?
+
+            seats = Array(l[:seats]).map(&:to_i).select(&:positive?).uniq.sort.presence
+            { section: settings.our_section, row: settings.our_row, price: price.round(2), ticket_type: "verified_resale",
+              raw_label: l[:raw_label].to_s.first(300) }.merge(seats ? { seats: seats } : {})
+          end
+          { quantity: check[:quantity].to_i, complete: ActiveModel::Type::Boolean.new.cast(check[:complete]) == true, listings: rows }
+        end
     end
 
     def normalized_listings

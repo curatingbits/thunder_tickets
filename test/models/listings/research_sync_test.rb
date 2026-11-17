@@ -13,12 +13,17 @@ class Listings::ResearchSyncTest < ActiveSupport::TestCase
   NEARBY = [ %w[101 K 145.80], %w[101 S 157.95], %w[102 L 151.88], %w[101 GG 181.04], %w[101 EE 303.75],
              %w[120 DD 235.71], %w[101 AA 250.00], %w[102 JJ 170.10] ].freeze
 
+  # Our three open seats need a look at 3 tickets before "not listed".
+  LOOKED_AT_THREE = { quantity: 3, complete: true, listings: [] }.freeze
+
   # One research scan of the game. row_dd: [[price, seats or nil if unread], ...]
-  def scan(row_dd: [], scroll_complete: true, captured_at: Time.current, sync: true)
+  # at the pair view; check: the reader's second look at our seat count.
+  def scan(row_dd: [], check: LOOKED_AT_THREE, scroll_complete: true, captured_at: Time.current, sync: true)
     rows = NEARBY.map { |sec, row, price| { section: sec, row: row, price: price.to_f } }
     rows += row_dd.map { |price, seats| { section: "101", row: "DD", price: price }.merge(seats ? { seats: seats } : {}) }
     payload = { event_date: "2026-11-20", captured_at: captured_at.iso8601, scroll_complete: scroll_complete,
                 listings: rows.each_with_index.map { |l, i| l.merge(position: i + 1) } }
+    payload[:quantity_check] = check if check
     run, = ImportRun.start!(kind: "market_research", source: "ticketmaster_browser", key: "r-#{@runs += 1}", client_id: "c")
     Market::ScanIngest.new(run: run, game: @game, payload: payload, sync_listings: sync).call.tap { run.finish!("completed") }
   end
@@ -45,6 +50,26 @@ class Listings::ResearchSyncTest < ActiveSupport::TestCase
     assert_equal "not_listed", result.our_listing.outcome
     assert_empty @game.listings
     assert_equal :not_listed, status.status
+  end
+
+  test "all three seats listed together: found on the second look at 3 tickets" do
+    result = scan(check: { quantity: 3, complete: true, listings: [ { price: 309.83, seats: [ 1, 2, 3 ] } ] })
+
+    ours = result.our_listing
+    assert_equal [ "listed", 309.83, [ 1, 2, 3 ], [ 1, 2, 3 ] ], [ ours.outcome, ours.price, ours.seats, ours.seen_seats ]
+    assert_equal BigDecimal("309.83"), @game.listings.sole.ask_price
+    assert_equal NEARBY.size, result.snapshot.captured_count, "the second look never enters pricing"
+  end
+
+  test "three open seats and no look at 3 tickets: it won't say not listed" do
+    assert_equal "unconfirmed", scan(check: nil).our_listing.outcome
+    assert_equal "unconfirmed", scan(check: { quantity: 3, complete: false, listings: [] }).our_listing.outcome
+    assert_empty ListingEvent.all
+  end
+
+  test "two open seats: the pair view is enough to say not listed" do
+    @game.tickets.create!(seat_number: 1, sale_price: 200)
+    assert_equal "not_listed", scan(check: nil).our_listing.outcome
   end
 
   test "a Row DD listing whose seats couldn't be read changes nothing" do

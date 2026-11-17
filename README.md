@@ -178,10 +178,12 @@ research opens each Row DD listing and reads them ("Seats 6-7").
 - **A Row DD listing whose seats couldn't be read, or our seats at two different
   prices:** nothing changes.
 
-These changes appear in the listing history as made by the research.
+Ticketmaster lists only what sells at the chosen quantity, and the research
+prices pairs. So when our open seats aren't 2, it also looks at that quantity,
+for example 3, where a listing that only sells all three together shows up.
+"Not listed" is recorded only after a complete look at our seat count.
 
-The research reads listings for a pair, so a listing that only sells all three
-seats together won't show.
+These changes appear in the listing history as made by the research.
 
 Sales through Ticketmaster count as delivered when they sell; mark private
 sales **delivered** once the buyer has the tickets. Home flags undelivered

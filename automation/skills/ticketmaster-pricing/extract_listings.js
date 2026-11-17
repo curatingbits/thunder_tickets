@@ -3,19 +3,28 @@
 // growing (it loads ~40 at a time), then read each listing's
 // "Sec X • Row Y" and all-in price. Keeps only window.__madrSections.
 //
-// Our row (window.__madrOurs, default Section 101 Row DD): the list doesn't
-// show seat numbers, so it opens each listing there, reads "You'll get 2
-// tickets together in Sec 101, Row DD, Seats 6-7." and closes the panel. The
-// app counts a listing as ours only if it has our seats (1-3).
+// Our row (window.__madrOurs: section, row, and quantity = our open seats):
+// - The list doesn't show seat numbers, so it opens each listing there,
+//   reads "You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."
+//   and closes the panel.
+// - Ticketmaster lists only what sells at the chosen quantity: 2, which is
+//   what we price. A listing of all three of our seats that only sells
+//   together is hidden there (Dec 13, 2026-11-16). So when our open seats
+//   aren't 2, it switches the quantity to that number afterwards and reads
+//   our row again (window.__madr.quantity_check).
+// The app counts a listing as ours only if it has our seats (1-3).
 //
 // Runs in the page via javascript_tool and returns "started" at once; the
 // result lands in window.__madr (tool calls time out at 45s, so poll it).
-// Stops at the first sign of a block page and says so. The only things it
-// clicks: "Accept & Continue", a listing card in our row, and that panel's
-// "Close Ticket Selection" button. Never "Reserve Tickets" or anything else.
+// Stops at the first sign of a block page, or a list that stops loading
+// short of Ticketmaster's own count ("stalled"). The only things it clicks:
+// "Accept & Continue", the quantity filter and one of its options, a listing
+// card in our row, and that panel's "Close Ticket Selection" button. Never
+// "Reserve Tickets" or anything else.
 (() => {
   const sections = new Set(window.__madrSections || [ "101", "102", "120" ])
   const ours = window.__madrOurs || { section: "101", row: "DD" }
+  const PRICED_QUANTITY = 2
   const state = (window.__madr = { status: "running", startedAt: new Date().toISOString() })
 
   // setTimeout is throttled in background tabs; MessageChannel isn't.
@@ -29,8 +38,74 @@
   const BLOCK = /pardon the interruption|browsing activity has been paused|are you a robot|captcha|access denied|unusual (?:traffic|activity)|you'?re (?:now )?in (?:the )?(?:queue|waiting room)|queue-it/i
   const blocked = () => BLOCK.test(`${document.title} ${(document.body?.innerText || "").slice(0, 4000)}`)
 
-  // "You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."
+  // "You'll get 3 tickets together in Sec 101, Row DD, Seats 1-3."
   const SEATS = /You'll get \d+ tickets? (?:together )?in Sec (\w+), Row (\w+), Seats? (\d+)(?:\s*[-–]\s*(\d+))?/
+
+  const listElement = () => document.querySelector('ul[aria-label^="Ticket listings"]')
+
+  const resultsCount = () => {
+    const match = document.body.innerText.match(/([\d,]+) Results?\b/)
+    return match ? parseInt(match[1].replace(/,/g, ""), 10) : null
+  }
+
+  // "Open quantity filters, current quantity: 2 Tickets"
+  const quantityButton = () => [ ...document.querySelectorAll("button") ]
+    .find((b) => /^Open quantity filters/i.test(b.getAttribute("aria-label") || "") && b.getBoundingClientRect().width > 0)
+
+  const currentQuantity = () => {
+    const match = (quantityButton()?.getAttribute("aria-label") || "").match(/current quantity:\s*(\d+)/i)
+    return match ? Number(match[1]) : null
+  }
+
+  // Chooses "N Tickets" in Ticketmaster's quantity menu ("Set quantity to: N
+  // Tickets" radio buttons). True once the page says that quantity.
+  const setQuantity = async (n) => {
+    const opener = quantityButton()
+    if (!opener) return false
+    opener.click()
+    const pattern = new RegExp(`Set quantity to:\\s*${n} Tickets?\\b`, "i")
+    let option = null
+    for (let i = 0; i < 20 && !option; i++) {
+      await sleep(250)
+      option = [ ...document.querySelectorAll('button[role="radio"]') ].find((b) => pattern.test(b.textContent))
+    }
+    if (!option) return false
+    const before = resultsCount()
+    option.click()
+    for (let i = 0; i < 40 && resultsCount() === before; i++) await sleep(250)
+    await sleep(1500)
+    const now = currentQuantity()
+    return now === null || now === n
+  }
+
+  // Scrolls the list until its count holds for four checks, or two minutes.
+  // A list that stops well short of Ticketmaster's count has stalled (seen
+  // 2026-11-16: 81 of 589 after several visits in a row).
+  const scrollAll = async () => {
+    const list = listElement()
+    let last = -1
+    let stable = 0
+    const deadline = Date.now() + 120000
+    while (list && stable < 4 && Date.now() < deadline) {
+      list.parentElement.scrollTop = list.parentElement.scrollHeight
+      await sleep(1200)
+      if (blocked()) return { blocked: true }
+      const count = list.querySelectorAll("li").length
+      stable = count === last ? stable + 1 : 0
+      last = count
+    }
+    const items = list ? [ ...list.querySelectorAll("li") ] : []
+    const total = resultsCount()
+    return { items, total, stable, stalled: !!total && items.length < Math.floor(total * 0.95) }
+  }
+
+  const describe = (li) => {
+    const text = li.innerText.replace(/\s+/g, " ").trim()
+    const where = text.match(/Sec (\w+) • Row (\w+)/)
+    const price = text.match(/\$([\d,]+\.\d\d)/)
+    if (!where || !price) return null
+    return { section: where[1], row: where[2], price: parseFloat(price[1].replace(/,/g, "")), text }
+  }
 
   const closePanel = async () => {
     const header = [ ...document.querySelectorAll("*") ].find((el) => el.childElementCount === 0 && el.textContent.trim() === "Ticket Selection")
@@ -64,86 +139,89 @@
     return Array.from({ length: to - from + 1 }, (_, i) => from + i)
   }
 
+  const seatLabel = (seats) => (seats ? ` [Seats ${seats[0]}-${seats.at(-1)}]` : "")
+  const stop = (status, extra = {}) => Object.assign(state, { status, title: document.title, ...extra })
+
   const run = async () => {
-    let list = null
-    for (let i = 0; i < 60 && !list; i++) {
-      if (blocked()) return Object.assign(state, { status: "blocked", title: document.title })
+    for (let i = 0; i < 60 && !listElement(); i++) {
+      if (blocked()) return stop("blocked")
       const accept = [ ...document.querySelectorAll("button") ].find((b) => /Accept & Continue/i.test(b.innerText))
       if (accept) accept.click()
-      list = document.querySelector('ul[aria-label^="Ticket listings"]')
-      if (!list) await sleep(500)
+      if (!listElement()) await sleep(500)
     }
-    if (!list) {
-      return Object.assign(state, { status: "no_list", title: document.title,
-                                    text: (document.body?.innerText || "").replace(/\s+/g, " ").slice(0, 300) })
+    if (!listElement()) return stop("no_list", { text: (document.body?.innerText || "").replace(/\s+/g, " ").slice(0, 300) })
+
+    // Prices are for a pair: make sure Ticketmaster is showing 2.
+    const shown = currentQuantity()
+    if (shown !== null && shown !== PRICED_QUANTITY && !(await setQuantity(PRICED_QUANTITY))) {
+      return stop("error", { error: `couldn't set the quantity to ${PRICED_QUANTITY}` })
     }
 
-    // Scroll until the count holds for four checks, or two minutes pass.
-    let last = -1
-    let stable = 0
-    const deadline = Date.now() + 120000
-    while (stable < 4 && Date.now() < deadline) {
-      const scroller = list.parentElement
-      scroller.scrollTop = scroller.scrollHeight
-      await sleep(1200)
-      if (blocked()) return Object.assign(state, { status: "blocked", title: document.title })
-      const count = list.querySelectorAll("li").length
-      stable = count === last ? stable + 1 : 0
-      last = count
-    }
+    const main = await scrollAll()
+    if (main.blocked) return stop("blocked")
+    if (main.stalled) return stop("stalled", { read: main.items.length, event_total_listings: main.total })
 
-    const items = [ ...list.querySelectorAll("li") ]
-    const results = (document.body.innerText.match(/([\d,]+) Results/) || [])[1]
-    const total = results ? parseInt(results.replace(/,/g, ""), 10) : null
-    // A list that stops growing well short of Ticketmaster's own count has
-    // stalled (seen 2026-11-16: 81 of 589 after several visits in a row).
-    // That's Ticketmaster holding back, not a complete read: stop here.
-    if (total && items.length < Math.floor(total * 0.95)) {
-      return Object.assign(state, { status: "stalled", title: document.title, read: items.length, event_total_listings: total })
-    }
     const listings = []
-    items.forEach((li, index) => {
-      const text = li.innerText.replace(/\s+/g, " ").trim()
-      const where = text.match(/Sec (\w+) • Row (\w+)/)
-      const price = text.match(/\$([\d,]+\.\d\d)/)
-      if (!where || !price || !sections.has(where[1])) return
+    main.items.forEach((li, index) => {
+      const l = describe(li)
+      if (!l || !sections.has(l.section)) return
       listings.push({
-        position: index + 1,
-        section: where[1],
-        row: where[2],
-        price: parseFloat(price[1].replace(/,/g, "")),
-        ticket_type: /Standard Admission/i.test(text) ? "standard_admission" : "verified_resale",
-        raw_label: text.slice(0, 200)
+        position: index + 1, section: l.section, row: l.row, price: l.price,
+        ticket_type: /Standard Admission/i.test(l.text) ? "standard_admission" : "verified_resale",
+        raw_label: l.text.slice(0, 200)
       })
     })
     for (const listing of listings) {
       if (listing.section !== ours.section || listing.row !== ours.row) continue
-      if (blocked()) return Object.assign(state, { status: "blocked", title: document.title })
-      listing.seats = await readSeats(items[listing.position - 1])
-      if (listing.seats) listing.raw_label = `${listing.raw_label} [Seats ${listing.seats[0]}-${listing.seats.at(-1)}]`
+      if (blocked()) return stop("blocked")
+      listing.seats = await readSeats(main.items[listing.position - 1])
+      listing.raw_label += seatLabel(listing.seats)
+    }
+
+    // A listing of all our open seats together shows only at that quantity.
+    let check = null
+    if (ours.quantity && ours.quantity !== PRICED_QUANTITY) {
+      check = { quantity: ours.quantity, complete: false, listings: [] }
+      if (await setQuantity(ours.quantity)) {
+        const again = await scrollAll()
+        if (again.blocked) return stop("blocked")
+        if (again.stalled) return stop("stalled", { read: again.items.length, event_total_listings: again.total })
+        Object.assign(check, { read: again.items.length, total: again.total, complete: again.stable >= 4 })
+        for (const li of again.items) {
+          const l = describe(li)
+          if (!l || l.section !== ours.section || l.row !== ours.row) continue
+          if (blocked()) return stop("blocked")
+          const seats = await readSeats(li)
+          check.listings.push({ price: l.price, seats, raw_label: l.text.slice(0, 160) + seatLabel(seats) })
+        }
+      } else {
+        check.error = "couldn't switch Ticketmaster's quantity"
+      }
     }
 
     Object.assign(state, {
       status: "done",
       title: document.title,
-      read: items.length,
-      scroll_complete: stable >= 4,
-      event_total_listings: total ?? items.length,
+      read: main.items.length,
+      scroll_complete: main.stable >= 4,
+      event_total_listings: main.total ?? main.items.length,
       our_row: listings.filter((l) => l.section === ours.section && l.row === ours.row)
                        .map((l) => ({ price: l.price, seats: l.seats || null })),
+      quantity_check: check,
       listings
     })
   }
 
   // Tool output is cut off at around a thousand characters, so read the
   // result back in pieces:
-  //   window.__madrMeta()       title, counts, scroll_complete
+  //   window.__madrMeta()       title, counts, scroll_complete, our_row, quantity_check
   //   window.__madrChunk(0, 10) [position, section, row, price, "R"|"S", label, seats]
   // ("S" = Standard Admission; the label keeps only "Sec X • Row Y ... $price";
   // seats are read only in our row, else null).
   window.__madrMeta = () => JSON.stringify({
     status: state.status, title: state.title, read: state.read, kept: state.listings?.length,
-    event_total_listings: state.event_total_listings, scroll_complete: state.scroll_complete, our_row: state.our_row
+    event_total_listings: state.event_total_listings, scroll_complete: state.scroll_complete,
+    our_row: state.our_row, quantity_check: state.quantity_check
   })
   window.__madrChunk = (from, n) => JSON.stringify((state.listings || []).slice(from, from + n).map((l) => [
     l.position, l.section, l.row, l.price, l.ticket_type === "standard_admission" ? "S" : "R",

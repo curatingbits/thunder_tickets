@@ -81,7 +81,7 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
     assert_equal false, created["replayed"]
     assert_equal "competitive", created.dig("recommended", "strategy")
     assert created.dig("prices_all_in", "market").positive?
-    assert_includes %w[listed not_listed], created.dig("our_listing", "outcome"), "the research checks our own row"
+    assert_includes %w[listed not_listed unconfirmed], created.dig("our_listing", "outcome"), "the research checks our own row"
 
     post_scan(run["id"])
     assert_response :ok
@@ -120,6 +120,16 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
     assert_response :created
     assert_equal [ "listed", 194.4, [ 1, 2 ] ], response.parsed_body["our_listing"].values_at("outcome", "price", "seen_seats")
     assert_equal BigDecimal("194.4"), @game.listings.sole.ask_price
+  end
+
+  test "the second look at our seat count comes through the API" do
+    run = start_run
+    scan = @scan.merge(quantity_check: { quantity: 3, complete: true, read: 75, total: 75,
+                                         listings: [ { price: 309.83, seats: [ 1, 2, 3 ], raw_label: "Sec 101 • Row DD [Seats 1-3]" } ] })
+    post_scan(run["id"], scan: scan)
+
+    assert_response :created
+    assert_equal [ "listed", 309.83, [ 1, 2, 3 ] ], response.parsed_body["our_listing"].values_at("outcome", "price", "seen_seats")
   end
 
   test "a different scan for the same game, or the wrong night, is refused" do

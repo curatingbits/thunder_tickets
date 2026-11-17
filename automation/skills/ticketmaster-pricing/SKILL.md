@@ -10,14 +10,15 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 ## Standing context
 
 - Our seats: **Section 101, Row DD, seats 1–3** at Paycom Center. Comparables: sections **101, 102, 120**.
-- Ticketmaster's default quantity is **2**, which is what we price. Prices on the page are **all-in per ticket** (fees in, tax out). Don't change the quantity or the fee display.
+- Ticketmaster's default quantity is **2**, which is what we price. Prices on the page are **all-in per ticket** (fees in, tax out). Don't change the quantity or the fee display yourself; the reader prices at 2 and only switches quantity for its second look at our row.
 - **Our own listing.** Our exact seats are **Section 101, Row DD, Seats 1, 2 and 3**, and only those count.
   - The list doesn't show seat numbers, so the reader opens each Row DD listing in Section 101 and reads its panel ("You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."). Then it closes the panel.
+  - Ticketmaster lists only what sells at the chosen quantity, and we price pairs (2). A listing of all three of our seats that only sells together is hidden at 2, as Dec 13 was on 2026-11-16. So when our open seats aren't 2, the reader switches the quantity to that number afterwards and reads our row again (`quantity_check` in `__madrMeta()`).
   - The app records our seats as listed at a price only if that listing has seats 1, 2 or 3. Someone else's Row DD seats, such as 6-7, don't count.
-  - No listing with our seats after a complete read means not listed.
+  - No listing with our seats means not listed, but only after a complete read at our seat count.
   - Each scan's response reports this as `our_listing.outcome`:
     - `listed`, `confirmed`, `repriced` or `not_listed`;
-    - `unconfirmed`: a Row DD listing's seats couldn't be read, so nothing changed;
+    - `unconfirmed`: a Row DD listing's seats couldn't be read, or the look at our seat count couldn't be done, so nothing changed;
     - `unclear`: our seats at two prices;
     - `incomplete` or `nothing_to_sell`.
   - Report it; never change anything on Ticketmaster.
@@ -31,8 +32,9 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 
 ## Hard rules
 
-1. **Read only.** Never sign in, never type credentials, never click Buy, Sell, Checkout, "Reserve Tickets", Next, Find Tickets with a purchase intent, or My Account. Only the reader clicks, and only three things:
+1. **Read only.** Never sign in, never type credentials, never click Buy, Sell, Checkout, "Reserve Tickets", Next, Find Tickets with a purchase intent, or My Account. Only the reader clicks, and only these:
    - the "Accept & Continue" policy dialog;
+   - the ticket quantity filter and one of its options, for the second look at our seat count;
    - in our row (Section 101, Row DD), each listing's card, to read its seat numbers;
    - that panel's "Close Ticket Selection" button.
 
@@ -83,7 +85,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
 
 ### 2. Read each game (ascending date, skipping already-scanned games)
 1. Navigate the tab to the event URL from the page. Wait ~8 seconds.
-2. Run `window.__madrSections = ["101","102","120"]; window.__madrOurs = {section: "101", row: "DD"}` (from `our_seats` in the targets), then the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
+2. Run `window.__madrSections = ["101","102","120"]; window.__madrOurs = {section: "101", row: "DD", quantity: N}`. Take section and row from `our_seats` in the targets, and N from the game's `seats_to_sell`. Then run the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
 3. Poll `JSON.stringify({status: window.__madr?.status, read: window.__madr?.read})` every ~10 seconds, for up to 3 minutes. Each tool call must finish within 45 seconds.
 4. Act on the status:
    - **blocked**: go straight to *When Ticketmaster blocks you*.
@@ -91,10 +93,10 @@ If you were started with the argument `soon`, rescan only the games in the next 
    - **no_list**: look at the page. Sold out, no listings, or an error page means note it for this game and move on. Anything else that looks like a block is rule 3.
    - **error**: note it and move on. If 3 games end in errors, finish the run as partial.
    - **done**: tool output is cut off at around a thousand characters, so read the result in pieces.
-     - Read `window.__madrMeta()` for the title, `event_total_listings` and `scroll_complete`.
+     - Read `window.__madrMeta()` for the title, `event_total_listings`, `scroll_complete` and `quantity_check`. Save it, exactly as returned, as `$W/meta-<game id>.json`.
      - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`. Each row is `[position, section, row, price, "R"|"S", label, seats]`; seats are filled only in our row.
      - Append each chunk, exactly as returned, as one line of `$W/rows-<game id>.txt`.
-     - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` and refuses duplicated rows.
+     - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` (with the second look from the meta file) and refuses duplicated rows.
 5. `bin/madr-api POST /api/v1/import_runs/<run id>/market_scans $W/scan-<game id>.json`:
    - **201** means saved; **200** with `"replayed": true` means already saved.
    - Note `our_listing` from the response for the report (see Standing context).

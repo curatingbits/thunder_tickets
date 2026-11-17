@@ -3,33 +3,56 @@
 <head>
   <meta charset="utf-8">
   <title>Oklahoma City Thunder vs. Test Opponent | Ticketmaster (test page)</title>
-  <style>#scroller { height: 300px; overflow-y: auto; } li { height: 100px; }</style>
+  <style>#scroller { height: 300px; overflow-y: auto; } li { height: 100px; } [hidden-text] { font-size: 0; }</style>
 </head>
 <body>
   <!-- A stand-in for a Ticketmaster event page: just the parts
-       automation/skills/ticketmaster-pricing/extract_listings.js relies on. -->
+       automation/skills/ticketmaster-pricing/extract_listings.js relies on.
+       ?stall=4 stops loading after 4 listings; ?start=3 opens at 3 tickets. -->
+  <button id="quantity" aria-label="">2 Tickets</button>
+  <div id="menu" hidden>
+    <h3>Quantity</h3>
+    <ul id="options"></ul>
+  </div>
   <div id="count"></div>
   <div id="scroller"><ul aria-label="Ticket listings, sorted by price"></ul></div>
   <script>
-    // ?stall=4 stops loading after 4 listings, like Ticketmaster holding back.
-    const stallAt = Number(new URLSearchParams(location.search).get("stall") || 0)
-    const all = [
-      ["101", "K", "$145.80", null], ["102", "Q", "$145.80", null], ["101", "DD", "$151.88", "6-7"],
-      ["120", "N", "$159.17", null], ["101", "S", "$157.95", null], ["328", "M", "$31.95", null],
-      ["101", "DD", "$194.40", "1-2"], ["102", "L", "$161.60", null], ["120", "EE", "$352.35", null],
-      ["101", "GG", "$181.04", null], ["101", "EE", "$303.75", null], ["102", "JJ", "$170.10", null]
-    ]
-    document.getElementById("count").textContent = `${all.length} Results`
-    const list = document.querySelector("ul")
+    const params = new URLSearchParams(location.search)
+    const stallAt = Number(params.get("stall") || 0)
+    // By quantity, like Ticketmaster: a listing shows only where it can sell
+    // that many. Our three seats sell only together, so they show at 3.
+    const lists = {
+      2: [
+        ["101", "K", "$145.80", null], ["102", "Q", "$145.80", null], ["101", "DD", "$151.88", "6-7"],
+        ["120", "N", "$159.17", null], ["101", "S", "$157.95", null], ["328", "M", "$31.95", null],
+        ["102", "L", "$161.60", null], ["120", "EE", "$352.35", null], ["101", "GG", "$181.04", null],
+        ["101", "EE", "$303.75", null], ["102", "JJ", "$170.10", null], ["101", "R", "$126.36", null]
+      ],
+      3: [["101", "K", "$145.80", null], ["101", "DD", "$309.83", "1-3"], ["101", "S", "$157.95", null]]
+    }
+    let quantity = Number(params.get("start") || 2)
     let shown = 0
+    const list = document.querySelector("ul[aria-label]")
+    const button = document.getElementById("quantity")
+
+    const render = () => {
+      const all = lists[quantity] || []
+      button.setAttribute("aria-label", `Open quantity filters, current quantity: ${quantity} Tickets`)
+      button.textContent = `${quantity} Tickets`
+      document.getElementById("count").textContent = `${all.length} Results`
+      list.innerHTML = ""
+      shown = 0
+      load()
+    }
     const load = () => {
+      const all = lists[quantity] || []
       const limit = stallAt || all.length
       for (const [sec, row, price, seats] of all.slice(shown, Math.min(shown + 4, limit))) {
         const li = document.createElement("li")
-        const button = document.createElement("button")
-        button.textContent = `Select Verified Resale Ticket, section ${sec}, row ${row} Sec ${sec} • Row ${row} Verified Resale Ticket ${price}`
-        button.addEventListener("click", () => openPanel(sec, row, seats))
-        li.appendChild(button)
+        const card = document.createElement("button")
+        card.textContent = `Select Verified Resale Ticket, section ${sec}, row ${row} Sec ${sec} • Row ${row} Verified Resale Ticket ${price}`
+        card.addEventListener("click", () => openPanel(sec, row, seats))
+        li.appendChild(card)
         list.appendChild(li)
       }
       shown = Math.min(shown + 4, limit)
@@ -39,16 +62,27 @@
       const panel = document.createElement("div")
       panel.id = "panel"
       panel.innerHTML = `<div class="header"><button id="close">Close Ticket Selection panel</button><h2>Ticket Selection</h2></div>
-        <p>You'll get 2 tickets together in Sec ${sec}, Row ${row}, Seats ${seats}.</p><button id="reserve">Reserve Tickets</button>`
+        <p>You'll get ${quantity} tickets together in Sec ${sec}, Row ${row}, Seats ${seats}.</p><button id="reserve">Reserve Tickets</button>`
       document.body.appendChild(panel)
       document.getElementById("close").addEventListener("click", () => setTimeout(() => panel.remove(), 100))
       document.getElementById("reserve").addEventListener("click", () => { window.reserved = true })
     }
-    load()
+
+    for (let n = 1; n <= 8; n++) {
+      const li = document.createElement("li")
+      li.innerHTML = `<button role="radio"><span hidden-text>Set quantity to: </span>${n} Ticket${n === 1 ? "" : "s"}</button>`
+      li.querySelector("button").addEventListener("click", () => {
+        document.getElementById("menu").hidden = true
+        setTimeout(() => { quantity = n; render() }, 300)
+      })
+      document.getElementById("options").appendChild(li)
+    }
+    button.addEventListener("click", () => { document.getElementById("menu").hidden = false })
     document.getElementById("scroller").addEventListener("scroll", (e) => {
       const s = e.target
       if (s.scrollTop + s.clientHeight >= s.scrollHeight - 5) setTimeout(load, 200)
     })
+    render()
   </script>
 </body>
 </html>

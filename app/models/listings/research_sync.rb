@@ -12,8 +12,11 @@ module Listings
   # is never priced against itself. Holds and other platforms are left alone,
   # and every change is a ListingEvent tied to the scan.
   #
-  # Limit: the research reads listings for a pair, so a listing that only
-  # sells all three seats together doesn't show.
+  # Ticketmaster lists only what sells at the chosen quantity, and the
+  # research prices pairs. A listing of all three of our seats that only
+  # sells together is hidden at 2 (Dec 13, 2026-11-16). So the reader takes a
+  # second look at the number of our open seats (quantity_check), and "not
+  # listed" needs a complete look at that number.
   class ResearchSync
     Result = Data.define(:outcome, :price, :seats, :prices, :seen_seats)
 
@@ -21,12 +24,15 @@ module Listings
 
     attr_reader :result
 
-    def initialize(game:, listings:, settings:, scroll_complete:, now:)
+    def initialize(game:, listings:, settings:, scroll_complete:, now:, quantity: 2, quantity_check: nil)
       @game = game
       @scroll_complete = scroll_complete
       @now = now
+      @quantity = quantity
+      @check = quantity_check
       resale = listings.reject { |l| l[:ticket_type] == "standard_admission" }
-      @our_row = resale.select { |l| l[:section] == settings.our_section && l[:row] == settings.our_row }
+      @our_row = resale.select { |l| l[:section] == settings.our_section && l[:row] == settings.our_row } +
+                 Array(quantity_check&.dig(:listings))
       our_seats = (1..game.season.num_seats).to_a
       @ours = @our_row.select { |l| l[:seats]&.intersect?(our_seats) }
       @unread = @our_row.select { |l| l[:seats].nil? }
@@ -47,6 +53,7 @@ module Listings
         elsif prices.one? then seen(prices.first, ticketmaster.first, seats)
         elsif @unread.any? then outcome(:unconfirmed, prices: @unread.map { |l| l[:price] })
         elsif !@scroll_complete then outcome(:incomplete)
+        elsif !looked_at_our_quantity?(seats) then outcome(:unconfirmed)
         else not_seen(ticketmaster, elsewhere, seats)
         end
     end
@@ -97,6 +104,12 @@ module Listings
       end
       @events << { listing: nil, action: "verified_unlisted", note: GONE } if elsewhere.empty?
       outcome(:not_listed, seats: seats)
+    end
+
+    # "Not listed" needs a look at the quantity of our open seats: the pair
+    # view for two, the reader's second, complete look for one or three.
+    def looked_at_our_quantity?(seats)
+      seats.size == @quantity || (@check.present? && @check[:complete] && @check[:quantity] == seats.size)
     end
 
     def seen_seats = @ours.flat_map { |l| l[:seats] }.uniq.sort
