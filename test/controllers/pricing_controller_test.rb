@@ -23,6 +23,26 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_match "List $#{@snapshot.recommended_list_price.round}", response.body
   end
 
+  test "the board opens on unsold games, and All adds the sold and transferred ones" do
+    @game.tickets.create!(seat_number: 3, sale_price: 150)
+
+    get pricing_path
+    assert_select "[data-pricing-filter='unsold'][aria-current='page'][href=?]", pricing_path
+    assert_select "[data-pricing-game='#{@game.id}']", { minimum: 1 }, "a partly sold game still has seats to price"
+
+    @game.tickets.create!(seat_number: 1, sale_price: 150, transferred_at: Time.current)
+    @game.tickets.create!(seat_number: 2, sale_price: 150, transferred_at: Time.current)
+
+    get pricing_path
+    assert_select "[data-pricing-game='#{@game.id}']", count: 0
+    assert_select "[data-listing-status='sold'], [data-listing-status='transferred']", count: 0
+
+    get pricing_path(filter: "all")
+    assert_select "[data-pricing-filter='all'][aria-current='page']"
+    assert_select "[data-pricing-filter='unsold'][aria-current]", count: 0
+    assert_select "[data-pricing-game='#{@game.id}'] [data-listing-status='sold']", minimum: 1
+  end
+
   test "filters narrow the board" do
     @game.listings.create!(seat_numbers: [ 1, 2, 3 ], platform: "ticketmaster", ask_price: 400, verified_at: Time.current)
 

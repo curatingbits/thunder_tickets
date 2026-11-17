@@ -20,16 +20,21 @@
 
   <%= render "pricing/value_tiles", value: @value, counts: @counts %>
 
+  <%# Opens on Unsold; "All" adds the games already sold or transferred. %>
   <div class="flex flex-wrap gap-2">
-    <% [ [ "All", nil ], [ "Needs action", "action" ], [ "Overpriced", "overpriced" ], [ "Underpriced", "underpriced" ],
-         [ "Not listed", "not_listed" ], [ "Verify listing", "verify" ] ].each do |label, filter| %>
-      <%= link_to label, pricing_path(filter: filter),
-            class: "px-3 py-1.5 rounded-lg text-sm #{params[:filter] == filter ? "bg-accent text-canvas font-semibold" : "bg-surface-raised text-content hover:bg-strong"}" %>
+    <% [ [ "Unsold", "unsold" ], [ "Needs action", "action" ], [ "Overpriced", "overpriced" ], [ "Underpriced", "underpriced" ],
+         [ "Not listed", "not_listed" ], [ "Verify listing", "verify" ], [ "All", "all" ] ].each do |label, filter| %>
+      <% current = @filter == filter %>
+      <%= link_to label, pricing_path(filter: (filter unless filter == PricingController::DEFAULT_FILTER)),
+            aria: { current: ("page" if current) }, data: { pricing_filter: filter },
+            class: "px-3 py-1.5 rounded-lg text-sm #{current ? "bg-accent text-canvas font-semibold" : "bg-surface-raised text-content hover:bg-strong"}" %>
     <% end %>
   </div>
 
   <% if @rows.empty? %>
-    <div class="card text-center py-12"><p class="text-content-dim text-lg">No games match.</p></div>
+    <div class="card text-center py-12">
+      <p class="text-content-dim text-lg"><%= @filter == "unsold" ? "No unsold games to price." : "No games match." %></p>
+    </div>
   <% else %>
     <%# Desktop table %>
     <div class="card hidden lg:block p-0 overflow-x-auto">
