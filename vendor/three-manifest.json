@@ -1,0 +1,26 @@
+{
+  "version": "0.187.0",
+  "source": "https://cdn.jsdelivr.net/npm/three@0.187.0/",
+  "files": {
+    "three.module.js": {
+      "from": "build/three.module.js",
+      "upstream_sha256": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341",
+      "sha256": "8b48814c3f413f7e23b03eb255f0eb10bdbd4b88536183dca40f3670050a407e"
+    },
+    "three.core.js": {
+      "from": "build/three.core.js",
+      "upstream_sha256": "613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578",
+      "sha256": "613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578"
+    },
+    "three/addons/controls/OrbitControls.js": {
+      "from": "examples/jsm/controls/OrbitControls.js",
+      "upstream_sha256": "e7fca2fe9e7670a828af9b28084669a5909445b7f36f1f26cee9bf8f2961c32c",
+      "sha256": "e7fca2fe9e7670a828af9b28084669a5909445b7f36f1f26cee9bf8f2961c32c"
+    },
+    "three/addons/geometries/RoundedBoxGeometry.js": {
+      "from": "examples/jsm/geometries/RoundedBoxGeometry.js",
+      "upstream_sha256": "c5feab96123858ed8823c889b238dc8734adab7e760e3cfd21e7f3f2f3e348e3",
+      "sha256": "c5feab96123858ed8823c889b238dc8734adab7e760e3cfd21e7f3f2f3e348e3"
+    }
+  }
+}

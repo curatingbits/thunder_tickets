@@ -43,6 +43,68 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-pricing-game='#{@game.id}'] [data-listing-status='sold']", minimum: 1
   end
 
+  test "the 3D seat map is off until switched on, and the choice is remembered" do
+    get pricing_path
+    assert_select "#seat-map", count: 0
+    assert_select "[data-seat-map-switch][role='switch'][aria-checked='false']"
+
+    get pricing_path(map: "on")
+    assert_select "#seat-map[data-controller='seat-map'][data-seat-map-venue-value]"
+    assert_select "[data-seat-map-switch][aria-checked='true']"
+
+    get pricing_path
+    assert_select "#seat-map", 1
+
+    get pricing_path(map: "off")
+    assert_select "#seat-map", count: 0
+  end
+
+  test "the seat map lists every listing read for the soonest game, grouped by what it did to the value" do
+    get pricing_path(map: "on")
+
+    assert_select "#seat-map-game option[selected][value='#{@game.id}']"
+    assert_select "[data-seat-map-target='item'][data-listing-id]", @snapshot.observations.count
+    assert_select "[data-seat-map-group='comparable'] [data-role='comparable']", minimum: 1
+    groups = css_select("[data-seat-map-group]").map { |g| g["data-seat-map-group"] }
+    assert_equal Market::SeatMap::ROLES.keys & groups, groups, "groups in role order"
+    data = JSON.parse(css_select("[data-seat-map-target='data']").first["data-json"])
+    assert_equal [ @game.id, [ 1, 2, 3 ] ], [ data["game"], data.dig("ours", "seats") ]
+    assert_select "[data-seat-map-game-link='#{@game.id}']"
+  end
+
+  test "choosing another game swaps only the seat map frame" do
+    other = seasons(:current).games.create!(game_number: 102, game_date: Date.new(2026, 12, 16), opponent: teams(:rockets),
+                                            cost_per_ticket: 162.52, parking_cost: 8.70, game_type: "regular")
+    payload = Market::ScrapeFile.payloads(JSON.parse(file_fixture("tm_scrape_sample.json").read), captured_at: Time.current)
+                                .find { |p| p[:event_date] == "2026-12-16" }
+    run = ImportRun.create!(kind: "market_research", source: "backfill", key: "t2", status: "completed", started_at: Time.current)
+    Market::ScanIngest.new(run: run, game: other, payload: payload).call
+
+    get pricing_path(map: "on", game_id: other.id), headers: { "Turbo-Frame" => "seat_map_listings" }
+
+    assert_response :success
+    assert_select "turbo-frame#seat_map_listings"
+    assert_select "#seat-map-game option[selected][value='#{other.id}']"
+    assert_select "[data-seat-map-group='set_aside']", 1, "the Kings game had courtside and Standard Admission listings"
+    assert_select "[data-pricing-game]", count: 0
+    assert_no_match "<html", response.body
+  end
+
+  test "three.js is pinned for the seat map but never preloaded" do
+    get pricing_path(map: "on")
+
+    imports = JSON.parse(css_select("script[type='importmap']").first.text)["imports"]
+    assert imports.key?("three")
+    assert imports.key?("arena3d/viewer")
+    assert_select "link[rel='modulepreload'][href*='three']", count: 0
+    assert_select "link[rel='modulepreload'][href*='arena3d']", count: 0
+  end
+
+  test "the game page links to its seats on the map" do
+    get game_path(@game)
+    assert_select "a[data-seat-map-link='#{@game.id}'][href=?]", pricing_path(map: "on", game_id: @game.id, anchor: "seat-map")
+  end
+
   test "filters narrow the board" do
     @game.listings.create!(seat_numbers: [ 1, 2, 3 ], platform: "ticketmaster", ask_price: 400, verified_at: Time.current)
 

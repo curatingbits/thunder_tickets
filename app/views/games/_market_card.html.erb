@@ -79,6 +79,13 @@
       </dd>
     </dl>
 
+    <% if game.game_date >= Date.current %>
+      <p class="text-sm">
+        <%= link_to "See where these sit on the 3D seat map →", pricing_path(map: "on", game_id: game.id, anchor: "seat-map"),
+              class: "text-accent hover:brightness-125", data: { seat_map_link: game.id } %>
+      </p>
+    <% end %>
+
     <details class="text-sm">
       <summary class="cursor-pointer text-accent">All <%= snap.captured_count %> listings read</summary>
       <table class="data-table mt-2">

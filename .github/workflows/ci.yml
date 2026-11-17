@@ -38,6 +38,9 @@ jobs:
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/importmap audit
 
+      - name: Check the vendored three.js against its manifest
+        run: bin/rails three:verify
+
   lint:
     runs-on: ubuntu-latest
     steps:

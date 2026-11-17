@@ -8,5 +8,6 @@ class MobileSystemTestCase < ApplicationSystemTestCase
   # which every system test would then share.
   driven_by :selenium, using: :headless_chrome, screen_size: [ 390, 844 ], options: { name: :mobile_chrome } do |options|
     options.add_emulation(device_metrics: { width: 390, height: 844, pixelRatio: 3, touch: true })
+    WEBGL.each { |flag| options.add_argument(flag) }
   end
 end

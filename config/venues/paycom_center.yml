@@ -1,0 +1,139 @@
+# Paycom Center's lower bowl at the Thunder bench end: sections 119, 120,
+# 101 and 102, drawn by the seat map on the Pricing page (Venue::Layout).
+#
+# Facing this end from the court, left to right: 119, 120, 101, 102.
+# - 120 and 101 are the two halves behind the basket: straight rows parallel
+#   to the baseline, split by a center aisle on the basket line.
+# - 119 and 102 are corner wedges with diagonal rows; team tunnels run along
+#   their outer sides (118/119 and 102/103).
+#
+# Seat numbers run left to right as seen from the court (seat 1 is on the
+# right for someone sitting there). In 101, seat 1 is on the center aisle, so
+# our DD 1-3 sit right behind the basket; in 120, seat 1 is at the 119 end.
+#
+# Each row: its seats, and "offset", the empty seat widths at the end next to
+# the center (the aisle, or the basket support in the floor rows). A row that
+# isn't listed doesn't exist in that section. Row SA, 120's accessible row,
+# stands where S would be.
+#
+# Sources: 101 and 120 from Ticketmaster's seat map (Duggan's screenshots,
+# 2026-11-17, every seat counted); the order, shapes and rows from
+# RateYourSeats and the Gametime map. 119 and 102 are estimates from the
+# map's outline: nobody publishes their row lengths.
+name: Paycom Center
+sections:
+  "119":
+    shape: corner
+    side: left
+    source: estimated
+    rows: &corner
+      AA: 3
+      BB: 5
+      CC: 6
+      DD: 7
+      EE: 9
+      FF: 9
+      GG: 11
+      HH: 11
+      JJ: 11
+      KK: 11
+      LL: 11
+      MM: 11
+      NN: 11
+      PP: 16
+      QQ: 16
+      RR: 17
+      SS: 17
+      TT: 18
+      UU: 18
+      J: 19
+      K: 19
+      L: 20
+      M: 20
+      N: 20
+      P: 21
+      Q: 21
+      R: 21
+      S: 21
+      T: 21
+      U: 21
+  "120":
+    shape: baseline
+    side: left
+    source: Ticketmaster seat map
+    rows:
+      FL1: { seats: 12, offset: 3 }
+      FL2: { seats: 12, offset: 3 }
+      FL3: { seats: 12, offset: 3 }
+      AA: 6
+      BB: 6
+      CC: 7
+      DD: 7
+      EE: 8
+      FF: 8
+      GG: 9
+      HH: 10
+      JJ: 10
+      KK: 11
+      LL: 11
+      MM: 12
+      NN: 12
+      PP: 13
+      QQ: 13
+      RR: 14
+      SS: 14
+      TT: 14
+      UU: 12
+      J: 13
+      K: 14
+      L: 14
+      M: 14
+      N: 14
+      P: 15
+      Q: 14
+      R: 15
+      SA: 15
+      U: 11
+  "101":
+    shape: baseline
+    side: right
+    source: Ticketmaster seat map
+    rows:
+      FL1: { seats: 12, offset: 3 }
+      FL2: { seats: 12, offset: 3 }
+      FL3: { seats: 12, offset: 3 }
+      AA: 6
+      BB: 6
+      CC: 7
+      DD: 7
+      EE: 8
+      FF: 8
+      GG: 9
+      HH: 9
+      JJ: 10
+      KK: 11
+      LL: 11
+      MM: 12
+      NN: 12
+      PP: 13
+      QQ: 13
+      RR: 14
+      SS: 14
+      TT: 14
+      UU: 12
+      J: 13
+      K: 14
+      L: 14
+      M: 14
+      N: 14
+      P: 15
+      Q: 14
+      R: 15
+      S: 15
+      T: { seats: 10, offset: 1 }
+      U: 11
+  "102":
+    shape: corner
+    side: right
+    source: estimated
+    rows: *corner

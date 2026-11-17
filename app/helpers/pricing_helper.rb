@@ -34,6 +34,21 @@ module PricingHelper
     amount.nil? ? "—" : number_to_currency(amount, precision: 0)
   end
 
+  # "Seats 6–7", "Seat 5", "Seats 1, 3"
+  def seat_range(seats)
+    seats = Array(seats).sort
+    return if seats.empty?
+    return "Seat #{seats.first}" if seats.one?
+
+    contiguous = seats.each_cons(2).all? { |a, b| b == a + 1 }
+    contiguous ? "Seats #{seats.first}–#{seats.last}" : "Seats #{seats.join(', ')}"
+  end
+
+  # "Sun, Dec 13 · Toronto Raptors"
+  def seat_map_game_label(game)
+    "#{game.game_date.strftime('%a, %b %-d')} · #{game.opponent.name}"
+  end
+
   # "$260 all-in · $214 list"
   def all_in_and_list(all_in, multiplier)
     return "—" if all_in.nil?

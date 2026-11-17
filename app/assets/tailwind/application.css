@@ -78,6 +78,18 @@
    * CVD dE 26.8, normal-vision dE 31.8, both >= 3:1. */
   --color-chart-series-1: #3987e5;
   --color-chart-series-2: #d95926;
+  /* Seat map (the legend, and arena3d/viewer.js reads them). Price is the
+   * dataviz sequential blue as a 5-step ordinal ramp, cheap to expensive,
+   * brightening as it climbs on dark; validated on --color-surface (all
+   * ordinal checks pass, dimmest step 2.58:1). Our seats take series-2's
+   * orange. Empty seats are furniture, not data: low contrast on purpose. */
+  --color-price-1: #1c5cab;
+  --color-price-2: #2a78d6;
+  --color-price-3: #5598e7;
+  --color-price-4: #86b6ef;
+  --color-price-5: #cde2fb;
+  --color-seat: #3b4261;
+  --color-seat-ours: #d95926;
 }
 
 /* ---------------------------------------------------------------
@@ -127,6 +139,14 @@
     /* Light slots 1-2 on white: CVD dE 24.7, normal-vision dE 33.6, >= 3:1. */
     --color-chart-series-1: #2a78d6;
     --color-chart-series-2: #eb6834;
+    /* Seat map: the ramp darkens as it climbs; validated on white (dimmest 2.11:1). */
+    --color-price-1: #86b6ef;
+    --color-price-2: #5598e7;
+    --color-price-3: #2a78d6;
+    --color-price-4: #1c5cab;
+    --color-price-5: #0d366b;
+    --color-seat: #c3c9dc;
+    --color-seat-ours: #eb6834;
   }
 
   html[data-theme="system"] {
@@ -156,6 +176,13 @@
       --color-chart-neutral: #6e78a8;
       --color-chart-series-1: #2a78d6;
       --color-chart-series-2: #eb6834;
+      --color-price-1: #86b6ef;
+      --color-price-2: #5598e7;
+      --color-price-3: #2a78d6;
+      --color-price-4: #1c5cab;
+      --color-price-5: #0d366b;
+      --color-seat: #c3c9dc;
+      --color-seat-ours: #eb6834;
     }
   }
 

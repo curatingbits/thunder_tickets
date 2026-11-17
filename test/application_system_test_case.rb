@@ -1,7 +1,12 @@
 require "test_helper"
 
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
-  driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ]
+  # Software WebGL (SwiftShader), so the 3D seat map draws without a GPU, as on CI.
+  WEBGL = %w[--use-angle=swiftshader --enable-unsafe-swiftshader].freeze
+
+  driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ] do |options|
+    WEBGL.each { |flag| options.add_argument(flag) }
+  end
 
   # Signs in through the real login form.
   def sign_in_via_form(user = users(:admin), password: "password")
