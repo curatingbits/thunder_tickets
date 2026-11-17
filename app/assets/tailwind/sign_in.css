@@ -1,0 +1,410 @@
+/* ---------------------------------------------------------------
+ * The sign-in page: an arena backdrop (arena_wave_controller.js)
+ * behind a frosted card. Built on the theme tokens, so it follows
+ * light and dark like the rest of the app.
+ *
+ * Nothing on the page changes height when a message appears: a
+ * failed sign-in fills a line under the password that is always
+ * there, and other messages float in as a toast.
+ * --------------------------------------------------------------- */
+
+@layer base {
+  :root {
+    --auth-shadow: 0 32px 90px -32px rgb(0 0 0 / 0.7);
+    --auth-sheen: rgb(255 255 255 / 0.07);
+    --auth-glass: 72%;
+  }
+
+  html[data-theme="light"] {
+    --auth-shadow: 0 30px 70px -34px rgb(36 40 59 / 0.32);
+    --auth-sheen: rgb(255 255 255 / 0.85);
+    --auth-glass: 78%;
+  }
+
+  @media (prefers-color-scheme: light) {
+    html[data-theme="system"] {
+      --auth-shadow: 0 30px 70px -34px rgb(36 40 59 / 0.32);
+      --auth-sheen: rgb(255 255 255 / 0.85);
+      --auth-glass: 78%;
+    }
+  }
+}
+
+@layer components {
+  /* The arena, fixed behind everything. */
+  .auth-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: var(--color-canvas);
+  }
+
+  .auth-backdrop canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Arena lights: two soft pools of brand color drifting overhead. */
+  .auth-light {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .auth-light--blue {
+    width: 75vmax;
+    height: 75vmax;
+    left: -30vmax;
+    top: -42vmax;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 30%, transparent), transparent);
+    animation: auth-drift-a 24s ease-in-out infinite alternate;
+  }
+
+  .auth-light--orange {
+    width: 60vmax;
+    height: 60vmax;
+    right: -28vmax;
+    top: -30vmax;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--color-brand-orange) 20%, transparent), transparent);
+    animation: auth-drift-b 30s ease-in-out infinite alternate;
+  }
+
+  /* Darkens the edges so the eye lands on the card. */
+  .auth-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 50% 42%, transparent 45%, color-mix(in oklab, var(--color-canvas) 80%, transparent) 100%);
+  }
+
+  /* The page column, clear of the notch and home indicator. */
+  .auth-stage {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: max(2.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+             max(2.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+
+  .auth-logo {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    justify-content: center;
+    animation: auth-logo 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .auth-logo::before {
+    content: "";
+    position: absolute;
+    inset: -35% -25%;
+    z-index: -1;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 20%, transparent), transparent);
+  }
+
+  .auth-card {
+    position: relative;
+    width: 100%;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: color-mix(in oklab, var(--color-surface) var(--auth-glass), transparent);
+    border: 1px solid color-mix(in oklab, var(--color-content-strong) 9%, transparent);
+    box-shadow: inset 0 1px 0 var(--auth-sheen), var(--auth-shadow);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    animation: auth-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both;
+  }
+
+  @media (max-width: 380px) {
+    .auth-card { padding: 1.5rem; }
+  }
+
+  /* A failed sign-in re-renders the page: no second entrance, one short shake. */
+  .auth-retry .auth-logo,
+  .auth-retry .auth-footnote {
+    animation: none;
+  }
+
+  .auth-card--error {
+    animation: auth-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  .auth-label {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--color-content-dim);
+  }
+
+  .auth-link {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-underline-offset: 3px;
+  }
+
+  .auth-link:hover { text-decoration: underline; }
+
+  .auth-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
+  }
+
+  .auth-field { position: relative; }
+
+  .auth-field-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    width: 1.25rem;
+    height: 1.25rem;
+    translate: 0 -50%;
+    color: var(--color-muted);
+    pointer-events: none;
+    transition: color 0.2s;
+  }
+
+  .auth-field:focus-within .auth-field-icon { color: var(--color-accent); }
+
+  /* 16px text so iPhones don't zoom in on focus. */
+  .auth-input {
+    display: block;
+    width: 100%;
+    height: 3rem;
+    padding: 0 1rem 0 2.75rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--color-subtle);
+    background: color-mix(in oklab, var(--color-canvas) 60%, transparent);
+    color: var(--color-content-strong);
+    font-size: 1rem;
+    caret-color: var(--color-accent);
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  }
+
+  .auth-input::placeholder {
+    color: var(--color-muted);
+    opacity: 0.75;
+  }
+
+  .auth-input:hover { border-color: var(--color-strong); }
+
+  .auth-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: color-mix(in oklab, var(--color-canvas) 78%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent) 20%, transparent);
+  }
+
+  .auth-input[aria-invalid="true"] {
+    border-color: var(--color-negative);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-negative) 15%, transparent);
+  }
+
+  .auth-input--reveal { padding-right: 3.25rem; }
+
+  /* Password managers fill in yellow; keep the field's own colors. */
+  .auth-input:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-content-strong);
+    box-shadow: inset 0 0 0 100px var(--color-surface);
+    transition: background-color 600000s 0s;
+  }
+
+  .auth-input:-webkit-autofill:focus {
+    box-shadow: inset 0 0 0 100px var(--color-surface), 0 0 0 4px color-mix(in oklab, var(--color-accent) 20%, transparent);
+  }
+
+  .auth-reveal {
+    position: absolute;
+    right: 0.375rem;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    translate: 0 -50%;
+    border-radius: 0.625rem;
+    color: var(--color-muted);
+    transition: color 0.2s, background-color 0.2s;
+  }
+
+  .auth-reveal:hover {
+    color: var(--color-content-strong);
+    background: color-mix(in oklab, var(--color-content-strong) 8%, transparent);
+  }
+
+  .auth-reveal:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 0;
+  }
+
+  /* The one message line under the password. Always 20px tall. */
+  .auth-message {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.25rem;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    color: var(--color-negative);
+  }
+
+  .auth-message[data-tone="caps"] { color: var(--color-warning); }
+
+  .auth-message > * { animation: auth-fade 0.25s ease-out both; }
+
+  .auth-submit {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 3rem;
+    margin-top: 1.25rem;
+    border-radius: 0.875rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-canvas);
+    background: linear-gradient(180deg, color-mix(in oklab, var(--color-accent) 88%, white), var(--color-accent));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28),
+                0 12px 30px -12px color-mix(in oklab, var(--color-accent) 75%, transparent);
+    transition: transform 0.15s, filter 0.2s, box-shadow 0.2s;
+  }
+
+  .auth-submit:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3),
+                0 16px 36px -12px color-mix(in oklab, var(--color-accent) 85%, transparent);
+  }
+
+  .auth-submit:active {
+    filter: brightness(0.97);
+    transform: none;
+  }
+
+  .auth-submit:focus-visible {
+    outline: none;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28),
+                0 0 0 4px color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+
+  .auth-submit svg { transition: transform 0.2s; }
+  .auth-submit:hover svg { transform: translateX(3px); }
+
+  .auth-footnote {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: var(--color-muted);
+    text-shadow: 0 0 6px var(--color-canvas), 0 0 14px var(--color-canvas);
+    animation: auth-fade 0.8s ease-out 0.5s both;
+  }
+
+  /* Messages from other pages float over the top; they never move the form. */
+  .auth-toasts {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 0;
+    pointer-events: none;
+  }
+
+  .auth-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: min(26rem, 100%);
+    padding: 0.875rem 0.875rem 0.875rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-content-strong);
+    background: color-mix(in oklab, var(--color-surface) 86%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-content-strong) 10%, transparent);
+    box-shadow: inset 0 1px 0 var(--auth-sheen), var(--auth-shadow);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    pointer-events: auto;
+    animation: auth-toast 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s both;
+  }
+
+  .auth-toast button {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: -0.25rem -0.125rem -0.25rem 0;
+    border-radius: 0.5rem;
+    color: var(--color-muted);
+  }
+
+  .auth-toast button:hover {
+    color: var(--color-content-strong);
+    background: color-mix(in oklab, var(--color-content-strong) 8%, transparent);
+  }
+
+  .auth-toast.is-leaving {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-light,
+    .auth-logo,
+    .auth-card,
+    .auth-card--error,
+    .auth-footnote,
+    .auth-toast,
+    .auth-message > * {
+      animation: none;
+    }
+  }
+}
+
+@keyframes auth-drift-a {
+  to { transform: translate(10vmax, 7vmax) scale(1.08); }
+}
+
+@keyframes auth-drift-b {
+  to { transform: translate(-8vmax, 9vmax) scale(1.12); }
+}
+
+@keyframes auth-logo {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+}
+
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+}
+
+@keyframes auth-fade {
+  from { opacity: 0; }
+}
+
+@keyframes auth-toast {
+  from { opacity: 0; transform: translateY(-14px); }
+}
+
+@keyframes auth-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}

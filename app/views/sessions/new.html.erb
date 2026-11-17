@@ -1,43 +1,79 @@
-<div class="min-h-screen flex items-center justify-center bg-canvas py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full space-y-8">
-    <div>
-      <h1 class="flex justify-center">
-        <%= render "shared/logo_stacked", class: "h-36 w-auto" %>
-      </h1>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-content-strong">
-        Sign in to your account
-      </h2>
-      <p class="mt-2 text-center text-sm text-content-dim">
-        Manage your Thunder season tickets
-      </p>
+<% content_for :title, "Sign in · MADR Tickets" %>
+
+<%# Messages from other pages (signed out, reset link sent) float in over the top,
+    so they never move the form. A failed sign-in uses the line under the password. %>
+<% content_for :flash do %>
+  <% if flash.any? %>
+    <div class="auth-toasts" data-turbo-temporary>
+      <% flash.each do |type, message| %>
+        <% notice = type.to_s == "notice" %>
+        <div class="auth-toast" role="<%= notice ? "status" : "alert" %>" data-controller="flash"
+             data-flash-fade-value="true" data-flash-timeout-value="<%= notice ? 6000 : 0 %>">
+          <%= icon(notice ? :check_circle : :exclamation_circle, "h-5 w-5 shrink-0 #{notice ? "text-positive" : "text-negative"}") %>
+          <span class="flex-1"><%= message %></span>
+          <button type="button" data-action="flash#dismiss" aria-label="Dismiss message"><%= icon(:x, "h-4 w-4") %></button>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<%# The arena: kept across a failed sign-in's re-render, so the wave carries on. %>
+<div id="sign-in-arena" class="auth-backdrop" data-turbo-permanent data-controller="arena-wave" aria-hidden="true">
+  <div class="auth-light auth-light--blue"></div>
+  <div class="auth-light auth-light--orange"></div>
+  <canvas data-arena-wave-target="canvas"></canvas>
+  <div class="auth-vignette"></div>
+</div>
+
+<div class="auth-stage <%= "auth-retry" if @login_error %>">
+  <div class="w-full max-w-[25rem]">
+    <h1 class="auth-logo">
+      <%= render "shared/logo_stacked", class: "h-28 w-auto sm:h-32" %>
+    </h1>
+
+    <div class="auth-card mt-8 <%= "auth-card--error" if @login_error %>" data-controller="login">
+      <h2 class="text-2xl font-bold tracking-tight text-content-strong">Sign in</h2>
+      <p class="mt-1.5 text-sm text-content-dim">Your seats, sales and payouts, all in one place.</p>
+
+      <%= form_with url: login_path, method: :post, class: "mt-7" do %>
+        <div>
+          <label for="email" class="auth-label">Email</label>
+          <div class="auth-field mt-2">
+            <%= icon(:mail, "auth-field-icon") %>
+            <%= email_field_tag :email, params[:email], class: "auth-input", required: true, autofocus: @login_error.blank?,
+                  autocomplete: "username", autocapitalize: "none", spellcheck: false, placeholder: "you@example.com",
+                  aria: { invalid: (true if @login_error), describedby: "login-message" },
+                  data: { login_target: "field", action: "input->login#edit" } %>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div class="flex items-center justify-between gap-4">
+            <label for="password" class="auth-label">Password</label>
+            <%= link_to "Forgot password?", new_password_reset_path, class: "auth-link" %>
+          </div>
+          <div class="auth-field mt-2">
+            <%= icon(:lock, "auth-field-icon") %>
+            <%= password_field_tag :password, nil, class: "auth-input auth-input--reveal", required: true, autofocus: @login_error.present?,
+                  autocomplete: "current-password", placeholder: "Your password",
+                  aria: { invalid: (true if @login_error), describedby: "login-message" },
+                  data: { login_target: "field password", action: "input->login#edit keydown->login#caps keyup->login#caps" } %>
+            <button type="button" class="auth-reveal" aria-label="Show password" aria-pressed="false" aria-controls="password"
+                    data-login-target="reveal" data-action="login#reveal">
+              <%= icon(:eye, "h-5 w-5") %><%= icon(:eye_off, "hidden h-5 w-5") %>
+            </button>
+          </div>
+          <p id="login-message" class="auth-message" data-login-target="message" data-tone="<%= "error" if @login_error %>" aria-live="polite"><% if @login_error %><%= icon(:exclamation_circle, "h-4 w-4 shrink-0") %><span><%= @login_error %></span><% end %></p>
+          <template data-login-target="caps"><%= icon(:arrow_up, "h-4 w-4 shrink-0") %><span>Caps Lock is on</span></template>
+        </div>
+
+        <%= button_tag type: "submit", class: "auth-submit", data: { turbo_submits_with: "Signing in…" } do %>
+          Sign in<%= icon(:arrow_right, "h-[18px] w-[18px]") %>
+        <% end %>
+      <% end %>
     </div>
 
-    <%= form_with url: login_path, method: :post, class: "mt-8 space-y-6" do %>
-      <div class="rounded-md shadow-sm space-y-4">
-        <div>
-          <label for="email" class="block text-sm font-medium text-content mb-2">Email address</label>
-          <%= email_field_tag :email, nil, placeholder: "admin@madrtickets.com", class: "input-field", required: true, autofocus: true %>
-        </div>
-
-        <div>
-          <label for="password" class="block text-sm font-medium text-content mb-2">Password</label>
-          <%= password_field_tag :password, nil, placeholder: "Enter your password", class: "input-field", required: true %>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between">
-        <div class="text-sm">
-          <%= link_to "Forgot your password?", new_password_reset_path, class: "font-medium text-accent hover:brightness-125" %>
-        </div>
-      </div>
-
-      <div>
-        <%= submit_tag "Sign in", class: "w-full btn-primary text-lg py-3" %>
-      </div>
-    <% end %>
-
-    <div class="text-center text-sm text-muted">
-      <p>This is an invite-only system</p>
-    </div>
+    <p class="auth-footnote">Invite only. You'll stay signed in on this device for a year.</p>
   </div>
 </div>

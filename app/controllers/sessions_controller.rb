@@ -13,7 +13,9 @@ class SessionsController < ApplicationController
       log_in(user)
       redirect_to root_path, notice: "Welcome back, #{user.name}!"
     else
-      flash.now[:alert] = "Invalid email or password"
+      # Shown in the line under the password, which is always there, so the
+      # page doesn't move.
+      @login_error = "Wrong email or password. Try again."
       render :new, status: :unprocessable_entity
     end
   end

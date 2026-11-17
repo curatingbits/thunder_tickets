@@ -37,7 +37,8 @@
 
       <%= render "layouts/bottom_nav" %>
     <% else %>
-      <%= render "layouts/flash" %>
+      <%# A page can show its own messages (the sign-in page floats them in). %>
+      <%= content_for?(:flash) ? yield(:flash) : render("layouts/flash") %>
       <main>
         <%= yield %>
       </main>
