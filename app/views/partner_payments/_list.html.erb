@@ -1,0 +1,19 @@
+<ul class="card p-0 divide-y divide-subtle overflow-hidden">
+  <% payments.each do |payment| %>
+    <li>
+      <%= link_to payment, class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-surface-raised" do %>
+        <div class="min-w-0">
+          <p class="font-medium text-content-strong">
+            <span class="figure"><%= cents(payment.amount_cents) %></span>
+            <span class="text-sm text-content-dim">· <%= payment_direction(payment) %> · <%= payment.occurred_on.strftime("%b %-d, %Y") %></span>
+          </p>
+          <p class="text-sm text-content-dim truncate">“<%= payment.memo %>”</p>
+          <% if (allocs = payment.allocations.select(&:active?)).any? %>
+            <p class="text-xs text-muted"><%= allocs.map { |a| "#{a.game.opponent.name} #{a.game.game_date.strftime("%-m/%-d")}" }.join(", ") %></p>
+          <% end %>
+        </div>
+        <%= payment_chip(payment) %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

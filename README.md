@@ -105,6 +105,22 @@ over time. Recommendations are advisory: nothing here changes a Ticketmaster
 listing. Thresholds and fee assumptions live in Settings; the seller fee is left
 unknown until it's set there or measured from sales linked to listings.
 
+### Money
+The **Money** tab answers which sold games have been paid out and what's still
+owed. Mark pays Duggan half of each sale's payout over Venmo. Each sold game in a
+tracked season (2026-27 on) shows what's owed, what's been paid, and its status:
+Paid, Partly paid, Unpaid or Needs review.
+
+Payments come in read-only from the finance app (the weekly Venmo sync) or by
+hand (**Add a payment**). A payment settles automatically only when its note and
+amount clearly fit (for example "Thunder vs Twolves 11/25" for exactly half of
+that game's payout). Payments covering two games and part-payments that say so
+are fine. Anything uncertain lands in **Needs review** with a suggestion you can
+apply, change or ignore. Season-invoice installments ("26/27") and personal
+payments are set aside. Every change is kept: undoing an allocation needs a
+reason, and nothing is ever deleted. If a sale's payout went to Duggan's account
+instead, set **Payout went to** on the sale; then Duggan owes Mark half.
+
 ### Listings
 Record what you've listed on each game's page (**List seats**), or hold seats
 you're keeping. Each game shows a listing status: Listed, Partially sold, Not

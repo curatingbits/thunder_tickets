@@ -1,0 +1,22 @@
+<% content_for :title, "Payments · MADR TICKETS" %>
+
+<div class="space-y-6">
+  <div>
+    <%= link_to "← Money", money_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-3xl sm:text-4xl font-bold text-content-strong mt-2">Payments</h1>
+    <p class="text-content-dim mt-2">Venmo payments between <%= Settlements.owner_name %> and <%= Settlements.partner_first_name %>, newest first.</p>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <% [ [ "All", nil ], [ "Needs review", "review" ], [ "Open", "open" ], [ "Settled", "settled" ], [ "Ignored", "ignored" ] ].each do |label, filter| %>
+      <%= link_to label, partner_payments_path(filter: filter),
+            class: "px-3 py-1.5 rounded-lg text-sm #{params[:filter] == filter ? "bg-accent text-canvas font-semibold" : "bg-surface-raised text-content hover:bg-strong"}" %>
+    <% end %>
+  </div>
+
+  <% if @payments.any? %>
+    <%= render "list", payments: @payments %>
+  <% else %>
+    <div class="card text-center py-12"><p class="text-content-dim text-lg">No payments here.</p></div>
+  <% end %>
+</div>

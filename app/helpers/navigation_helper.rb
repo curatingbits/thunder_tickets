@@ -8,7 +8,8 @@ module NavigationHelper
     [
       nav_item(:home, "Home", root_path, :home, controllers: %w[dashboard]),
       nav_item(:games, "Games", games_path, :ticket, controllers: %w[games tickets listings listing_reviews manual_scans]),
-      nav_item(:pricing, "Pricing", pricing_path, :chart, controllers: %w[pricing import_runs])
+      nav_item(:pricing, "Pricing", pricing_path, :chart, controllers: %w[pricing import_runs]),
+      nav_item(:money, "Money", money_path, :cash, controllers: %w[settlements partner_payments settlement_allocations])
     ]
   end
 

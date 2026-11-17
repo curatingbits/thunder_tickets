@@ -51,6 +51,20 @@ Rails.application.routes.draw do
     resources :manual_scans, only: [ :new, :create ]
   end
 
+  # Money: what Mark owes, his Venmo payments, and the review queue.
+  get "money", to: "settlements#show", as: :money
+  resources :partner_payments, only: [ :index, :show, :new, :create ] do
+    member do
+      post :apply_suggestion
+      post :allocate
+      post :ignore
+      post :reopen
+    end
+  end
+  resources :settlement_allocations, only: [] do
+    member { post :void }
+  end
+
   # Market value and recommended prices; research run log.
   get "pricing", to: "pricing#index", as: :pricing
   resources :import_runs, only: [ :index, :show ]
@@ -74,6 +88,8 @@ Rails.application.routes.draw do
       resources :import_runs, only: [ :create, :show, :update ] do
         resources :market_scans, only: [ :create ]
       end
+      resources :payment_imports, only: [ :create ]
+      resource :settlement_summary, only: [ :show ]
     end
   end
 

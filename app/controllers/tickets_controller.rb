@@ -85,6 +85,6 @@ class TicketsController < ApplicationController
   end
 
   def ticket_params
-    params.require(:ticket).permit(:section, :row, :seat_number, :sale_price, :buyer_id, :notes, :sold_on)
+    params.require(:ticket).permit(:section, :row, :seat_number, :sale_price, :buyer_id, :notes, :sold_on, :payout_received_by)
   end
 end

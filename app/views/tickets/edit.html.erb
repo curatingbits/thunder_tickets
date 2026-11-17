@@ -69,6 +69,13 @@
       </div>
 
       <div>
+        <%= f.label :payout_received_by, "Payout went to", class: "block text-sm font-medium text-content mb-2" %>
+        <%= f.select :payout_received_by, [ [ "#{Settlements.partner_first_name}'s account (he pays #{Settlements.owner_name} half)", "partner" ],
+                                            [ "#{Settlements.owner_name}'s account (#{Settlements.owner_name} pays #{Settlements.partner_first_name} half)", "owner" ] ],
+                     {}, class: "input-field" %>
+      </div>
+
+      <div>
         <%= f.label :notes, "Notes", class: "block text-sm font-medium text-content mb-2" %>
         <%= f.text_area :notes, rows: 2, placeholder: "Any additional notes...", class: "input-field" %>
       </div>

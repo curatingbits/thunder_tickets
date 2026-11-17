@@ -20,7 +20,14 @@ class AppSetting < ApplicationRecord
                    "Rows near ours vs the section's typical price",
                    "Used until 8 games of history let the app measure it."),
     Definition.new("pricing.prior_weight", :decimal, 2,
-                   "How strongly sparse comparables lean on the section's typical price", nil)
+                   "How strongly sparse comparables lean on the section's typical price", nil),
+    Definition.new("settlement.partner_name", :string, "Mark Augspurger",
+                   "Partner who pays out (as named on Venmo)", nil),
+    Definition.new("settlement.owner_name", :string, "Duggan",
+                   "Who the partner pays", nil),
+    Definition.new("settlement.auto_match_min", :integer, 85,
+                   "Match score needed to settle a payment automatically (0-100)",
+                   "Anything below goes to the review queue.")
   ].index_by(&:key).freeze
 
   belongs_to :updated_by, class_name: "User", optional: true

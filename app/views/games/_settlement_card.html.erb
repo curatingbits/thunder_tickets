@@ -1,0 +1,27 @@
+<%# This game's payout: what the partner owes on its sales and what's been paid. %>
+<% balance = Settlements::Ledger.new([ game.season ]).for_game(game) %>
+<% if balance %>
+  <div class="card space-y-3" data-settlement-card>
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-bold text-content-strong">Payout</h2>
+        <p class="text-sm text-content-dim mt-0.5">
+          Sold <%= cents(balance.revenue_cents) %> · owed <%= cents(balance.expected_cents, signed: true) %> ·
+          paid <%= cents(balance.allocated_cents, signed: true) %>
+        </p>
+      </div>
+      <%= balance_chip(balance.status) %>
+    </div>
+    <% allocations = SettlementAllocation.active.where(game: game).includes(:partner_payment).order(:created_at) %>
+    <% if allocations.any? %>
+      <ul class="space-y-1 text-sm">
+        <% allocations.each do |a| %>
+          <li class="flex justify-between gap-3">
+            <%= link_to "“#{a.partner_payment.memo.to_s.truncate(40)}”", a.partner_payment, class: "text-content hover:text-accent truncate" %>
+            <span class="text-muted whitespace-nowrap figure"><%= a.partner_payment.occurred_on.strftime("%b %-d") %> · <%= cents(a.amount_cents, signed: true) %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+<% end %>

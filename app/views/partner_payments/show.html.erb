@@ -1,0 +1,96 @@
+<% content_for :title, "Payment · MADR TICKETS" %>
+
+<div class="max-w-2xl mx-auto space-y-6">
+  <div>
+    <%= link_to "← Money", money_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <div class="flex items-start justify-between gap-3 mt-2">
+      <h1 class="text-2xl sm:text-3xl font-bold text-content-strong figure"><%= cents(@payment.amount_cents) %></h1>
+      <%= payment_chip(@payment) %>
+    </div>
+    <p class="text-content-dim mt-1"><%= payment_direction(@payment) %> · <%= @payment.occurred_on.strftime("%A, %B %-d, %Y") %></p>
+    <p class="text-content mt-2">“<%= @payment.memo %>”</p>
+    <p class="text-xs text-muted mt-1">
+      <%= @payment.source == "manual" ? "Entered by hand" : "From Venmo via the finance app" %>
+      · <%= @payment.category.humanize %>
+      <%= " · no longer in the finance app" if @payment.source_missing_at %>
+      <% if @payment.possible_duplicate_of %> · possible duplicate of <%= link_to "this payment", @payment.possible_duplicate_of, class: "text-accent" %><% end %>
+    </p>
+  </div>
+
+  <% if (reasons = Array(@payment.match_details["reasons"])).any? || @payment.review_note.present? %>
+    <div class="card text-sm space-y-1">
+      <% if @payment.match_confidence %><p class="text-content-dim">Match score <%= @payment.match_confidence %> of 100</p><% end %>
+      <% reasons.each do |r| %><p class="text-content">· <%= r %></p><% end %>
+      <% if @payment.match_details["waiting"] %><p class="text-content">· Waiting <%= @payment.match_details["waiting"] %></p><% end %>
+      <% if @payment.review_note.present? %><p class="text-muted">Note: <%= @payment.review_note %></p><% end %>
+    </div>
+  <% end %>
+
+  <div class="card space-y-3" data-allocations>
+    <h2 class="text-lg font-bold text-content-strong">Settles</h2>
+    <% if (allocations = @payment.allocations.includes(:game, :created_by, :voided_by).order(:id)).any? %>
+      <ul class="space-y-2">
+        <% allocations.each do |a| %>
+          <li class="bg-canvas rounded-lg p-3 border border-subtle <%= "opacity-60" unless a.active? %>">
+            <div class="flex items-start justify-between gap-3">
+              <div class="text-sm">
+                <p class="font-medium text-content-strong"><%= link_to "#{a.game.game_date.strftime("%b %-d")} · #{a.game.opponent.name}", game_path(a.game), class: "hover:text-accent" %> · <span class="figure"><%= cents(a.amount_cents, signed: true) %></span></p>
+                <p class="text-xs text-muted"><%= a.method == "auto" ? "matched automatically" : "by #{a.created_by&.name || "hand"}" %> · <%= a.reason %></p>
+                <% unless a.active? %><p class="text-xs text-warning">Voided by <%= a.voided_by&.name %>: <%= a.void_reason %></p><% end %>
+              </div>
+              <% if a.active? %>
+                <%= form_with url: void_settlement_allocation_path(a), method: :post, class: "flex flex-col items-end gap-1" do |f| %>
+                  <%= f.text_field :reason, placeholder: "Why undo it?", required: true, class: "input-field text-sm py-1 min-h-[36px] w-40" %>
+                  <%= f.submit "Undo", class: "text-xs text-accent cursor-pointer" %>
+                <% end %>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-sm text-content-dim">Not applied to any game yet.</p>
+    <% end %>
+
+    <% if @payment.unallocated_cents.positive? && @payment.status != "ignored" %>
+      <% if (suggestion = Array(@payment.match_details["suggestion"])).any? %>
+        <%= button_to "Apply the suggestion", apply_suggestion_partner_payment_path(@payment), class: "btn-primary w-full" %>
+      <% end %>
+      <%= form_with url: allocate_partner_payment_path(@payment), method: :post, class: "pt-3 border-t border-subtle space-y-3" do |f| %>
+        <p class="text-sm text-content-dim">Or apply it to a game yourself:</p>
+        <%= f.select :game_id, @games.reverse.map { |g| [ "#{g.game_date.strftime("%b %-d")} · #{g.opponent.name}", g.id ] },
+                     { prompt: "Game" }, class: "input-field" %>
+        <%= f.number_field :amount, step: 0.01, min: 0.01, value: format("%.2f", @payment.unallocated_cents / 100.0), class: "input-field", inputmode: "decimal" %>
+        <%= f.text_field :reason, placeholder: "Why (optional)", class: "input-field" %>
+        <%= f.submit "Apply", class: "btn-secondary w-full" %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="card space-y-3">
+    <% if @payment.status == "ignored" %>
+      <%= button_to "Reopen", reopen_partner_payment_path(@payment), class: "btn-secondary w-full" %>
+    <% elsif @payment.allocations.none?(&:active?) %>
+      <%= form_with url: ignore_partner_payment_path(@payment), method: :post, class: "space-y-2" do |f| %>
+        <p class="text-sm text-content-dim">Not a ticket payment?</p>
+        <%= f.select :category, [ [ "Not about tickets", "unrelated" ], [ "Season invoice share", "cost_share" ] ], {}, class: "input-field" %>
+        <%= f.text_field :note, placeholder: "What it was for", required: true, class: "input-field" %>
+        <%= f.submit "Ignore it", class: "btn-secondary w-full" %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if (events = @payment.audit_events.includes(:user).order(:id)).any? %>
+    <div class="card">
+      <h2 class="section-label mb-2">History</h2>
+      <ul class="space-y-1 text-sm">
+        <% events.each do |e| %>
+          <li class="flex justify-between gap-3">
+            <span class="text-content"><%= e.action.humanize %><%= ": #{e.note}" if e.note.present? %></span>
+            <span class="text-xs text-muted whitespace-nowrap"><%= e.created_at.strftime("%b %-d, %-l:%M %p") %><%= " · #{e.user.name.split.first}" if e.user %></span>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>

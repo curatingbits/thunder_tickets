@@ -1,0 +1,35 @@
+<% content_for :title, "Add a payment · MADR TICKETS" %>
+
+<div class="max-w-xl mx-auto space-y-6">
+  <div>
+    <%= link_to "← Money", money_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-2xl sm:text-3xl font-bold text-content-strong mt-2">Add a payment</h1>
+    <p class="text-sm text-content-dim mt-1">For a payment the finance app doesn't have. It's matched to games the same way.</p>
+  </div>
+
+  <%= form_with model: @payment, class: "card space-y-4" do |f| %>
+    <% if @payment.errors.any? %>
+      <div class="rounded-lg p-4 bg-negative/15 border border-negative/40 text-negative text-sm" role="alert"><%= @payment.errors.full_messages.to_sentence %></div>
+    <% end %>
+    <div>
+      <%= f.label :direction, "Who paid", class: "block text-sm font-medium text-content mb-2" %>
+      <%= f.select :direction, [ [ "#{Settlements.partner_first_name} paid #{Settlements.owner_name}", "incoming" ],
+                                 [ "#{Settlements.owner_name} paid #{Settlements.partner_first_name}", "outgoing" ] ], {}, class: "input-field" %>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :occurred_on, "Date", class: "block text-sm font-medium text-content mb-2" %>
+        <%= f.date_field :occurred_on, class: "input-field" %>
+      </div>
+      <div>
+        <%= label_tag "partner_payment_amount", "Amount", class: "block text-sm font-medium text-content mb-2" %>
+        <%= number_field_tag "partner_payment[amount]", params.dig(:partner_payment, :amount), step: 0.01, min: 0.01, id: "partner_payment_amount", class: "input-field", inputmode: "decimal" %>
+      </div>
+    </div>
+    <div>
+      <%= f.label :memo, "Venmo note", class: "block text-sm font-medium text-content mb-2" %>
+      <%= f.text_field :memo, class: "input-field", placeholder: "Thunder vs Lakers 4/1" %>
+    </div>
+    <%= f.submit "Add payment", class: "btn-primary w-full" %>
+  <% end %>
+</div>

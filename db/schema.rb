@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_030300) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -64,6 +64,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
     t.index ["updated_by_id"], name: "index_app_settings_on_updated_by_id"
   end
 
+  create_table "audit_events", force: :cascade do |t|
+    t.string "auditable_type", null: false
+    t.integer "auditable_id", null: false
+    t.string "action", null: false
+    t.json "changeset", default: {}, null: false
+    t.text "note"
+    t.integer "user_id"
+    t.integer "api_token_id"
+    t.datetime "created_at", null: false
+    t.index ["api_token_id"], name: "index_audit_events_on_api_token_id"
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_events_on_auditable"
+    t.index ["user_id"], name: "index_audit_events_on_user_id"
+  end
+
   create_table "buyers", force: :cascade do |t|
     t.string "name"
     t.string "email"
@@ -88,6 +102,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
     t.datetime "tipoff_at"
     t.string "ticketmaster_event_id"
     t.string "ticketmaster_url"
+    t.integer "series_game_number"
     t.index ["opponent_id"], name: "index_games_on_opponent_id"
     t.index ["season_id"], name: "index_games_on_season_id"
     t.index ["ticketmaster_event_id"], name: "index_games_on_ticketmaster_event_id", unique: true, where: "ticketmaster_event_id IS NOT NULL"
@@ -249,6 +264,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
     t.index ["previous_snapshot_id"], name: "index_market_snapshots_on_previous_snapshot_id"
   end
 
+  create_table "partner_payments", force: :cascade do |t|
+    t.integer "import_run_id"
+    t.string "source", null: false
+    t.string "external_id", null: false
+    t.date "occurred_on", null: false
+    t.integer "amount_cents", null: false
+    t.string "direction", null: false
+    t.string "counterparty"
+    t.text "memo"
+    t.string "raw_name"
+    t.string "account_name"
+    t.string "category", default: "unknown", null: false
+    t.string "status", default: "unmatched", null: false
+    t.integer "match_confidence"
+    t.json "match_details", default: {}, null: false
+    t.integer "possible_duplicate_of_id"
+    t.datetime "source_missing_at"
+    t.integer "reviewed_by_id"
+    t.datetime "reviewed_at"
+    t.text "review_note"
+    t.json "raw", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["import_run_id"], name: "index_partner_payments_on_import_run_id"
+    t.index ["occurred_on", "amount_cents", "direction"], name: "idx_on_occurred_on_amount_cents_direction_3b9cebf88d"
+    t.index ["possible_duplicate_of_id"], name: "index_partner_payments_on_possible_duplicate_of_id"
+    t.index ["reviewed_by_id"], name: "index_partner_payments_on_reviewed_by_id"
+    t.index ["source", "external_id"], name: "index_partner_payments_on_source_and_external_id", unique: true
+    t.index ["status", "occurred_on"], name: "index_partner_payments_on_status_and_occurred_on"
+    t.check_constraint "amount_cents > 0", name: "partner_payments_amount_positive"
+    t.check_constraint "category IN ('settlement', 'cost_share', 'unrelated', 'unknown')", name: "partner_payments_category"
+    t.check_constraint "direction IN ('incoming', 'outgoing')", name: "partner_payments_direction"
+    t.check_constraint "status IN ('unmatched', 'partially_matched', 'matched', 'needs_review', 'ignored')", name: "partner_payments_status"
+  end
+
   create_table "seasons", force: :cascade do |t|
     t.string "year"
     t.decimal "total_season_cost"
@@ -258,7 +308,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
     t.datetime "updated_at", null: false
     t.string "seat_section"
     t.string "seat_row", default: "DD"
+    t.boolean "settlement_tracked", default: true, null: false
+    t.decimal "partner_split_pct", precision: 5, scale: 2, default: "50.0", null: false
     t.index ["year"], name: "index_seasons_on_year", unique: true
+  end
+
+  create_table "settlement_allocations", force: :cascade do |t|
+    t.integer "partner_payment_id", null: false
+    t.integer "game_id", null: false
+    t.integer "amount_cents", null: false
+    t.string "method", null: false
+    t.integer "confidence"
+    t.string "reason", null: false
+    t.integer "created_by_id"
+    t.datetime "voided_at"
+    t.integer "voided_by_id"
+    t.string "void_reason"
+    t.integer "replaces_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_settlement_allocations_on_created_by_id"
+    t.index ["game_id"], name: "index_settlement_allocations_on_game_id"
+    t.index ["partner_payment_id", "game_id"], name: "index_settlement_allocations_one_active_per_payment_game", unique: true, where: "voided_at IS NULL"
+    t.index ["partner_payment_id"], name: "index_settlement_allocations_on_partner_payment_id"
+    t.index ["replaces_id"], name: "index_settlement_allocations_on_replaces_id"
+    t.index ["voided_by_id"], name: "index_settlement_allocations_on_voided_by_id"
+    t.check_constraint "amount_cents <> 0", name: "settlement_allocations_amount_nonzero"
+    t.check_constraint "method IN ('auto', 'manual')", name: "settlement_allocations_method"
   end
 
   create_table "teams", force: :cascade do |t|
@@ -284,9 +360,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
     t.datetime "transferred_at"
     t.integer "listing_id"
     t.decimal "list_price_at_sale", precision: 10, scale: 2
+    t.string "payout_received_by", default: "partner", null: false
     t.index ["buyer_id"], name: "index_tickets_on_buyer_id"
     t.index ["game_id"], name: "index_tickets_on_game_id"
     t.index ["listing_id"], name: "index_tickets_on_listing_id"
+    t.check_constraint "payout_received_by IN ('partner', 'owner')", name: "tickets_payout_received_by"
   end
 
   create_table "users", force: :cascade do |t|
@@ -311,6 +389,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "api_tokens", "users", column: "created_by_id"
   add_foreign_key "app_settings", "users", column: "updated_by_id"
+  add_foreign_key "audit_events", "api_tokens"
+  add_foreign_key "audit_events", "users"
   add_foreign_key "games", "seasons"
   add_foreign_key "games", "teams", column: "opponent_id"
   add_foreign_key "import_runs", "api_tokens"
@@ -326,6 +406,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_020600) do
   add_foreign_key "market_snapshots", "games"
   add_foreign_key "market_snapshots", "import_runs"
   add_foreign_key "market_snapshots", "market_snapshots", column: "previous_snapshot_id"
+  add_foreign_key "partner_payments", "import_runs"
+  add_foreign_key "partner_payments", "partner_payments", column: "possible_duplicate_of_id"
+  add_foreign_key "partner_payments", "users", column: "reviewed_by_id"
+  add_foreign_key "settlement_allocations", "games"
+  add_foreign_key "settlement_allocations", "partner_payments"
+  add_foreign_key "settlement_allocations", "settlement_allocations", column: "replaces_id"
+  add_foreign_key "settlement_allocations", "users", column: "created_by_id"
+  add_foreign_key "settlement_allocations", "users", column: "voided_by_id"
   add_foreign_key "tickets", "buyers"
   add_foreign_key "tickets", "games"
   add_foreign_key "tickets", "listings"

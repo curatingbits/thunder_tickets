@@ -10,8 +10,9 @@ module Attention
     STALE_RESEARCH = 8.days
     MARKET_DROP_PCT = -10
 
-    KIND_ORDER = %i[research_blocked transfer_pending unsold_soon reprice not_listed verify_listing market_drop
-                    research_stale].freeze
+    KIND_ORDER = %i[research_blocked transfer_pending unsold_soon reprice settlement_review not_listed verify_listing
+                    market_drop research_stale payout_overdue].freeze
+    PAYOUT_OVERDUE = 14.days
 
     # priority: 1 is most urgent. seats_open excludes held seats. game is nil
     # for season-wide items (research runs).
@@ -26,7 +27,7 @@ module Attention
     def items
       return [] unless @season
 
-      @items ||= (game_items + research_items).sort_by do |item|
+      @items ||= (game_items + research_items + settlement_items).sort_by do |item|
         [ item.priority, item.game&.game_date || @today, KIND_ORDER.index(item.kind) ]
       end
     end
@@ -87,8 +88,23 @@ module Attention
       found
     end
 
-    def global_item(priority, kind)
-      Item.new(priority: priority, kind: kind, game: nil, days: nil, seats_open: 0, status: nil, snapshot: nil, assessment: nil)
+    # Payments waiting for a person, and payouts still owed two weeks after
+    # the last sale.
+    def settlement_items
+      return [] unless @season.settlement_tracked
+
+      found = []
+      review = PartnerPayment.where(status: "needs_review").count
+      found << global_item(2, :settlement_review, review) if review.positive?
+      overdue = Settlements::Ledger.new([ @season ]).balances.select do |b|
+        b.outstanding_cents > b.tolerance && b.game.tickets.map(&:sold_at).compact.max.to_i < (@now - PAYOUT_OVERDUE).to_i
+      end
+      found << global_item(4, :payout_overdue, overdue) if overdue.any?
+      found
+    end
+
+    def global_item(priority, kind, detail = nil)
+      Item.new(priority: priority, kind: kind, game: nil, days: nil, seats_open: 0, status: nil, snapshot: nil, assessment: detail)
     end
 
     def urgency(days)

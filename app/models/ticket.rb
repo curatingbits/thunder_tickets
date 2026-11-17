@@ -10,6 +10,9 @@ class Ticket < ApplicationRecord
   before_create :link_listing
   before_create :mark_marketplace_transfer
   after_create :close_sold_out_listing
+  after_commit :rematch_payments
+
+  validates :payout_received_by, inclusion: { in: %w[partner owner] }
 
   # The edit form works in dates, but sold_at keeps a time of day so sales
   # recorded on the same day stay in order. Moving a sale to a new date keeps
@@ -46,6 +49,11 @@ class Ticket < ApplicationRecord
   def mark_marketplace_transfer
     marketplace = listing&.platform == "ticketmaster" || buyer&.name&.casecmp?("Ticketmaster")
     self.transferred_at ||= sold_at if marketplace
+  end
+
+  # A payment may have arrived before this sale was entered.
+  def rematch_payments
+    SettlementRematchJob.perform_later if game.season.settlement_tracked && PartnerPayment.where(status: "unmatched").exists?
   end
 
   # Once every seat on a listing has sold, the listing is done.

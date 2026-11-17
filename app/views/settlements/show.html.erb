@@ -1,0 +1,102 @@
+<% content_for :title, "Money · MADR TICKETS" %>
+<% totals = @summary.totals %>
+
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <h1 class="text-3xl sm:text-4xl font-bold text-content-strong">Money</h1>
+      <p class="text-content-dim mt-2">
+        <%= Settlements.partner_first_name %> pays <%= Settlements.owner_name %> half of each sale's payout over Venmo.
+        Read-only: nothing here moves money.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "All payments", partner_payments_path, class: "btn-secondary text-sm" %>
+      <%= link_to "Add a payment", new_partner_payment_path, class: "btn-secondary text-sm" %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-subtle rounded-xl overflow-hidden border border-subtle" data-money-totals>
+    <div class="bg-surface p-4 sm:p-5 col-span-2 lg:col-span-1">
+      <p class="section-label">Balance</p>
+      <p class="text-xl font-bold text-content-strong mt-1"><%= owes_sentence(totals[:outstanding_cents]) %></p>
+    </div>
+    <div class="bg-surface p-4 sm:p-5">
+      <p class="section-label">Owed so far</p>
+      <p class="text-xl font-semibold text-content-strong figure mt-1"><%= cents(totals[:expected_cents], signed: true) %></p>
+    </div>
+    <div class="bg-surface p-4 sm:p-5">
+      <p class="section-label">Paid</p>
+      <p class="text-xl font-semibold text-content-strong figure mt-1"><%= cents(totals[:allocated_cents], signed: true) %></p>
+    </div>
+    <div class="bg-surface p-4 sm:p-5 col-span-2 lg:col-span-1">
+      <p class="section-label">Venmo</p>
+      <p class="text-sm text-content mt-1"><%= @summary.last_sync_at ? "synced #{time_ago_in_words(@summary.last_sync_at)} ago" : "not synced yet" %></p>
+    </div>
+  </div>
+
+  <% if (review = @summary.review.includes(allocations: :game).to_a).any? %>
+    <section class="space-y-3" data-money-section="review">
+      <h2 class="section-label">Needs review</h2>
+      <ul class="space-y-3">
+        <% review.each do |payment| %>
+          <li class="card">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <%= link_to payment, class: "font-semibold text-content-strong hover:text-accent" do %>
+                  <%= cents(payment.amount_cents) %> · <%= payment_direction(payment) %> · <%= payment.occurred_on.strftime("%b %-d") %>
+                <% end %>
+                <p class="text-sm text-content-dim mt-0.5">“<%= payment.memo %>”</p>
+              </div>
+              <%= payment_chip(payment) %>
+            </div>
+            <ul class="mt-2 text-sm text-content-dim list-disc pl-5">
+              <% Array(payment.match_details["reasons"]).each do |reason| %><li><%= reason %></li><% end %>
+            </ul>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <% if (suggestion = Array(payment.match_details["suggestion"])).any? %>
+                <% games = Game.includes(:opponent).where(id: suggestion.map { |s| s["game_id"] }).index_by(&:id) %>
+                <%= button_to "Settle: " + suggestion.map { |s| "#{games[s["game_id"]]&.opponent&.name} #{cents(s["cents"].to_i)}" }.join(" + "),
+                      apply_suggestion_partner_payment_path(payment), class: "btn-primary text-sm py-1.5 px-3 min-h-[36px]" %>
+              <% end %>
+              <%= link_to "Decide…", payment, class: "btn-secondary text-sm py-1.5 px-3 min-h-[36px]" %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <section class="space-y-3" data-money-section="games">
+    <h2 class="section-label">Games</h2>
+    <% if @summary.balances.any? %>
+      <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+        <% @summary.balances.reverse_each do |b| %>
+          <li data-balance-game="<%= b.game.id %>">
+            <%= link_to game_path(b.game), class: "flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-surface-raised" do %>
+              <div class="min-w-0">
+                <p class="font-medium text-content-strong truncate"><%= b.game.game_date.strftime("%b %-d") %> · <%= b.game.opponent.name %></p>
+                <p class="text-xs text-muted">
+                  sold <%= cents(b.revenue_cents) %> · owed <%= cents(b.expected_cents, signed: true) %> · paid <%= cents(b.allocated_cents, signed: true) %>
+                </p>
+              </div>
+              <%= balance_chip(b.status) %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="card"><p class="text-content-dim">No sales yet in the tracked season.</p></div>
+    <% end %>
+  </section>
+
+  <% if @recent.any? %>
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="section-label">Recent payments</h2>
+        <%= link_to "All →", partner_payments_path, class: "text-xs text-accent" %>
+      </div>
+      <%= render "partner_payments/list", payments: @recent %>
+    </section>
+  <% end %>
+</div>

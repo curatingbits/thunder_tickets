@@ -4,6 +4,8 @@ module AttentionHelper
     when :verify_listing then listing_review_path
     when :research_blocked then import_runs_path
     when :research_stale then pricing_path
+    when :settlement_review then partner_payments_path(filter: "review")
+    when :payout_overdue then money_path
     else game_path(item.game)
     end
   end
@@ -13,6 +15,10 @@ module AttentionHelper
     case item.kind
     when :research_blocked then "Ticketmaster research was blocked"
     when :research_stale then "Market data is over #{(Attention::Feed::STALE_RESEARCH / 1.day).to_i} days old"
+    when :settlement_review then "#{pluralize(item.assessment, "Venmo payment")} to review"
+    when :payout_overdue
+      owed = item.assessment.sum(&:outstanding_cents)
+      "#{Settlements.partner_first_name} owes #{number_to_currency(owed / 100.0)} for #{pluralize(item.assessment.size, "game")}"
     when :transfer_pending then "Deliver #{pluralize(item.status.untransferred_count, "ticket")} #{vs}"
     when :unsold_soon then "#{pluralize(item.seats_open, "seat")} to sell #{vs}"
     when :reprice then "#{item.assessment == "overpriced" ? "Priced above" : "Priced below"} market #{vs}"
@@ -26,6 +32,9 @@ module AttentionHelper
     case item.kind
     when :research_blocked then "Partial results are saved. Run it again later, or add listings by hand."
     when :research_stale then "Recommendations are getting old. Run the research or add listings by hand."
+    when :settlement_review then "The matcher wasn't sure which games these settle."
+    when :payout_overdue
+      "Sold over two weeks ago: " + item.assessment.map { |b| "#{b.game.opponent.name} #{b.game.game_date.strftime('%-m/%-d')}" }.to_sentence
     else
       extra =
         case item.kind

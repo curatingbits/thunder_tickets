@@ -31,10 +31,13 @@
   <% if @inventory_value %>
     <section class="space-y-3" data-dashboard-section="worth">
       <div class="flex items-center justify-between">
-        <h2 class="section-label">Worth and pricing</h2>
+        <h2 class="section-label">Worth, pricing and payouts</h2>
         <%= link_to "Pricing →", pricing_path, class: "text-xs text-accent hover:brightness-125" %>
       </div>
       <%= render "pricing/value_tiles", value: @inventory_value, counts: @pricing_counts %>
+      <% if @settlement_summary %>
+        <%= render "settlements/tile", summary: @settlement_summary %>
+      <% end %>
     </section>
   <% end %>
 

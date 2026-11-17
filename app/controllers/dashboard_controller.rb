@@ -32,6 +32,7 @@ class DashboardController < ApplicationController
       @inventory_value = Market::InventoryValue.from(@board.rows)
       @pricing_counts = @board.rows.filter_map(&:assessment).tally
       @next_rows = @board.rows.first(3)
+      @settlement_summary = Settlements::Summary.new if @season.settlement_tracked
     end
 
     # Past games, most recent first (used for the recap "Final Results" list)

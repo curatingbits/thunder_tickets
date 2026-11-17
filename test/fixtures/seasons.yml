@@ -6,6 +6,7 @@ current:
   is_current: true
   num_seats: 3
   seat_section: "101"
+  settlement_tracked: false
 
 past_season:
   year: "2024-25"
@@ -13,3 +14,4 @@ past_season:
   is_current: false
   num_seats: 2
   seat_section: "101"
+  settlement_tracked: false
