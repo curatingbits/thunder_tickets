@@ -8,10 +8,14 @@ class ExtractListingsTest < ApplicationSystemTestCase
   READER = Rails.root.join("automation/skills/ticketmaster-pricing/extract_listings.js").read
   PAGE = Rails.root.join("test/fixtures/files/tm_event_page.html")
 
-  def read_page(query = "", our_quantity: 3)
+  NEAR_DD = %w[AA BB CC DD EE FF GG].freeze
+
+  def read_page(query = "", our_quantity: 3, seat_reads_max: nil)
     visit "file://#{PAGE}#{query}"
-    page.execute_script("window.__madrSections = ['101', '102', '120']; " \
+    page.execute_script("window.__madrSections = ['101', '102', '120', '119']; " \
+                        "window.__madrSeatRows = #{%w[101 102 120].index_with { NEAR_DD }.to_json}; " \
                         "window.__madrOurs = { section: '101', row: 'DD', quantity: #{our_quantity} };")
+    page.execute_script("window.__madrSeatReadsMax = #{seat_reads_max}") if seat_reads_max
     # Assigned, not returned: the file opens with comments, and "return" + a
     # comment line would return before the code.
     page.execute_script("window.__readerStarted = #{READER}")
@@ -23,7 +27,7 @@ class ExtractListingsTest < ApplicationSystemTestCase
   test "prices at 2 tickets, and finds our 3-seat listing by looking again at 3" do
     meta = read_page
 
-    assert_equal [ "done", true, 12, 11 ], meta.values_at("status", "scroll_complete", "event_total_listings", "kept")
+    assert_equal [ "done", true, 15, 14 ], meta.values_at("status", "scroll_complete", "event_total_listings", "kept")
     assert_equal [ { "price" => 151.88, "seats" => [ 6, 7 ] } ], meta["our_row"], "someone else's pair shows at 2"
     check = meta["quantity_check"]
     assert_equal [ 3, true ], check.values_at("quantity", "complete")
@@ -32,15 +36,39 @@ class ExtractListingsTest < ApplicationSystemTestCase
 
     rows = JSON.parse(page.evaluate_script("window.__madrChunk(0, 20)"))
     assert_equal [ 6, 7 ], rows.find { |r| r[2] == "DD" }[6]
-    assert_nil rows.find { |r| r[2] == "K" }[6], "seats are read only in our row"
+    assert_nil rows.find { |r| r[2] == "K" }[6], "row K is too far from DD to be opened"
     assert_not page.evaluate_script("!!window.reserved"), "never presses Reserve Tickets"
     assert_no_selector "#panel"
+  end
+
+  test "opens the listings in rows near ours for their seats, and keeps section 119 for context" do
+    meta = read_page
+    rows = JSON.parse(page.evaluate_script("window.__madrChunk(0, 20)")).index_by { |r| r.values_at(1, 2) }
+
+    assert_equal [ 4, 5 ], rows[%w[120 CC]][6]
+    assert_equal [ 8, 9 ], rows[%w[101 BB]][6]
+    assert_equal [ 10, 11 ], rows[%w[101 EE]][6]
+    assert_match "[Seats 4-5]", rows[%w[120 CC]][5]
+    assert_nil rows[%w[102 JJ]][6], "rows far from DD are only read from the list"
+    assert_nil rows[%w[119 EE]][6], "119 is context: kept, never opened"
+    assert_equal [ 2, 3 ], rows[%w[120 EE]][6]
+    assert_equal [ 5, 0 ], meta.values_at("seat_reads", "seat_reads_capped")
+    assert_not page.evaluate_script("!!window.reserved"), "never presses Reserve Tickets"
+  end
+
+  test "stops opening rows near ours at the cap, but always reads our row" do
+    meta = read_page(seat_reads_max: 1)
+    rows = JSON.parse(page.evaluate_script("window.__madrChunk(0, 20)"))
+
+    assert_equal [ 1, 4 ], meta.values_at("seat_reads", "seat_reads_capped")
+    assert_equal [ 6, 7 ], rows.find { |r| r[1] == "101" && r[2] == "DD" }[6]
+    assert_equal 1, rows.count { |r| r[6] && r.values_at(1, 2) != %w[101 DD] }, "one other row read before the cap"
   end
 
   test "finds the quantity button by its text when it has no aria-label" do
     meta = read_page("?label=text&start=3")
 
-    assert_equal [ "done", 12, 11 ], meta.values_at("status", "event_total_listings", "kept")
+    assert_equal [ "done", 15, 14 ], meta.values_at("status", "event_total_listings", "kept")
     check = meta["quantity_check"]
     assert_equal [ 3, true ], check.values_at("quantity", "complete")
     assert_equal [ [ 309.83, [ 1, 2, 3 ] ] ], check["listings"].map { |l| l.values_at("price", "seats") }
@@ -49,21 +77,21 @@ class ExtractListingsTest < ApplicationSystemTestCase
   test "with two open seats, the pair view is the only look needed" do
     meta = read_page(our_quantity: 2)
 
-    assert_equal [ "done", 12 ], meta.values_at("status", "event_total_listings")
+    assert_equal [ "done", 15 ], meta.values_at("status", "event_total_listings")
     assert_nil meta["quantity_check"]
   end
 
   test "a page that opens at another quantity is set back to 2 before pricing" do
     meta = read_page("?start=3")
 
-    assert_equal [ "done", 12, 11 ], meta.values_at("status", "event_total_listings", "kept")
+    assert_equal [ "done", 15, 14 ], meta.values_at("status", "event_total_listings", "kept")
     assert_equal 3, meta.dig("quantity_check", "quantity")
   end
 
   test "a list that stops loading short of the results count is stalled, not complete" do
     meta = read_page("?stall=4")
 
-    assert_equal [ "stalled", 4, 12 ], meta.values_at("status", "read", "event_total_listings")
+    assert_equal [ "stalled", 4, 15 ], meta.values_at("status", "read", "event_total_listings")
     assert_nil meta["our_row"]
   end
 end

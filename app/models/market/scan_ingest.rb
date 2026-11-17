@@ -167,7 +167,7 @@ module Market
         section_min: valuation.section_min, section_median: valuation.section_median&.round(2), section_max: valuation.section_max,
         near_raw_median: valuation.near_raw_median&.round(2), row_premium: row_premium, row_premium_source: row_premium_source,
         primary_min_price: @observations.reject(&:resale?).map(&:price).min,
-        distribution: distribution,
+        distribution: distribution(settings),
         buyer_fee_multiplier: fee.multiplier, fee_evidence_share: fee.share, fee_verified: fee.verified,
         competitive_price: valuation.competitive, market_value: valuation.market, premium_price: valuation.premium,
         recommended_strategy: (strategy unless valuation.insufficient),
@@ -199,9 +199,12 @@ module Market
       @observations.count { |o| o.comparable? && o.tier == tier }
     end
 
-    # $25 buckets of every kept resale price in our section and neighbors.
-    def distribution
-      @observations.select { |o| o.kept? && o.resale? }.group_by { |o| ((o.price / 25).floor * 25).to_i }
+    # $25 buckets of every kept resale price in our section and its
+    # comparables (context-only sections like 119 stay out).
+    def distribution(settings)
+      sections = settings.pricing_sections
+      @observations.select { |o| o.kept? && o.resale? && sections.include?(o.section) }
+                   .group_by { |o| ((o.price / 25).floor * 25).to_i }
                    .transform_values(&:size).sort.to_h.transform_keys(&:to_s)
     end
 

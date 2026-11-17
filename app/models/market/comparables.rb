@@ -18,7 +18,7 @@ module Market
       type = listing[:ticket_type].presence || "verified_resale"
       obs = Observation.new(position: listing[:position].to_i, section: section, row: row, row_rank: RowOrder.rank(row),
                             price: listing[:price].to_f, ticket_type: type, raw_label: listing[:raw_label].to_s.first(300),
-                            tier: nil, weight: 0.0)
+                            seats: listing[:seats].presence, tier: nil, weight: 0.0)
       return obs.tap { |o| o.excluded_reason = "primary" } if type == "standard_admission"
       return obs.tap { |o| o.excluded_reason = "unknown_row" } if obs.row_rank.nil?
       # Courtside Club rows are a different product ($1,000-$6,000 asks in

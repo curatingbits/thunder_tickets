@@ -22,7 +22,8 @@ module Api
           season: season.year,
           start_url: Market::TICKETMASTER_START_URL,
           our_seats: { section: settings.our_section, row: settings.our_row, seats: (1..season.num_seats).to_a },
-          sections: [ settings.our_section, *settings.comparable_sections ],
+          sections: settings.research_sections,
+          seat_rows: settings.seat_rows,
           quantity: 2,
           games: games.map do |game|
             status = game.listing_status

@@ -61,7 +61,9 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     body = response.parsed_body
-    assert_equal [ "101", "102", "120" ], body["sections"]
+    assert_equal [ "101", "102", "120", "119" ], body["sections"], "119 is read for context"
+    near_dd = %w[AA BB CC DD EE FF GG]
+    assert_equal({ "101" => near_dd, "102" => near_dd, "120" => near_dd }, body["seat_rows"])
     assert_equal 2, body["quantity"]
     assert_match %r{ticketmaster.com/oklahoma-city-thunder-tickets}, body["start_url"]
     game = body["games"].find { |g| g["id"] == @game.id }

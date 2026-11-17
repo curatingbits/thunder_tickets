@@ -21,5 +21,13 @@ module Market
       b = rank(from)
       a - b if a && b
     end
+
+    # Rows within n of `row`, courtside excluded: AA..GG around DD.
+    def self.near(row, n)
+      center = rank(row)
+      return [] unless center
+
+      ORDER.each_with_index.filter_map { |r, i| r if (i - center).abs <= n && !courtside?(r) }
+    end
   end
 end

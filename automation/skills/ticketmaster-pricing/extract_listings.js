@@ -3,10 +3,14 @@
 // growing (it loads ~40 at a time), then read each listing's
 // "Sec X • Row Y" and all-in price. Keeps only window.__madrSections.
 //
+// Seats (the list only shows section and row): for listings in the rows
+// that can price our seats (window.__madrSeatRows, from research_targets:
+// rows near ours in our section and the comparable ones) it opens the
+// listing, reads "You'll get 2 tickets together in Sec 101, Row DD, Seats
+// 6-7." and closes the panel. Our row is always read; the others stop after
+// 20 opens a page. The seat map shows those exactly, the rest by row.
+//
 // Our row (window.__madrOurs: section, row, and quantity = our open seats):
-// - The list doesn't show seat numbers, so it opens each listing there,
-//   reads "You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."
-//   and closes the panel.
 // - Ticketmaster lists only what sells at the chosen quantity: 2, which is
 //   what we price. A listing of all three of our seats that only sells
 //   together is hidden there (Dec 13, 2026-11-16). So when our open seats
@@ -19,11 +23,13 @@
 // Stops at the first sign of a block page, or a list that stops loading
 // short of Ticketmaster's own count ("stalled"). The only things it clicks:
 // "Accept & Continue", the quantity filter and one of its options, a listing
-// card in our row, and that panel's "Close Ticket Selection" button. Never
-// "Reserve Tickets" or anything else.
+// card in a row near ours, and that panel's "Close Ticket Selection" button.
+// Never "Reserve Tickets" or anything else.
 (() => {
   const sections = new Set(window.__madrSections || [ "101", "102", "120" ])
   const ours = window.__madrOurs || { section: "101", row: "DD" }
+  const seatRows = window.__madrSeatRows || { [ours.section]: [ ours.row ] }
+  const MAX_SEAT_READS = window.__madrSeatReadsMax ?? 20
   const PRICED_QUANTITY = 2
   const state = (window.__madr = { status: "running", startedAt: new Date().toISOString() })
 
@@ -121,8 +127,9 @@
     for (let i = 0; i < 20 && /Ticket Selection/.test(document.body.innerText); i++) await sleep(250)
   }
 
-  // Opens one listing's panel, reads its seats, closes it. null if unread.
-  const readSeats = async (li) => {
+  // Opens one listing's panel, reads its seats, closes it. null if unread
+  // or if the panel names a different section or row.
+  const readSeats = async (li, section, row) => {
     const card = li?.querySelector("button")
     if (!card) return null
     li.scrollIntoView({ block: "center" })
@@ -134,7 +141,7 @@
     }
     await closePanel()
     await sleep(600)
-    if (!match || match[1] !== ours.section || match[2] !== ours.row) return null
+    if (!match || match[1] !== section || match[2] !== row) return null
     const from = Number(match[3])
     const to = Number(match[4] || match[3])
     if (to < from || to - from > 20) return null
@@ -173,11 +180,21 @@
         raw_label: l.text.slice(0, 200)
       })
     })
-    for (const listing of listings) {
-      if (listing.section !== ours.section || listing.row !== ours.row) continue
+    // Our row first and always (it decides whether our seats are listed),
+    // then the other rows near ours up to the cap.
+    const isOurs = (l) => l.section === ours.section && l.row === ours.row
+    const wanted = listings.filter((l) => (seatRows[l.section] || []).includes(l.row) || isOurs(l))
+    let seatReads = 0
+    let seatReadsCapped = 0
+    for (const listing of [ ...wanted.filter(isOurs), ...wanted.filter((l) => !isOurs(l)) ]) {
+      if (!isOurs(listing) && seatReads >= MAX_SEAT_READS) {
+        seatReadsCapped += 1
+        continue
+      }
       if (blocked()) return stop("blocked")
-      listing.seats = await readSeats(main.items[listing.position - 1])
+      listing.seats = await readSeats(main.items[listing.position - 1], listing.section, listing.row)
       listing.raw_label += seatLabel(listing.seats)
+      if (!isOurs(listing)) seatReads += 1
     }
 
     // A listing of all our open seats together shows only at that quantity.
@@ -193,7 +210,7 @@
           const l = describe(li)
           if (!l || l.section !== ours.section || l.row !== ours.row) continue
           if (blocked()) return stop("blocked")
-          const seats = await readSeats(li)
+          const seats = await readSeats(li, ours.section, ours.row)
           check.listings.push({ price: l.price, seats, raw_label: l.text.slice(0, 160) + seatLabel(seats) })
         }
       } else {
@@ -210,6 +227,8 @@
       our_row: listings.filter((l) => l.section === ours.section && l.row === ours.row)
                        .map((l) => ({ price: l.price, seats: l.seats || null })),
       quantity_check: check,
+      seat_reads: seatReads,
+      seat_reads_capped: seatReadsCapped,
       listings
     })
   }
@@ -219,10 +238,11 @@
   //   window.__madrMeta()       title, counts, scroll_complete, our_row, quantity_check
   //   window.__madrChunk(0, 10) [position, section, row, price, "R"|"S", label, seats]
   // ("S" = Standard Admission; the label keeps only "Sec X • Row Y ... $price";
-  // seats are read only in our row, else null).
+  // seats are read only in rows near ours, else null).
   window.__madrMeta = () => JSON.stringify({
     status: state.status, title: state.title, read: state.read, kept: state.listings?.length,
     event_total_listings: state.event_total_listings, scroll_complete: state.scroll_complete,
+    seat_reads: state.seat_reads, seat_reads_capped: state.seat_reads_capped,
     our_row: state.our_row, quantity_check: state.quantity_check
   })
   window.__madrChunk = (from, n) => JSON.stringify((state.listings || []).slice(from, from + n).map((l) => [

@@ -98,8 +98,9 @@ the reasons, how our confirmed listing compares, a confidence score, and how
 old the data is. Each game's page has the full breakdown, including every
 listing read and why any were set aside.
 
-Market data comes from the weekly Ticketmaster research (sections 101, 102 and
-120, priced for pairs). When that can't run, paste a game's listings on its page
+Market data comes from the twice-weekly Ticketmaster research (sections 101, 102
+and 120, priced for pairs, plus 119 for context; listings in rows near ours are
+opened for their seat numbers). When that can't run, paste a game's listings on its page
 (**Add market data by hand**). Every scan is kept, so prices can be compared
 over time. Recommendations are advisory: nothing here changes a Ticketmaster
 listing. Thresholds and fee assumptions live in Settings; the seller fee is left

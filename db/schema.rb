@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_030300) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_160000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -195,6 +195,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_030300) do
     t.string "excluded_reason"
     t.string "raw_label"
     t.datetime "created_at", null: false
+    t.json "seats"
     t.index ["market_snapshot_id", "position"], name: "index_market_observations_on_market_snapshot_id_and_position", unique: true
     t.index ["market_snapshot_id"], name: "index_market_observations_on_market_snapshot_id"
   end

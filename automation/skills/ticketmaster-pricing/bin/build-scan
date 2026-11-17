@@ -35,7 +35,7 @@ def listing(row):
     item = {"position": position, "section": section, "row": seat_row, "price": price,
             "ticket_type": "standard_admission" if kind == "S" else "verified_resale", "raw_label": label}
     seats = row[6] if len(row) > 6 else None
-    if seats:  # read only in our row: the app counts a listing as ours by its seats
+    if seats:  # read only in rows near ours: comparables, and our own listing by its seats
         item["seats"] = seats
     return item
 

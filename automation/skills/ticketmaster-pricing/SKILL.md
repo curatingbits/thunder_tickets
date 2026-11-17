@@ -1,6 +1,6 @@
 ---
 name: ticketmaster-pricing
-description: Twice-weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102 and 120 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats and records whether our own seats are listed. Trigger Monday and Wednesday at 4am (systemd timer) or whenever Duggan asks to refresh ticket prices.
+description: Twice-weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102, 120 and 119 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats and records whether our own seats are listed. Trigger Monday and Wednesday at 4am (systemd timer) or whenever Duggan asks to refresh ticket prices.
 ---
 
 # Ticketmaster pricing research
@@ -9,7 +9,8 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 
 ## Standing context
 
-- Our seats: **Section 101, Row DD, seats 1–3** at Paycom Center. Comparables: sections **101, 102, 120**.
+- Our seats: **Section 101, Row DD, seats 1–3** at Paycom Center. Comparables: sections **101, 102, 120**. Section **119** is read for context only: the seat map shows it, and the app never prices with it. The targets' `sections` lists all four.
+- **Seats near ours.** Listings in rows within 3 of DD in 101, 102 and 120 (the targets' `seat_rows`) can set the market value, so the reader opens each one's card for its seat numbers, about 3 a game. It always reads our row, and reads at most 20 others a page (`seat_reads_capped` in `__madrMeta()` counts any it skipped). Everything else is read from the list alone, by section and row.
 - Ticketmaster's default quantity is **2**, which is what we price. Prices on the page are **all-in per ticket** (fees in, tax out). Don't change the quantity or the fee display yourself; the reader prices at 2 and only switches quantity for its second look at our row.
 - **Our own listing.** Our exact seats are **Section 101, Row DD, Seats 1, 2 and 3**, and only those count.
   - The list doesn't show seat numbers, so the reader opens each Row DD listing in Section 101 and reads its panel ("You'll get 2 tickets together in Sec 101, Row DD, Seats 6-7."). Then it closes the panel.
@@ -35,7 +36,7 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 1. **Read only.** Never sign in, never type credentials, never click Buy, Sell, Checkout, "Reserve Tickets", Next, Find Tickets with a purchase intent, or My Account. Only the reader clicks, and only these:
    - the "Accept & Continue" policy dialog;
    - the ticket quantity filter and one of its options, for the second look at our seat count;
-   - in our row (Section 101, Row DD), each listing's card, to read its seat numbers;
+   - in the rows near ours (`seat_rows`: our row Section 101 Row DD, and rows AA to GG in 101, 102 and 120), each listing's card, to read its seat numbers;
    - that panel's "Close Ticket Selection" button.
 
    You don't click anything yourself.
@@ -86,7 +87,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
 
 ### 2. Read each game (ascending date, skipping already-scanned games)
 1. Navigate the tab to the event URL from the page. Wait ~8 seconds.
-2. Run `window.__madrSections = ["101","102","120"]; window.__madrOurs = {section: "101", row: "DD", quantity: N}`. Take section and row from `our_seats` in the targets, and N from the game's `seats_to_sell`. Then run the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
+2. Run `window.__madrSections = S; window.__madrSeatRows = R; window.__madrOurs = {section: "101", row: "DD", quantity: N}`. S is the targets' `sections` array and R its `seat_rows` object, both pasted exactly as the targets give them. Take section and row from `our_seats`, and N from the game's `seats_to_sell`. Then run the contents of `extract_listings.js` with `javascript_tool`. It returns `"started"`.
 3. Poll `JSON.stringify({status: window.__madr?.status, read: window.__madr?.read})` every ~10 seconds, for up to 3 minutes. Each tool call must finish within 45 seconds.
 4. Act on the status:
    - **blocked**: go straight to *When Ticketmaster blocks you*.
@@ -95,7 +96,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
    - **error**: note it and move on. If 3 games end in errors, finish the run as partial.
    - **done**: tool output is cut off at around a thousand characters, so read the result in pieces.
      - Read `window.__madrMeta()` for the title, `event_total_listings`, `scroll_complete` and `quantity_check`. Save it, exactly as returned, as `$W/meta-<game id>.json`.
-     - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`. Each row is `[position, section, row, price, "R"|"S", label, seats]`; seats are filled only in our row.
+     - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`. Each row is `[position, section, row, price, "R"|"S", label, seats]`; seats are filled only in the rows near ours.
      - Append each chunk, exactly as returned, as one line of `$W/rows-<game id>.txt`.
      - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` (with the second look from the meta file) and refuses duplicated rows.
 5. `bin/madr-api POST /api/v1/import_runs/<run id>/market_scans $W/scan-<game id>.json`:

@@ -111,6 +111,47 @@ class Market::ScanIngestTest < ActiveSupport::TestCase
     assert_in_delta 10, snapshot.market_value_change_pct, 1.5
   end
 
+  test "seats the research read are kept with their listing" do
+    payload = @payloads.fetch("2026-11-18").deep_dup
+    near = payload[:listings].find { |l| l[:section] == "101" && %w[AA BB CC EE FF GG].include?(l[:row]) }
+    near[:seats] = [ 4, 5 ]
+
+    snapshot = ingest("2026-11-18", payload: payload).snapshot
+    observation = snapshot.observations.find_by!(position: near[:position])
+
+    assert_equal [ 4, 5 ], observation.seats
+    assert_equal [ 4, 5 ], observation.seat_numbers
+    assert_nil snapshot.observations.where.not(id: observation.id).first.seat_numbers
+  end
+
+  test "section 119 is read for context: kept, untiered, and never moves the market value" do
+    without = ingest("2026-11-18").snapshot
+    @run.finish!("completed")
+    payload = @payloads.fetch("2026-11-18").deep_dup
+    payload[:listings] += [ [ "DD", 205.0 ], [ "AA", 450.0 ], [ "U", 120.0 ] ].map.with_index do |(row, price), i|
+      { position: 900 + i, section: "119", row: row, price: price, ticket_type: "verified_resale",
+        raw_label: "Sec 119 • Row #{row} Verified Resale Ticket $#{price}" }
+    end
+    other_run, = ImportRun.start!(kind: "market_research", source: "ticketmaster_browser", key: "tm-test-119", client_id: "client-b")
+
+    with = ingest("2026-11-18", run: other_run, payload: payload).snapshot
+    section119 = with.observations.where(section: "119")
+
+    assert_equal 3, section119.count
+    assert section119.all? { |o| o.kept? && o.tier.nil? && o.weight.zero? }
+    assert_equal without.market_value, with.market_value
+    assert_equal without.recommended_list_price, with.recommended_list_price
+    assert_equal without.distribution, with.distribution, "the price distribution stays our section and its neighbors"
+    assert_equal without.captured_count + 3, with.captured_count
+  end
+
+  test "older scans keep the seats the reader put in the label" do
+    observation = MarketObservation.new(raw_label: "Sec 101 • Row DD Verified Resale Ticket $151.88 [Seats 6-7]")
+
+    assert_equal [ 6, 7 ], observation.seat_numbers
+    assert_nil MarketObservation.new(raw_label: "Sec 101 • Row DD $151.88").seat_numbers
+  end
+
   test "our own verified listing is recognized in the market and assessed" do
     game = @games["2026-12-16"]
     # Row DD was listed at $151.88 all-in, i.e. $125 list.
