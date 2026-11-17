@@ -2,7 +2,7 @@ require "test_helper"
 
 class SeedsTest < ActiveSupport::TestCase
   def empty_database
-    [ ListingEvent, Ticket, Listing, MarketPrice, Game, Buyer, Season, Team, User ].each(&:delete_all)
+    [ MarketObservation, ListingEvent, MarketSnapshot, ImportRun, ApiToken, Ticket, Listing, Game, Buyer, Season, Team, AppSetting, User ].each(&:delete_all)
   end
 
   def load_seeds

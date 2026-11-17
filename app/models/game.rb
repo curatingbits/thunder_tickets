@@ -4,7 +4,7 @@ class Game < ApplicationRecord
   has_many :tickets, dependent: :destroy
   has_many :listings, dependent: :destroy
   has_many :listing_events, dependent: :delete_all
-  has_one :market_price, dependent: :destroy
+  has_many :market_snapshots, dependent: :restrict_with_error
   has_one_attached :receipt_image
 
   validates :game_number, presence: true, uniqueness: { scope: :season_id }

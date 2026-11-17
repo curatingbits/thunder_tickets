@@ -59,6 +59,16 @@ Rails.application.routes.draw do
   get "settings", to: "seasons#edit", as: :settings
   patch "settings", to: "seasons#update"
 
+  # JSON API for the workstation skills (bearer tokens; see Api::V1::BaseController).
+  namespace :api do
+    namespace :v1 do
+      get "research_targets", to: "research_targets#index"
+      resources :import_runs, only: [ :create, :show, :update ] do
+        resources :market_scans, only: [ :create ]
+      end
+    end
+  end
+
   # Phone tab bar's "More" page
   get "more", to: "more#show", as: :more
 
