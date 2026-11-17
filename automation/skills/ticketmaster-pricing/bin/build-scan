@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Builds one game's market_scans body from the page reader's chunks.
+
+  build-scan W GAME_ID EVENT_URL EVENT_DATE TOTAL_LISTINGS SCROLL_COMPLETE "TITLE"
+
+Reads $W/rows-<GAME_ID>.txt (each line one window.__madrChunk(...) result:
+a JSON array of [position, section, row, price, "R"|"S", label]) and the
+run's $W/client_id, and writes $W/scan-<GAME_ID>.json for
+`bin/madr-api POST /api/v1/import_runs/<run id>/market_scans`. Listings are
+copied as read; nothing is changed to make a post go through.
+"""
+import datetime
+import json
+import re
+import sys
+
+work, game_id, event_url, event_date, total, scroll_complete, title = sys.argv[1:8]
+rows = []
+with open(f"{work}/rows-{game_id}.txt", encoding="utf-8") as f:
+    for line in f:
+        if line.strip():
+            rows.extend(json.loads(line))
+
+positions = [r[0] for r in rows]
+assert len(positions) == len(set(positions)), "the same listing appears twice: re-read the chunks"
+match = re.search(r"/event/([0-9A-Za-z]+)", event_url)
+assert match, f"no event id in {event_url}"
+assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", event_date), f"event date {event_date} isn't YYYY-MM-DD"
+
+listings = [{"position": p, "section": s, "row": r, "price": price,
+             "ticket_type": "standard_admission" if t == "S" else "verified_resale", "raw_label": label}
+            for p, s, r, price, t, label in rows]
+scan = {"client_id": open(f"{work}/client_id").read().strip(), "game_id": int(game_id), "event_id": match.group(1),
+        "event_url": event_url.split("?")[0], "event_title": title, "event_date": event_date,
+        "event_total_listings": int(total), "scroll_complete": scroll_complete == "true",
+        "captured_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "quantity_filter": 2, "listings": listings}
+with open(f"{work}/scan-{game_id}.json", "w", encoding="utf-8") as f:
+    json.dump(scan, f, ensure_ascii=False)
+print(f"game {game_id}: {len(listings)} listings -> {work}/scan-{game_id}.json")

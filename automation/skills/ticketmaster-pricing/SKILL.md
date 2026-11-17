@@ -14,7 +14,9 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
 - Results: https://madrtickets.com/pricing · run log: https://madrtickets.com/import_runs
 - Files in this skill folder (`~/.claude/skills/ticketmaster-pricing/`):
   - `bin/madr-api METHOD PATH [BODY_FILE]` — the only way to talk to the app. It reads the token from `~/.config/madrtickets/market-research.header`.
+  - `bin/research-browser-id DEVICE_ID...` — prints which connected browser is the research profile.
   - `extract_listings.js` — the page reader. Run it in the event tab with `javascript_tool`.
+  - `bin/build-scan` — turns the reader's chunks into a game's scan file.
 - Work folder for this run: `W=$(mktemp -d /tmp/madr-research-$(date +%F)-XXXX)`. Save every body you POST there.
 
 ## Hard rules
@@ -29,11 +31,11 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
 ## Before you start
 
 1. **Targets.** `bin/madr-api GET /api/v1/research_targets > $W/targets.json`. It holds `start_url`, `sections`, and `games` (`id`, `date`, `opponent`, `ticketmaster_url`, `seats_to_sell`, `last_scanned_at`). If it fails with 401 or "no token header", stop and tell Duggan (see Setup).
-2. **Browser.** `list_connected_browsers`, then `select_browser` the one named **MADR Research**. If it isn't connected:
+2. **Browser.** `list_connected_browsers`, then pass every `deviceId` it lists to `bin/research-browser-id`, and `select_browser` the id it prints. The extension's display names ("Browser 1", "archdesktop") shuffle, so never choose by name. If it prints nothing, the research profile isn't connected:
    - start it with `systemd-run --user --quiet --collect /usr/bin/chromium --profile-directory="$MADR_RESEARCH_PROFILE"`; the value is in `~/.config/madrtickets/research.env`
-   - wait ~10 seconds and retry once
+   - wait ~10 seconds, list the browsers again and retry once
    - if it's still missing, stop and notify (see Report).
-   Never fall back to another browser.
+   Never fall back to another browser. Duggan's everyday profile is connected too.
 3. **Start or resume the run.**
    - Make `$W/client_id` once with `echo "$(hostname)-$(date +%s)" > $W/client_id`. If you're resuming after a crash, reuse the old work folder's client id.
    - The key is the ISO week: `tm-$(date +%G-W%V)`.
@@ -72,13 +74,11 @@ If you were started with the argument `soon`, rescan only the games in the next 
    - **blocked**: go straight to *When Ticketmaster blocks you*.
    - **no_list**: look at the page. Sold out, no listings, or an error page means note it for this game and move on. Anything else that looks like a block is rule 3.
    - **error**: note it and move on. If 3 games end in errors, finish the run as partial.
-   - **done**: read `JSON.stringify(window.__madr)` and write `$W/scan-<game id>.json`:
-
-     ```json
-     {"client_id": ID, "game_id": GAME_ID, "event_id": "<id from URL>", "event_url": "<URL without query>",
-      "event_title": TITLE, "event_date": "YYYY-MM-DD", "event_total_listings": N, "scroll_complete": true,
-      "captured_at": "<now, ISO 8601>", "quantity_filter": 2, "listings": [ ...from __madr... ]}
-     ```
+   - **done**: tool output is cut off at around a thousand characters, so read the result in pieces.
+     - Read `window.__madrMeta()` for the title, `event_total_listings` and `scroll_complete`.
+     - Read `window.__madrChunk(0, 10)`, then `(10, 10)`, `(20, 10)` and so on, until one returns `[]`. Batch several in one `browser_batch`.
+     - Append each chunk, exactly as returned, as one line of `$W/rows-<game id>.txt`.
+     - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` and refuses duplicated rows.
 5. `bin/madr-api POST /api/v1/import_runs/<run id>/market_scans $W/scan-<game id>.json`:
    - **201** means saved; **200** with `"replayed": true` means already saved.
    - **422** (for example, the event date doesn't match the game) or **409**: note the message and move on. Never edit listings to make a post go through.
@@ -110,7 +110,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
 
 ## Setup (one time, Duggan)
 
-1. **Profile.** In Chromium, add a profile named **MADR Research**. Never sign in to Ticketmaster in it. Install the Claude extension in that profile, sign in to Claude there, and give the browser the name "MADR Research" so `list_connected_browsers` can find it.
+1. **Profile.** In Chromium, add a profile named **MADR Research**. Never sign in to Ticketmaster in it. Install the Claude extension in that profile and sign in to Claude there. Its browser name doesn't matter: `bin/research-browser-id` recognizes it by the device id stored in the profile.
 2. **Profile folder.** Find it under chrome://version → *Profile Path* (for example `Profile 1`), and put this in `~/.config/madrtickets/research.env`:
 
    ```

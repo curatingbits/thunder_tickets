@@ -77,6 +77,20 @@
     })
   }
 
+  // Tool output is cut off at around a thousand characters, so read the
+  // result back in pieces:
+  //   window.__madrMeta()       title, counts, scroll_complete
+  //   window.__madrChunk(0, 10) [position, section, row, price, "R"|"S", label]
+  // ("S" = Standard Admission; the label keeps only "Sec X • Row Y ... $price").
+  window.__madrMeta = () => JSON.stringify({
+    status: state.status, title: state.title, read: state.read, kept: state.listings?.length,
+    event_total_listings: state.event_total_listings, scroll_complete: state.scroll_complete
+  })
+  window.__madrChunk = (from, n) => JSON.stringify((state.listings || []).slice(from, from + n).map((l) => [
+    l.position, l.section, l.row, l.price, l.ticket_type === "standard_admission" ? "S" : "R",
+    (l.raw_label.match(/Sec \w+ • Row \w+.*$/) || [ l.raw_label ])[0]
+  ]))
+
   run().catch((error) => Object.assign(state, { status: "error", error: String(error) }))
   return "started"
 })()

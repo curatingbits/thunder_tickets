@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Which connected Claude in Chrome browser is the MADR Research profile?
+#
+#   research-browser-id DEVICE_ID [DEVICE_ID ...]
+#
+# Prints the device id that the research profile's Claude extension has
+# stored, and that no other Chromium profile has. The extension's display
+# names ("Browser 1", "archdesktop") aren't stable, so never pick by name.
+# Exit 1 if no id matches, 2 if the profile is missing.
+set -euo pipefail
+source "$HOME/.config/madrtickets/research.env"
+root="$HOME/.config/chromium"
+research="$root/${MADR_RESEARCH_PROFILE:?set MADR_RESEARCH_PROFILE in ~/.config/madrtickets/research.env}"
+ext=fcoeoabgfenejglbffodgkkbkcdhcgfn # Claude in Chrome
+[[ -d $research ]] || { echo "research-browser-id: no Chromium profile at $research" >&2; exit 2; }
+
+stores() { # stores PROFILE_DIR ID: does that profile's extension storage hold the id?
+  grep -rlsqa -- "$2" "$1/Local Extension Settings/$ext" "$1/IndexedDB" "$1/Local Storage" "$1/Sync Extension Settings"
+}
+
+for id in "$@"; do
+  stores "$research" "$id" || continue
+  for other in "$root"/Default "$root"/Profile\ *; do
+    [[ -d $other && $other != "$research" ]] || continue
+    if stores "$other" "$id"; then
+      echo "research-browser-id: $id is also in $(basename "$other"); not choosing" >&2
+      exit 1
+    fi
+  done
+  echo "$id"
+  exit 0
+done
+echo "research-browser-id: none of these is the research profile's browser" >&2
+exit 1
