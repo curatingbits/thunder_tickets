@@ -68,4 +68,30 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/\$-\d/, response.body)
     assert_no_match(/\+\$-/, response.body)
   end
+  test "needs attention lists next week's unsold games for the current season" do
+    sign_in
+    soon = seasons(:current).games.create!(game_number: 90, game_date: Date.current + 2, opponent: teams(:rockets),
+                                           cost_per_ticket: 100, parking_cost: 10, game_type: "regular")
+
+    get dashboard_path
+
+    assert_select "[data-dashboard-section='attention'] li[data-attention-kind='unsold_soon']", count: 1
+    assert_select "[data-dashboard-section='attention'] a[href=?]", game_path(soon), text: /3 seats to sell vs Houston Rockets/
+    assert_select "[data-dashboard-section='next-games'] a[href=?]", game_path(soon)
+  end
+
+  test "an empty attention list says all clear" do
+    sign_in
+    get dashboard_path
+
+    assert_select "[data-dashboard-section='attention']", text: /All clear/
+  end
+
+  test "a past season shows neither attention nor next games" do
+    sign_in
+    get dashboard_path(season_id: seasons(:past_season).id)
+
+    assert_select "[data-dashboard-section='attention']", count: 0
+    assert_select "[data-dashboard-section='next-games']", count: 0
+  end
 end

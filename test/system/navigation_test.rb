@@ -78,3 +78,26 @@ class MobileNavigationTest < MobileSystemTestCase
     assert_operator padding, :>=, bar, "main's bottom padding (#{padding}px) should clear the tab bar (#{bar}px)"
   end
 end
+
+class MobileThemeTest < MobileSystemTestCase
+  setup { sign_in_via_form }
+
+  test "the theme choice applies at once and survives a reload" do
+    assert_selector "html[data-theme='dark']", visible: :all
+
+    within("[data-shell='bottom-nav']") { click_on "More" }
+    click_on "Light"
+
+    assert_selector "html[data-theme='light']", visible: :all
+    assert_selector "button[aria-pressed='true']", text: "Light"
+    canvas = page.evaluate_script("getComputedStyle(document.body).backgroundColor")
+    assert_equal "rgb(238, 240, 245)", canvas
+
+    visit root_path
+    assert_selector "html[data-theme='light']", visible: :all
+
+    within("[data-shell='bottom-nav']") { click_on "More" }
+    click_on "Dark"
+    assert_selector "html[data-theme='dark']", visible: :all
+  end
+end

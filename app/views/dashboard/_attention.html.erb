@@ -1,0 +1,36 @@
+<%# The dashboard's to-do list, most urgent first (Attention::Feed). %>
+<section class="space-y-3" data-dashboard-section="attention">
+  <div class="flex items-center justify-between">
+    <h2 class="section-label">Needs attention</h2>
+    <% if items.any? %>
+      <%= link_to "See games →", games_path(filter: "attention"), class: "text-xs text-accent hover:brightness-125" %>
+    <% end %>
+  </div>
+
+  <% if items.any? %>
+    <ul class="card p-0 divide-y divide-subtle overflow-hidden">
+      <% items.each do |item| %>
+        <li data-attention-kind="<%= item.kind %>" data-attention-priority="<%= item.priority %>">
+          <%= link_to game_path(item.game), class: "flex items-center gap-3 px-4 sm:px-6 py-4 hover:bg-surface-raised transition-colors" do %>
+            <%= icon(:exclamation, "h-5 w-5 shrink-0 #{item.priority <= 2 ? "text-warning" : "text-accent"}") %>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-content-strong"><%= pluralize(item.seats_open, "seat") %> to sell vs <%= item.game.opponent.name %></p>
+              <p class="text-sm text-content-dim">
+                <%= game_when(item.game) %>
+                <% if (price = item.game.break_even_price_for_remaining) %>
+                  · break even at <span class="text-content figure">$<%= number_with_delimiter(price.round) %></span> each
+                <% end %>
+              </p>
+            </div>
+            <%= countdown_chip(item.game) %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="card flex items-center gap-3 py-4">
+      <%= icon(:check, "h-5 w-5 shrink-0 text-positive") %>
+      <p class="text-sm text-content-dim">All clear: nothing left to sell in the next <%= Attention::Feed::WINDOW_DAYS %> days.</p>
+    </div>
+  <% end %>
+</section>

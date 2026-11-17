@@ -41,4 +41,19 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     get edit_game_path(@game)
     assert_response :success
   end
+  test "the needs-attention filter shows next week's games with seats left" do
+    sign_in
+    soon = seasons(:current).games.create!(game_number: 90, game_date: Date.current + 2, opponent: teams(:rockets),
+                                           cost_per_ticket: 100, parking_cost: 10, game_type: "regular")
+    sold_out = seasons(:current).games.create!(game_number: 91, game_date: Date.current + 3, opponent: teams(:clippers),
+                                               cost_per_ticket: 100, parking_cost: 10, game_type: "regular")
+    3.times { |i| sold_out.tickets.create!(seat_number: i + 1, sale_price: 150) }
+
+    get games_path(filter: "attention")
+
+    assert_response :success
+    assert_select "table.data-table tbody tr", count: 1
+    assert_select "table.data-table tbody", text: /Houston Rockets/
+    assert_select "a", text: "Needs attention"
+  end
 end

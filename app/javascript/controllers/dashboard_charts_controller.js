@@ -32,17 +32,41 @@ function signedCurrency(value) {
   return formatted
 }
 
-// Axis ticks: "$500", "-$50", "$2k", "-$1k".
+// Axis ticks: "$500", "-$50", "$2k", "$1.5k", "-$1k". Half-thousands keep
+// their decimal; rounding them made "$1.5k" and "$2k" both read "$2k".
 function axisCurrency(value) {
   const sign = value < 0 ? "-" : ""
   const abs = Math.abs(value)
-  return abs >= 1000 ? `${sign}$${(abs / 1000).toFixed(0)}k` : `${sign}$${abs}`
+  if (abs < 1000) return `${sign}$${abs}`
+  const thousands = abs / 1000
+  return `${sign}$${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}k`
 }
 
 export default class extends Controller {
   static targets = ["profitChart", "revenueChart"]
 
   connect() {
+    this.render()
+
+    // Repaint when the theme changes: the picker fires theme:change, and in
+    // "system" mode the OS can switch between light and dark on its own.
+    this.rerender = () => {
+      this.destroyCharts()
+      this.render()
+    }
+    window.addEventListener("theme:change", this.rerender)
+    this.colorScheme = window.matchMedia("(prefers-color-scheme: light)")
+    this.colorScheme.addEventListener("change", this.rerender)
+  }
+
+  disconnect() {
+    window.removeEventListener("theme:change", this.rerender)
+    this.colorScheme.removeEventListener("change", this.rerender)
+    this.destroyCharts()
+  }
+
+  // Colors are read from the live CSS tokens, so they follow the theme.
+  render() {
     this.colors = {
       positive: token("chart-positive"),
       negative: token("chart-negative"),
@@ -65,13 +89,11 @@ export default class extends Controller {
     }
   }
 
-  disconnect() {
-    if (this.profitChartInstance) {
-      this.profitChartInstance.destroy()
-    }
-    if (this.revenueChartInstance) {
-      this.revenueChartInstance.destroy()
-    }
+  destroyCharts() {
+    this.profitChartInstance?.destroy()
+    this.revenueChartInstance?.destroy()
+    this.profitChartInstance = null
+    this.revenueChartInstance = null
   }
 
   // Shared tooltip chrome: surface + text tokens, never series colors.

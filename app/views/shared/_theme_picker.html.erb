@@ -1,0 +1,14 @@
+<%# Dark / Light / System. Buttons with aria-pressed rather than a select, so
+    the choice is one tap on a phone. Wired to theme_controller.js. %>
+<div data-controller="theme" role="group" aria-label="Theme" class="grid grid-cols-3 gap-1 p-1 rounded-lg bg-canvas border border-subtle">
+  <% { "dark" => "Dark", "light" => "Light", "system" => "System" }.each do |choice, label| %>
+    <button type="button"
+            data-theme-target="option"
+            data-action="theme#select"
+            data-theme-choice-param="<%= choice %>"
+            aria-pressed="<%= current_theme == choice %>"
+            class="min-h-[36px] rounded-md text-sm font-medium text-content-dim hover:text-content-strong aria-pressed:bg-surface-raised aria-pressed:text-content-strong aria-pressed:shadow-sm">
+      <%= label %>
+    </button>
+  <% end %>
+</div>

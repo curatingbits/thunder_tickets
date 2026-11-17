@@ -67,6 +67,12 @@ in production they add the teams only. To start over with sample data, run
 MADR Tickets installs like an app. On iPhone, open madrtickets.com in Safari,
 tap Share, then **Add to Home Screen**. On Android, use Chrome's **Install app**.
 Phones get a bottom tab bar (Home, Games, Buyers, More); desktop gets a sidebar.
+Pick a Dark, Light or System theme under More (or at the bottom of the sidebar).
+
+### Home
+Home leads with what needs doing: games in the next 7 days that still have seats
+to sell, most urgent first, with the price each seat needs to break even. Then
+the next three games, then the season's profit, charts and recent sales.
 
 ### Dashboard
 The main dashboard displays:

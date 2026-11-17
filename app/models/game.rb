@@ -34,8 +34,10 @@ class Game < ApplicationRecord
     (cost_per_ticket * season.num_seats) + parking_cost
   end
 
+  # Uses preloaded tickets when the caller included them (lists, the
+  # dashboard), so a page of games doesn't run a query per game.
   def total_revenue
-    tickets.sum(:sale_price)
+    tickets.loaded? ? tickets.to_a.sum(BigDecimal("0"), &:sale_price) : tickets.sum(:sale_price)
   end
 
   def profit_loss
@@ -71,7 +73,7 @@ class Game < ApplicationRecord
   end
 
   def tickets_sold_count
-    tickets.count
+    tickets.size
   end
 
   def tickets_available

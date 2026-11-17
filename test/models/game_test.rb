@@ -132,6 +132,16 @@ class GameTest < ActiveSupport::TestCase
     end
   end
 
+  test "revenue and seat counts agree whether or not tickets are preloaded" do
+    game = games(:current_past)
+    preloaded = Game.includes(:tickets).find(game.id)
+
+    assert preloaded.tickets.loaded?
+    assert_equal game.total_revenue, preloaded.total_revenue
+    assert_equal game.tickets_sold_count, preloaded.tickets_sold_count
+    assert_equal BigDecimal("0"), build_game.total_revenue
+  end
+
   test "cup_round is nil for ordinary and playoff games" do
     assert_nil build_game(game_type: "regular").cup_round
     assert_nil build_game(game_type: "preseason").cup_round

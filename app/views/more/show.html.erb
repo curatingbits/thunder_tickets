@@ -16,6 +16,11 @@
   </ul>
 </div>
 
+<div class="card mt-6">
+  <h2 class="section-label mb-3">Appearance</h2>
+  <%= render "shared/theme_picker" %>
+</div>
+
 <div class="card mt-6 space-y-3">
   <%= render "layouts/season_indicator" %>
   <p class="text-sm text-content-dim">Signed in as <span class="text-content-strong"><%= current_user.name %></span></p>

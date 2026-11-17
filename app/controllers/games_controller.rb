@@ -16,6 +16,11 @@ class GamesController < ApplicationController
       @games = @games.upcoming
     when "past"
       @games = @games.past
+    when "attention"
+      # Same rule as the dashboard's attention list: the next week's games
+      # that still have seats to sell.
+      @games = @games.where(game_date: Date.current..(Date.current + Attention::Feed::WINDOW_DAYS))
+                     .where.not(id: Game.fully_sold.select(:id))
     end
   end
 

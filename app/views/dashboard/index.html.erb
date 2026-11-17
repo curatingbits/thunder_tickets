@@ -24,6 +24,14 @@
     </div>
   </div>
 
+  <% if @attention %>
+    <%= render "attention", items: @attention %>
+  <% end %>
+
+  <% if @next_games.present? %>
+    <%= render "next_games", games: @next_games, season: @season %>
+  <% end %>
+
   <!-- ============================== -->
   <!-- ZONE 1: OVERVIEW               -->
   <!-- ============================== -->
@@ -110,6 +118,8 @@
                    style="width: <%= [[@metrics[:cost_recovery_rate], 100].min, 0].max %>%"></div>
             </div>
             <p class="text-xs text-muted mt-2">
+              <span class="text-content figure">$<%= number_with_delimiter(@metrics[:total_revenue].round) %></span>
+              of $<%= number_with_delimiter(@metrics[:total_cost].round) %> ·
               <% if @metrics[:cost_recovery_rate] >= 100 %>
                 Season cost recovered
               <% else %>
@@ -163,89 +173,31 @@
   <section class="space-y-4">
     <h2 class="section-label">Financials</h2>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-      <!-- Revenue & Cost Comparison -->
-      <div class="card lg:col-span-2">
-        <h3 class="text-lg font-bold text-content-strong mb-4">Financial Overview</h3>
-        <div class="grid grid-cols-3 gap-4">
-          <div class="text-center p-4 bg-canvas rounded-lg border border-subtle">
-            <p class="section-label mb-1">Total Cost</p>
-            <!-- Cost is a commitment, not a loss: neutral, not red. -->
-            <p class="text-xl sm:text-2xl font-bold text-content-strong figure">$<%= number_with_delimiter(@metrics[:total_cost].round) %></p>
-            <p class="text-xs text-muted mt-1">$<%= number_with_delimiter(@metrics[:average_cost_per_ticket].round) %>/ticket</p>
-          </div>
-          <div class="text-center p-4 bg-canvas rounded-lg border border-subtle">
-            <p class="section-label mb-1">Revenue</p>
-            <p class="text-xl sm:text-2xl font-bold figure <%= @metrics[:total_revenue].positive? ? 'text-positive' : 'text-muted' %>">$<%= number_with_delimiter(@metrics[:total_revenue].round) %></p>
-            <p class="text-xs text-muted mt-1">$<%= number_with_delimiter(@metrics[:average_sale_price].round) %>/ticket avg</p>
-          </div>
-          <% if @not_started %>
-            <!-- Before a single sale, "net profit" is just the invoice negated.
-                 Show what's still outstanding instead. -->
-            <div class="text-center p-4 bg-canvas rounded-lg border border-subtle">
-              <p class="section-label mb-1">Outstanding</p>
-              <p class="text-xl sm:text-2xl font-bold text-content-strong figure">$<%= number_with_delimiter(@metrics[:total_cost].round) %></p>
-              <p class="text-xs text-muted mt-1">Season not started</p>
-            </div>
-          <% else %>
-            <div class="text-center p-4 bg-canvas rounded-lg border <%= @metrics[:total_profit] >= 0 ? 'border-positive/40 bg-positive/10' : 'border-negative/40 bg-negative/10' %>">
-              <p class="section-label mb-1">Net Profit</p>
-              <p class="text-xl sm:text-2xl font-bold figure <%= @metrics[:total_profit] >= 0 ? 'text-positive' : 'text-negative' %>">
-                <%= signed_currency(@metrics[:total_profit]) %>
-              </p>
-              <p class="text-xs text-muted mt-1"><%= @metrics[:cost_recovery_rate] %>% recovered</p>
-            </div>
-          <% end %>
-        </div>
-
-        <!-- Break-Even Progress -->
-        <div class="mt-6 p-4 bg-canvas rounded-lg border border-subtle">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-sm text-content-dim">Break-Even Progress</span>
-            <span class="text-sm font-medium <%= @metrics[:cost_recovery_rate] >= 100 ? 'text-positive' : 'text-warning' %>">
-              <%= @metrics[:cost_recovery_rate] %>%
-            </span>
-          </div>
-          <div class="w-full bg-surface-raised rounded-full h-3 relative">
-            <div class="h-3 rounded-full transition-all duration-500 <%= @metrics[:cost_recovery_rate] >= 100 ? 'bg-positive' : 'bg-warning' %>" style="width: <%= [[@metrics[:cost_recovery_rate], 100].min, 0].max %>%"></div>
-          </div>
-          <div class="flex justify-between mt-2 text-xs text-muted">
-            <span>$0</span>
-            <span class="font-medium">Break-even: $<%= number_with_delimiter(@metrics[:total_cost].round) %></span>
-            <% if @metrics[:cost_recovery_rate] >= 100 %>
-              <span class="text-positive"><%= signed_currency(@metrics[:total_profit]) %> profit</span>
-            <% elsif @is_recap %>
-              <span>Recovered <%= @metrics[:cost_recovery_rate] %>% — final</span>
-            <% else %>
-              <span>$<%= number_with_delimiter(@metrics[:revenue_to_break_even].round) %> to go</span>
-            <% end %>
-          </div>
-        </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-subtle rounded-xl overflow-hidden border border-subtle">
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label"><%= @is_recap ? "Unsold inventory" : "Remaining inventory" %></p>
+        <p class="text-lg sm:text-xl font-semibold mt-1 text-content-strong figure"><%= @metrics[:remaining_tickets] %></p>
+        <p class="text-xs text-muted mt-1">tickets</p>
       </div>
-
-      <!-- Quick Stats -->
-      <div class="card">
-        <h3 class="text-sm font-bold text-content-strong mb-3">Quick Stats</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-content-dim"><%= @is_recap ? 'Unsold Inventory' : 'Remaining Inventory' %></span>
-            <span class="text-sm font-medium text-content-strong"><%= @metrics[:remaining_tickets] %> tickets</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-content-dim">Games with Sales</span>
-            <span class="text-sm font-medium text-content-strong"><%= @metrics[:games_with_sales] %>/<%= @metrics[:total_games] %></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-content-dim">Avg Revenue/Game</span>
-            <span class="text-sm font-medium text-positive">$<%= number_with_delimiter(@metrics[:average_revenue_per_game].round) %></span>
-          </div>
-          <% if !@is_recap && @metrics[:tickets_to_break_even] && @metrics[:tickets_to_break_even] > 0 %>
-            <div class="flex justify-between items-center pt-2 border-t border-subtle">
-              <span class="text-sm text-content-dim">Tickets to Break-Even</span>
-              <span class="text-sm font-medium text-warning"><%= @metrics[:tickets_to_break_even] %></span>
-            </div>
-          <% end %>
-        </div>
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label">Games with sales</p>
+        <p class="text-lg sm:text-xl font-semibold mt-1 text-content-strong figure"><%= @metrics[:games_with_sales] %>/<%= @metrics[:total_games] %></p>
+        <p class="text-xs text-muted mt-1">games</p>
+      </div>
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label">Avg revenue/game</p>
+        <p class="text-lg sm:text-xl font-semibold mt-1 text-content-strong figure">$<%= number_with_delimiter(@metrics[:average_revenue_per_game].round) %></p>
+        <p class="text-xs text-muted mt-1">per game played or sold</p>
+      </div>
+      <div class="bg-surface p-4 sm:p-5">
+        <p class="section-label">Tickets to break even</p>
+        <% if !@is_recap && @metrics[:tickets_to_break_even].to_i > 0 %>
+          <p class="text-lg sm:text-xl font-semibold mt-1 text-warning figure"><%= @metrics[:tickets_to_break_even] %></p>
+          <p class="text-xs text-muted mt-1">at the average sale price</p>
+        <% else %>
+          <p class="text-lg sm:text-xl font-semibold mt-1 text-content-dim figure">—</p>
+          <p class="text-xs text-muted mt-1"><%= @is_recap ? "season over" : "already covered" %></p>
+        <% end %>
       </div>
     </div>
 
@@ -344,15 +296,16 @@
   <section class="space-y-4">
     <h2 class="section-label">Activity &amp; Inventory</h2>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Upcoming games (active) OR final results (recap) -->
+    <div class="grid grid-cols-1 <%= "lg:grid-cols-2" if @is_recap %> gap-6">
+      <!-- Final results (recap). The active season's next games are at the top. -->
+      <% if @is_recap %>
       <div class="card">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-bold text-content-strong"><%= @is_recap ? 'Final Results' : 'Upcoming Games' %></h2>
           <%= link_to "View All", games_path, class: "text-sm text-accent hover:brightness-125" %>
         </div>
         <div class="space-y-3">
-          <% list = @is_recap ? @past_games : @upcoming_games %>
+          <% list = @past_games %>
           <% if list.any? %>
             <% list.each do |game| %>
               <%= link_to game, class: "block bg-canvas rounded-lg p-4 border border-subtle hover:border-accent transition-colors" do %>
@@ -385,6 +338,7 @@
           <% end %>
         </div>
       </div>
+      <% end %>
 
       <!-- Recent Sales -->
       <div class="card">

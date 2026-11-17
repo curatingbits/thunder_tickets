@@ -5,7 +5,7 @@
       <%= link_to "← Back to Games", games_path, class: "text-accent hover:brightness-125 text-sm mb-2 inline-block" %>
       <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-content-strong">vs <%= @game.opponent.name %></h1>
       <p class="text-sm sm:text-base text-content-dim mt-2">
-        <%= @game.game_date.strftime("%A, %B %d, %Y") %><br class="sm:hidden">
+        <%= @game.game_date.strftime("%A, %B %-d, %Y") %><% if @game.tipoff_at %> · <%= @game.tipoff_at.strftime("%-l:%M %p") %><% end %><br class="sm:hidden">
         <span class="sm:before:content-['•'] sm:before:mx-2">Game #<%= @game.game_number %></span>
         <% if @game.playoff? %>
           <br class="sm:hidden">
@@ -18,6 +18,10 @@
           <span class="sm:before:content-['•'] sm:before:mx-2 text-info">Preseason</span>
         <% end %>
       </p>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <%= countdown_chip(@game) %>
+        <%= inventory_chip(@game) %>
+      </div>
     </div>
     <div class="w-full sm:w-auto">
       <%= link_to "Edit Game", edit_game_path(@game), class: "btn-secondary w-full sm:w-auto text-center" %>
@@ -28,9 +32,10 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
     <div class="stat-card">
       <p class="text-xs sm:text-sm text-content-dim">Total Cost</p>
-      <p class="text-xl sm:text-2xl font-bold text-negative">$<%= number_with_delimiter(@game.total_cost.round) %></p>
+      <%# A cost is a commitment, not a loss: neutral, never red. %>
+      <p class="text-xl sm:text-2xl font-bold text-content-strong">$<%= number_with_delimiter(@game.total_cost.round) %></p>
       <p class="text-xs text-muted mt-1 hidden sm:block">
-        $<%= number_with_delimiter(@game.cost_per_ticket) %>/ticket
+        <%= number_to_currency(@game.cost_per_ticket) %>/ticket
       </p>
     </div>
 
@@ -52,7 +57,8 @@
 
     <div class="stat-card">
       <p class="text-xs sm:text-sm text-content-dim">Status</p>
-      <p class="text-xl sm:text-2xl font-bold <%= @game.fully_sold? ? 'text-positive' : @game.partially_sold? ? 'text-warning' : 'text-negative' %>">
+      <%# Unsold seats are only a loss once the game is over. %>
+      <p class="text-xl sm:text-2xl font-bold <%= @game.fully_sold? ? 'text-positive' : @game.partially_sold? ? 'text-warning' : @game.game_date < Date.current ? 'text-negative' : 'text-content-strong' %>">
         <%= @game.tickets_available %> Left
       </p>
       <p class="text-xs text-muted mt-1">
@@ -74,9 +80,9 @@
             <div class="bg-canvas rounded-lg p-4 border border-subtle">
               <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-semibold text-content-strong">Section <%= ticket.section %>, Row <%= ticket.row %>, Seat <%= ticket.seat_number %></p>
+                  <p class="font-semibold text-content-strong"><%= [ ("Section #{ticket.section}" if ticket.section.present?), ("Row #{ticket.row}" if ticket.row.present?), "Seat #{ticket.seat_number}" ].compact.join(", ") %></p>
                   <p class="text-sm text-content-dim">
-                    Sold for <span class="text-positive font-semibold">$<%= number_with_delimiter(ticket.sale_price) %></span>
+                    Sold for <span class="text-positive font-semibold"><%= number_to_currency(ticket.sale_price) %></span>
                   </p>
                   <% if ticket.buyer.present? %>
                     <p class="text-xs text-muted mt-1">
@@ -270,21 +276,21 @@
             <div>
               <p class="text-sm text-content-dim">Average Sale Price</p>
               <p class="text-3xl font-bold text-accent">
-                $<%= number_with_delimiter(@game.tickets.average(:sale_price).round(2)) %>
+                <%= number_to_currency(@game.tickets.average(:sale_price)) %>
               </p>
             </div>
 
             <div>
               <p class="text-sm text-content-dim">Highest Sale</p>
               <p class="text-2xl font-bold text-positive">
-                $<%= number_with_delimiter(@game.tickets.maximum(:sale_price)) %>
+                <%= number_to_currency(@game.tickets.maximum(:sale_price)) %>
               </p>
             </div>
 
             <div>
               <p class="text-sm text-content-dim">Lowest Sale</p>
               <p class="text-2xl font-bold text-warning">
-                $<%= number_with_delimiter(@game.tickets.minimum(:sale_price)) %>
+                <%= number_to_currency(@game.tickets.minimum(:sale_price)) %>
               </p>
             </div>
 

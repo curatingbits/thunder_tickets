@@ -14,7 +14,10 @@ module IconHelper
     menu: [ "M4 6h16M4 12h16M4 18h16" ],
     chevron_right: [ "M9 5l7 7-7 7" ],
     logout: [ "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" ],
-    x: [ "M6 18L18 6M6 6l12 12" ]
+    x: [ "M6 18L18 6M6 6l12 12" ],
+    clock: [ "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" ],
+    check: [ "M5 13l4 4L19 7" ],
+    exclamation: [ "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" ]
   }.freeze
 
   # Decorative by default (aria-hidden): pair it with visible text.

@@ -24,8 +24,12 @@ class DashboardController < ApplicationController
     @best_game  = games.max_by(&:profit_loss)
     @worst_game = games.select { |g| g.tickets_sold_count.positive? }.min_by(&:profit_loss)
 
-    # Upcoming games (empty for a completed season)
-    @upcoming_games = @season.games.upcoming.includes(:opponent).limit(5)
+    # What needs doing and what's next are about the season in progress, so
+    # they only show while viewing it.
+    if viewing_current_season?
+      @attention = Attention::Feed.new(@season).items
+      @next_games = @season.games.upcoming.includes(:opponent, :tickets).limit(3)
+    end
 
     # Past games, most recent first (used for the recap "Final Results" list)
     @past_games = @season.games.past.includes(:opponent).limit(5) if @is_recap
