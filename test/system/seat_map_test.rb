@@ -92,7 +92,8 @@ class SeatMapTest < ApplicationSystemTestCase
     assert_map_ready
 
     select "Wed, Dec 16 · #{@other.opponent.name}", from: "seat-map-game"
-    assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
+    # The first software-rendered 3D frame can hold the page up for a few seconds on CI.
+    assert_selector "#seat-map-game option[selected][value='#{@other.id}']", wait: 15
     assert_current_path(/game_id=#{@other.id}/)
     assert_selector "[data-seat-map-target='item']", count: @other.market_snapshots.sole.observations.count
     assert_map_ready
