@@ -98,8 +98,23 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_select "td", text: /Houston Rockets/
   end
 
-  test "home shows what the seats are worth" do
+  test "home shows the next three unsold games the way Pricing lists them" do
+    game = ->(number, day) { seasons(:current).games.create!(game_number: number, game_date: Date.new(2026, 11, day), opponent: teams(:rockets),
+                                                             cost_per_ticket: 162.52, parking_cost: 8.70, game_type: "regular") }
+    sold_out = game.(102, 17)
+    (1..3).each { |seat| sold_out.tickets.create!(seat_number: seat, sale_price: 150) }
+    later = [ game.(103, 20), game.(104, 25), game.(105, 27) ]
+
     get root_path
-    assert_select "[data-dashboard-section='worth'] [data-pricing-tiles]"
+
+    shown = css_select("[data-dashboard-section='next-unsold'] [data-pricing-game]").map { |e| e["data-pricing-game"].to_i }.uniq
+    assert_equal [ @game.id, *later.first(2).map(&:id) ], shown, "soonest first, skipping the sold-out game"
+    assert_select "[data-dashboard-section='next-unsold'] tr[data-pricing-game='#{@game.id}']", text: /List \$#{@snapshot.recommended_list_price.round}/
+    assert_select "[data-dashboard-section='next-unsold'] a[data-seat-map-game-link='#{@game.id}']", 2, "the 3D button, in the table and on the phone card"
+    assert_select "[data-dashboard-section='pricing']", text: /Our prices vs the market/
+    assert_no_match "What our unsold seats are worth", response.body
+
+    get pricing_path
+    assert_equal shown, css_select("[data-pricing-game]").map { |e| e["data-pricing-game"].to_i }.uniq.first(3), "the top of Pricing's Unsold list"
   end
 end

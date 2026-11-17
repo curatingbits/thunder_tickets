@@ -1,0 +1,19 @@
+<%# Q2/Q3 on Pricing and Home: how our prices compare, per assessment, each
+    count linking to that filter on Pricing. %>
+<div class="card">
+  <p class="section-label">Our prices vs the market</p>
+  <% if counts.any? %>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <% [ [ "overpriced", "overpriced" ], [ "underpriced", "underpriced" ], [ "competitive", nil ],
+           [ "not_listed", "not_listed" ], [ "needs_verification", "verify" ], [ "insufficient_data", nil ], [ "no_data", nil ] ].each do |assessment, filter| %>
+        <% next unless counts[assessment].to_i.positive? %>
+        <%= link_to (filter ? pricing_path(filter: filter) : pricing_path), class: "inline-flex items-center gap-1.5" do %>
+          <%= assessment_chip(assessment) %><span class="text-sm font-semibold text-content-strong figure"><%= counts[assessment] %></span>
+        <% end %>
+      <% end %>
+    </div>
+    <p class="text-xs text-muted mt-3">Advisory only. Nothing here changes a Ticketmaster listing.</p>
+  <% else %>
+    <p class="text-sm text-content-dim mt-2">Nothing to sell right now.</p>
+  <% end %>
+</div>

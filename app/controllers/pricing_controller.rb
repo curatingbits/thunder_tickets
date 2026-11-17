@@ -5,7 +5,7 @@ class PricingController < ApplicationController
   # games show only under "All".
   DEFAULT_FILTER = "unsold"
   FILTERS = {
-    "unsold" => ->(row) { row.status.open_seats.any? },
+    "unsold" => ->(row) { row.unsold? },
     "action" => ->(row) { row.needs_action? },
     "overpriced" => ->(row) { row.assessment == "overpriced" },
     "underpriced" => ->(row) { row.assessment == "underpriced" },
@@ -22,6 +22,6 @@ class PricingController < ApplicationController
     @value = Market::InventoryValue.from(@board.rows)
     @counts = @board.rows.filter_map(&:assessment).tally
     @filter = FILTERS.key?(params[:filter]) ? params[:filter] : DEFAULT_FILTER
-    @rows = @board.rows.select { |row| row.seats_to_sell.positive? || row.snapshot }.select(&FILTERS.fetch(@filter))
+    @rows = @board.shown_rows.select(&FILTERS.fetch(@filter))
   end
 end

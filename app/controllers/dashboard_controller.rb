@@ -29,7 +29,8 @@ class DashboardController < ApplicationController
     if viewing_current_season?
       @attention = Attention::Feed.new(@season).items
       @board = Market::Board.new(@season)
-      @inventory_value = Market::InventoryValue.from(@board.rows)
+      # Pricing's table for the next three games with seats unsold.
+      @next_unsold = @board.shown_rows.select(&:unsold?).first(3)
       @pricing_counts = @board.rows.filter_map(&:assessment).tally
       @next_rows = @board.rows.first(3)
       @settlement_summary = Settlements::Summary.new if @season.settlement_tracked

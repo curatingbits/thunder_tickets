@@ -93,5 +93,16 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "[data-dashboard-section='attention']", count: 0
     assert_select "[data-dashboard-section='next-games']", count: 0
+    assert_select "[data-dashboard-section='next-unsold']", count: 0
+    assert_select "[data-dashboard-section='pricing']", count: 0
+  end
+
+  test "with every upcoming game sold, the next unsold games say so" do
+    (1..3).each { |seat| games(:current_future).tickets.create!(seat_number: seat, sale_price: 150) }
+
+    get dashboard_path
+
+    assert_select "[data-dashboard-section='next-unsold']", text: /No unsold games coming up/
+    assert_select "[data-dashboard-section='next-unsold'] [data-pricing-game]", count: 0
   end
 end

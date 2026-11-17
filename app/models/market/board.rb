@@ -5,6 +5,7 @@ module Market
   class Board
     Row = Data.define(:game, :status, :snapshot, :assessment, :our_all_in, :confidence, :freshness) do
       def seats_to_sell = status.open_seats.size - status.held_seats.size
+      def unsold? = status.open_seats.any?
       def needs_action? = assessment.in?(%w[overpriced underpriced not_listed needs_verification])
     end
 
@@ -22,6 +23,12 @@ module Market
         latest = MarketSnapshot.latest_by_game(games.map(&:id))
         games.map { |game| row_for(game, latest[game.id]) }
       end
+    end
+
+    # What Pricing lists: games with seats still to sell, or market data to
+    # read. Home's next three unsold games are the first of these.
+    def shown_rows
+      rows.select { |row| row.seats_to_sell.positive? || row.snapshot }
     end
 
     def last_run

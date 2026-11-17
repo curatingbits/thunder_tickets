@@ -29,16 +29,26 @@
     <%= render "attention", items: @attention %>
   <% end %>
 
-  <% if @inventory_value %>
-    <section class="space-y-3" data-dashboard-section="worth">
+  <% if @board %>
+    <%# The top of Pricing's Unsold list, in the same format. %>
+    <section class="space-y-3" data-dashboard-section="next-unsold">
       <div class="flex items-center justify-between">
-        <h2 class="section-label">Worth, pricing and payouts</h2>
-        <%= link_to "Pricing →", pricing_path, class: "text-xs text-accent hover:brightness-125" %>
+        <h2 class="section-label">Next unsold games</h2>
+        <%= link_to "All on Pricing →", pricing_path, class: "text-xs text-accent hover:brightness-125" %>
       </div>
-      <%= render "pricing/value_tiles", value: @inventory_value, counts: @pricing_counts %>
-      <% if @settlement_summary %>
-        <%= render "settlements/tile", summary: @settlement_summary %>
+      <% if @next_unsold.any? %>
+        <%= render "pricing/board", rows: @next_unsold %>
+      <% else %>
+        <p class="card text-sm text-content-dim">No unsold games coming up.</p>
       <% end %>
+    </section>
+
+    <section class="space-y-3" data-dashboard-section="pricing">
+      <h2 class="section-label">Pricing and payouts</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        <%= render "pricing/vs_market_tile", counts: @pricing_counts %>
+        <%= render "settlements/tile", summary: @settlement_summary if @settlement_summary %>
+      </div>
     </section>
   <% end %>
 
