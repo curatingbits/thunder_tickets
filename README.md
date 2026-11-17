@@ -161,11 +161,24 @@ belong to seasons that aren't tracked, so they're skipped.
 Record what you've listed on each game's page (**List seats**), or hold seats
 you're keeping. Each game shows a listing status: Listed, Partially sold, Not
 listed, Reserved, Sold, Transferred, or **Needs verification**. A listing nobody
-has confirmed in 7 days needs verification, and "Not listed" only appears after
-someone confirms it, so the app never guesses. **Review listings** (on Games,
-or from Home) is the weekly checklist: check Ticketmaster, then tap "Still
-listed", "Change price" or "Not listed". Every change is kept in the game's
-listing history. Nothing here changes anything on Ticketmaster.
+has confirmed in 7 days needs verification. **Review listings** (on Games, or
+from Home) is the checklist: check Ticketmaster, then tap "Still listed",
+"Change price" or "Not listed". Every change is kept in the game's listing
+history. Nothing here changes anything on Ticketmaster.
+
+The Ticketmaster research (Mondays and Wednesdays) keeps this up to date on its
+own, from what buyers can see:
+- **A listing in our row (Section 101, Row DD):** our open seats are recorded as
+  listed at that price (all-in), or the price change is recorded.
+- **Nothing in our row after a complete read:** the seats are recorded as not
+  listed, and any Ticketmaster listing the app had ends.
+- **Two different prices in our row:** the app doesn't guess which is ours.
+
+These changes appear in the listing history as made by the research.
+
+The research reads listings for a pair, so a listing that only sells all three
+seats together won't show. Another Row DD seat holder's listing would also look
+like ours.
 
 Sales through Ticketmaster count as delivered when they sell; mark private
 sales **delivered** once the buyer has the tickets. Home flags undelivered

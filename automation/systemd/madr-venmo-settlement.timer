@@ -1,10 +1,10 @@
-# Proposed: Monday 7:30am Central, after the pricing research. Finalize after
-# a supervised run, then: systemctl --user enable --now madr-venmo-settlement.timer
+# Every day at 7:30am Central (Duggan, 2026-11-16). A day with nothing new
+# replays as "already in"; Telegram only when a payment needs review.
 [Unit]
-Description=MADR Tickets - weekly Venmo settlement sync
+Description=MADR Tickets - daily Venmo settlement sync
 
 [Timer]
-OnCalendar=Mon *-*-* 07:30:00 America/Chicago
+OnCalendar=*-*-* 07:30:00 America/Chicago
 Persistent=true
 RandomizedDelaySec=10m
 

@@ -1,10 +1,10 @@
-# Proposed: Monday 6:30am Central, a few minutes' jitter. Finalize after a
-# supervised run, then: systemctl --user enable --now madr-ticketmaster-pricing.timer
+# Mondays and Wednesdays at 4am Central, a few minutes' jitter (Duggan,
+# 2026-11-16). Each run has its own key (tm-<date>), so both happen.
 [Unit]
-Description=MADR Tickets - weekly Ticketmaster pricing research
+Description=MADR Tickets - Ticketmaster pricing research (Mon and Wed)
 
 [Timer]
-OnCalendar=Mon *-*-* 06:30:00 America/Chicago
+OnCalendar=Mon,Wed *-*-* 04:00:00 America/Chicago
 Persistent=true
 RandomizedDelaySec=15m
 

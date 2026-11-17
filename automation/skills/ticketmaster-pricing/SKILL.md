@@ -1,16 +1,20 @@
 ---
 name: ticketmaster-pricing
-description: Weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102 and 120 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats. Trigger Monday mornings (systemd timer) or whenever Duggan asks to refresh ticket prices.
+description: Twice-weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102 and 120 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats and records whether our own seats are listed. Trigger Monday and Wednesday at 4am (systemd timer) or whenever Duggan asks to refresh ticket prices.
 ---
 
 # Ticketmaster pricing research
 
-Each week, read what Ticketmaster buyers can see for every upcoming Thunder home game near our seats, and hand it to MADR Tickets. **The app does all the analysis** (comparables, outliers, fees, recommendations). Your job is to read the listings faithfully, slowly, and to stop cleanly if Ticketmaster pushes back. Slow is fine; a run of ~35 games takes about an hour.
+Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder home game near our seats, and hand it to MADR Tickets. **The app does all the analysis**: comparables, outliers, fees, recommendations, and whether our own seats are listed. Your job is to read the listings faithfully, slowly, and to stop cleanly if Ticketmaster pushes back. Slow is fine; a run of ~35 games takes about an hour.
 
 ## Standing context
 
 - Our seats: **Section 101, Row DD, seats 1–3** at Paycom Center. Comparables: sections **101, 102, 120**.
 - Ticketmaster's default quantity is **2**, which is what we price. Prices on the page are **all-in per ticket** (fees in, tax out). Don't change the quantity or the fee display.
+- **Our own listing.** You don't look for it separately. Any Section 101 Row DD listing you read goes up with the others, and the app records it as our listing at that price.
+  - Nothing in our row after a complete read means our seats aren't listed on Ticketmaster.
+  - Each scan's response reports this as `our_listing.outcome`: `listed`, `confirmed`, `repriced`, `not_listed`, `unclear` (two prices in our row, so the app doesn't guess), `incomplete`, or `nothing_to_sell`.
+  - Report it; never change anything on Ticketmaster.
 - Results: https://madrtickets.com/pricing · run log: https://madrtickets.com/import_runs
 - Files in this skill folder (`~/.claude/skills/ticketmaster-pricing/`):
   - `bin/madr-api METHOD PATH [BODY_FILE]` — the only way to talk to the app. It reads the token from `~/.config/madrtickets/market-research.header`.
@@ -25,7 +29,7 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
 2. **Logged out, research profile only.** Use the connected browser named **MADR Research**. If Ticketmaster shows anyone signed in ("My Account", a first name in the header) instead of "Sign In/Register", stop and tell Duggan to sign out of Ticketmaster in that profile.
 3. **Never get past a block.** CAPTCHA, "Pardon the Interruption", "Your browsing activity has been paused", a queue or waiting room, access denied: stop the whole run. Don't retry, reload repeatedly, or switch profiles to get around it.
 4. **Never show the token.** Don't `cat` the header file, echo it, or put it anywhere but `bin/madr-api`.
-5. **One game at a time, about 30 seconds apart.** At most two scheduled runs a week: Monday's full run and, if Duggan enables it, Thursday's rescan of the next week's games.
+5. **One game at a time, about 30 seconds apart.** Scheduled runs: Monday and Wednesday at 4am. Anything else only when Duggan asks.
 6. **Advisory only.** Never change a listing or price anywhere. MADR's recommendations are for Duggan and Mark to act on.
 
 ## Before you start
@@ -38,15 +42,15 @@ Each week, read what Ticketmaster buyers can see for every upcoming Thunder home
    Never fall back to another browser. Duggan's everyday profile is connected too.
 3. **Start or resume the run.**
    - Make `$W/client_id` once with `echo "$(hostname)-$(date +%s)" > $W/client_id`. If you're resuming after a crash, reuse the old work folder's client id.
-   - The key is the ISO week: `tm-$(date +%G-W%V)`.
+   - The key is the date: `tm-$(date +%F)`. Monday's and Wednesday's runs are separate, and a crashed run resumes the same day.
    - POST `/api/v1/import_runs` with `{"kind":"market_research","source":"ticketmaster_browser","key":KEY,"client_id":ID,"agent_version":"ticketmaster-pricing/1"}`.
-   - **201** is a new run. **200** is a resumed run: skip every game in `scanned_game_ids`. **409** means another run holds it, or this week's run already completed: stop and report, don't start a second one.
+   - **201** is a new run. **200** is a resumed run: skip every game in `scanned_game_ids`. **409** means another run holds it, or today's run already completed: stop and report, don't start a second one.
 
 ## Mid-week rescan (`/ticketmaster-pricing soon`)
 
 If you were started with the argument `soon`, rescan only the games in the next seven days. Prices move fastest then.
 - **Targets:** `bin/madr-api GET "/api/v1/research_targets?within_days=7"`. If it lists no games, report "nothing in the next week" and stop.
-- **Run key:** `tm-$(date +%G-W%V)-soon`, so it doesn't collide with Monday's run.
+- **Run key:** `tm-$(date +%F)-soon`, so it doesn't collide with a full run the same day.
 - **Report:** in the vault Log line, write "mid-week rescan" in place of the seat value, because only some games were scanned.
 - Everything else is the same: the hard rules, the routine and block handling.
 
@@ -81,6 +85,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
      - Build the scan file: `bin/build-scan $W <game id> "<event URL>" <YYYY-MM-DD> <event_total_listings> <true|false> "<title>"`. It writes `$W/scan-<game id>.json` and refuses duplicated rows.
 5. `bin/madr-api POST /api/v1/import_runs/<run id>/market_scans $W/scan-<game id>.json`:
    - **201** means saved; **200** with `"replayed": true` means already saved.
+   - Note `our_listing` from the response for the report (see Standing context).
    - **422** (for example, the event date doesn't match the game) or **409**: note the message and move on. Never edit listings to make a post go through.
 6. Wait about 30 seconds before the next game.
 
@@ -102,10 +107,10 @@ If you were started with the argument `soon`, rescan only the games in the next 
   - If it doesn't exist, create it with frontmatter (`type: note`, `status: active`, `created: <date>`), a one-line purpose, and a `## Log` heading.
   - Otherwise copy it into `$W` first, re-read it right before writing, and edit it with Python, asserting `## Log` appears exactly once.
   - Add at the top of the Log:
-    `- <YYYY-MM-DD> — <n>/<m> games scanned (<status>). Seats worth about $<all-in total> all-in. Act on: <games within 3 weeks that are over/underpriced, unlisted or unconfirmed — date, opponent, list-at price>. [Pricing](https://madrtickets.com/pricing)`
+    `- <YYYY-MM-DD> — <n>/<m> games scanned (<status>). Seats worth about $<all-in total> all-in. Our listings: <changes the app recorded — e.g. "Pelicans 11/20 listed at $194 all-in", "Lakers 12/9 no longer listed", or "no changes">. Act on: <games within 3 weeks that are over/underpriced, unlisted or unconfirmed — date, opponent, list-at price>. [Pricing](https://madrtickets.com/pricing)`
   - **No secrets in notes.**
 - **Desktop:** `notify-send "MADR: Ticketmaster prices updated" "<n> games scanned · <k> need action"`.
-- **Terminal:** a short table of each game with market value (all-in), recommended list price and strategy, and assessment, then the run link.
+- **Terminal:** a short table of each game with market value (all-in), recommended list price and strategy, our seats on Ticketmaster (the `our_listing` outcome and price), and assessment, then the run link. Call out any `unclear` game: Duggan should check which Row DD listing is ours.
 - **Cleanup:** close the tabs you opened. Leave the research browser running.
 
 ## Setup (one time, Duggan)
@@ -125,4 +130,4 @@ If you were started with the argument `soon`, rescan only the games in the next 
    ```
    Revoke it any time under Settings → Workstation access.
 4. **Install.** Run `automation/install.sh` from the repo. It links this skill and installs the systemd units without enabling them.
-5. **Schedule.** After a supervised first run: `systemctl --user enable --now madr-ticketmaster-pricing.timer`.
+5. **Schedule.** `systemctl --user enable --now madr-ticketmaster-pricing.timer` (Mondays and Wednesdays, 4am Central).

@@ -2,21 +2,24 @@ module Market
   # Turns one game's scan into an immutable snapshot plus its observations,
   # in one transaction. Replaying the same scan returns the stored snapshot;
   # a different scan for the same run and game is refused, never merged.
-  # Never touches tickets, listings or anything financial.
+  # Never touches tickets or anything financial. With sync_listings (the
+  # automated research), it also brings our Ticketmaster listing in line with
+  # what the scan saw in our row (Listings::ResearchSync).
   class ScanIngest
     class Conflict < StandardError; end
     class Invalid < StandardError; end
 
-    Result = Data.define(:snapshot, :replayed)
+    Result = Data.define(:snapshot, :replayed, :our_listing)
 
     TICKET_TYPES = %w[verified_resale standard_admission other].freeze
     MAX_LISTINGS = 2_000
 
-    def initialize(run:, game:, payload:, manual: false, now: Time.current)
+    def initialize(run:, game:, payload:, manual: false, sync_listings: false, now: Time.current)
       @run = run
       @game = game
       @payload = payload.to_h.deep_symbolize_keys
       @manual = manual
+      @sync_listings = sync_listings
       @now = now
     end
 
@@ -25,14 +28,17 @@ module Market
       digest = Digest::SHA256.hexdigest(JSON.generate([ listings, @payload[:event_id], quantity ]))
 
       if (existing = @run.market_snapshots.find_by(game: @game))
-        return Result.new(existing, true) if existing.payload_digest == digest
+        return Result.new(existing, true, nil) if existing.payload_digest == digest
 
         raise Conflict, "this run already has a different scan for #{@game.opponent.name} on #{@game.game_date}"
       end
       check_event_date!
 
+      sync = nil
       snapshot = MarketSnapshot.transaction do
+        sync = sync_our_listing(listings)
         snapshot = MarketSnapshot.create!(snapshot_attributes(listings, digest))
+        sync&.record_events!(snapshot)
         rows = @observations.map do |o|
           o.to_h.except(:price, :dd_equivalent_price).merge(
             market_snapshot_id: snapshot.id, price: o.price.round(2), dd_equivalent_price: o.dd_equivalent_price,
@@ -43,10 +49,24 @@ module Market
         remember_event!
         snapshot
       end
-      Result.new(snapshot, false)
+      Result.new(snapshot, false, sync&.result)
     end
 
     private
+
+    # Only the automated research, on a current scan of an upcoming game: a
+    # pasted or backfilled scan says nothing reliable about our listing today.
+    def sync_our_listing(listings)
+      return unless @sync_listings && !@manual
+      return unless captured_at >= @now - 1.day && @game.game_date >= captured_at.to_date
+
+      sync = Listings::ResearchSync.new(game: @game, listings: listings, settings: Settings.for(@game.season),
+                                        scroll_complete: scroll_complete?, now: captured_at)
+      sync.apply
+      @game.listings.reset
+      @game.listing_events.reset
+      sync
+    end
 
     def quantity
       Integer(@payload[:quantity_filter] || 2)

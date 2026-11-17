@@ -81,10 +81,12 @@ class Api::V1::MarketApiTest < ActionDispatch::IntegrationTest
     assert_equal false, created["replayed"]
     assert_equal "competitive", created.dig("recommended", "strategy")
     assert created.dig("prices_all_in", "market").positive?
+    assert_includes %w[listed not_listed], created.dig("our_listing", "outcome"), "the research checks our own row"
 
     post_scan(run["id"])
     assert_response :ok
     assert_equal true, response.parsed_body["replayed"]
+    assert_nil response.parsed_body["our_listing"], "a replay changes nothing"
     assert_equal 1, MarketSnapshot.count
 
     patch api_v1_import_run_path(run["id"]), params: { client_id: "client-a", status: "completed", targeted: 2,

@@ -27,11 +27,10 @@ Ticketmaster pricing (/ticketmaster-pricing)
   1. ~/.config/madrtickets/research.env       MADR_RESEARCH_PROFILE="Profile N"
   2. ~/.config/madrtickets/market-research.header   (chmod 600; see the skill's Setup)
   3. Run /ticketmaster-pricing once while watching.
-  Then: systemctl --user enable --now madr-ticketmaster-pricing.timer
-  Later, optionally: systemctl --user enable --now madr-ticketmaster-midweek.timer   (Thursdays, next 7 days only)
+  Then: systemctl --user enable --now madr-ticketmaster-pricing.timer   (Mondays and Wednesdays, 4am)
 
 Venmo settlements (/venmo-settlement)
   1. ~/.config/madrtickets/finance.header and settlements.header   (chmod 600; see the skill's Setup)
   2. Run ~/.claude/skills/venmo-settlement/bin/venmo-sync once while watching.
-  Then: systemctl --user enable --now madr-venmo-settlement.timer
+  Then: systemctl --user enable --now madr-venmo-settlement.timer   (daily, 7:30am)
 NEXT

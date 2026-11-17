@@ -11,9 +11,10 @@ module Api
         return render_error(:conflict, "not_holder", "run #{run.key} isn't running or is held by another client") unless run.held_by?(client_id)
 
         game = Game.find(params.require(:game_id))
-        result = Market::ScanIngest.new(run: run, game: game, payload: scan_params).call
+        result = Market::ScanIngest.new(run: run, game: game, payload: scan_params, sync_listings: true).call
         run.renew!(client_id)
-        render json: snapshot_json(result.snapshot).merge(replayed: result.replayed), status: result.replayed ? :ok : :created
+        render json: snapshot_json(result.snapshot).merge(replayed: result.replayed, our_listing: result.our_listing&.to_h),
+               status: result.replayed ? :ok : :created
       rescue Market::ScanIngest::Conflict => e
         render_error(:conflict, "conflict", e.message)
       rescue Market::ScanIngest::Invalid => e

@@ -87,7 +87,7 @@ class Market::ScanIngestTest < ActiveSupport::TestCase
     assert_equal 0, MarketSnapshot.count
   end
 
-  test "ingest records the event but never touches sales or listings" do
+  test "ingest records the event; on its own it never touches sales or listings" do
     assert_no_difference [ -> { Ticket.count }, -> { Listing.count }, -> { ListingEvent.count } ] do
       ingest("2026-11-18")
     end

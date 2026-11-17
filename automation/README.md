@@ -1,6 +1,6 @@
 # MADR Tickets automation
 
-Weekly jobs that run on Duggan's workstation and send results to
+Scheduled jobs that run on Duggan's workstation and send results to
 madrtickets.com. The pricing research is a Claude Code skill launched by a
 systemd user timer, the same pattern as the fantasy-football skills. The Venmo
 sync is a plain script on a timer, with a skill for asking about it. Everything here is
@@ -9,9 +9,9 @@ Ticketmaster listing, or moves money.
 
 | Job | What it does | Proposed schedule | Status |
 |---|---|---|---|
-| `/ticketmaster-pricing` | Reads resale listings in sections 101, 102 and 120 for every upcoming home game (logged out, "MADR Research" profile) and posts them; the app prices our seats | Mondays 6:30am Central | Installed, **not enabled** |
-| `/ticketmaster-pricing soon` | Rescans only the next seven days' games, where prices move fastest | Thursdays 6:30am Central | Installed, **not enabled** (enable after the Monday run is reliable) |
-| Venmo settlement sync (`venmo-sync`, `/venmo-settlement`) | Reads Mark's posted Venmo payments from financial.dar.haus (read-only) and posts them; the app matches them to sold games. The timer runs the script directly (no browser, no AI); the skill runs it on request and explains anything to review | Mondays 7:30am Central | Installed, **not enabled** |
+| `/ticketmaster-pricing` | Reads resale listings in sections 101, 102 and 120 for every upcoming home game (logged out, "MADR Research" profile) and posts them; the app prices our seats and records whether our own Row DD seats are listed, and at what price | Mondays and Wednesdays 4am Central | **Enabled** |
+| `/ticketmaster-pricing soon` | Rescans only the next seven days' games | By hand only | — |
+| Venmo settlement sync (`venmo-sync`, `/venmo-settlement`) | Reads Mark's posted Venmo payments from financial.dar.haus (read-only) and posts them; the app matches them to sold games. The timer runs the script directly (no browser, no AI); the skill runs it on request and explains anything to review | Daily 7:30am Central | **Enabled** |
 
 ## Install
 
@@ -48,6 +48,8 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 | The unit can't start (Chromium missing, env file missing) | Telegram: "MADR automation … failed to start" | `journalctl --user -u madr-ticketmaster-pricing` |
 | Token revoked or missing | The skill stops at its first API call and says so | Create a new one (skill Setup, step 3) |
 | Data goes stale (no run for 8+ days) | "Market data is over 8 days old" on Home | Run it by hand |
+| Our seats show "not listed" but Mark did list them | The research reads listings for a pair, so a listing that only sells all three seats together doesn't show | Ask Mark to allow selling in pairs, or record the listing on the game's page (the next run will end it again if it still can't see it) |
+| The run reports `unclear` for a game | Two different prices in Row DD; the app doesn't guess which is ours | Record ours on the game's page |
 | A Venmo payment doesn't clearly fit one game | "N Venmo payments to review" on Home, plus Telegram | Open it on the Money tab: apply the suggestion, apply it yourself, or ignore it with a note |
 | The Venmo sync fails with a 401 | Telegram: "MADR automation madr-venmo-settlement.service failed" | The finance or MADR token was rotated or revoked; see `/venmo-settlement` Setup |
 | A transaction changes or disappears in the finance app | The payment goes to review ("changed") or is marked "no longer in the finance app"; nothing is deleted | Check it on the Money tab |
@@ -58,7 +60,6 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 systemctl --user list-timers 'madr-*'                         # what's scheduled
 systemctl --user edit madr-ticketmaster-pricing.timer          # change OnCalendar
 systemctl --user disable --now madr-ticketmaster-pricing.timer # stop it
-systemctl --user disable --now madr-ticketmaster-midweek.timer
 systemctl --user disable --now madr-venmo-settlement.timer
 ```
 
