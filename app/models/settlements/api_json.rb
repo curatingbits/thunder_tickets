@@ -7,7 +7,7 @@ module Settlements
       totals = summary.totals
       {
         partner: Settlements.partner_name, owner: Settlements.owner_name,
-        window_from: summary.window_from.iso8601, last_sync_at: summary.last_sync_at&.iso8601,
+        window_from: summary.window_from.iso8601, last_sync_at: summary.last_sync_at&.iso8601, synced: summary.synced?,
         owed_cents: totals[:expected_cents], paid_cents: totals[:allocated_cents], outstanding_cents: totals[:outstanding_cents],
         games: summary.balances.map do |b|
           { game_id: b.game.id, date: b.game.game_date.iso8601, opponent: b.game.opponent.name, revenue_cents: b.revenue_cents,

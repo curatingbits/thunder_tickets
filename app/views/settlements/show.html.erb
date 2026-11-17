@@ -16,6 +16,13 @@
     </div>
   </div>
 
+  <% unless @summary.synced? %>
+    <div class="rounded-lg p-4 bg-warning/10 border border-warning/40 text-sm text-content" role="status" data-money-not-synced>
+      No Venmo payments loaded yet, so every sold game shows as unpaid. They'll settle after the first sync, or
+      <%= link_to "add a payment by hand", new_partner_payment_path, class: "text-accent" %>.
+    </div>
+  <% end %>
+
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-subtle rounded-xl overflow-hidden border border-subtle" data-money-totals>
     <div class="bg-surface p-4 sm:p-5 col-span-2 lg:col-span-1">
       <p class="section-label">Balance</p>

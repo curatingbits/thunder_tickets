@@ -1,0 +1,12 @@
+# Proposed: Monday 7:30am Central, after the pricing research. Finalize after
+# a supervised run, then: systemctl --user enable --now madr-venmo-settlement.timer
+[Unit]
+Description=MADR Tickets - weekly Venmo settlement sync
+
+[Timer]
+OnCalendar=Mon *-*-* 07:30:00 America/Chicago
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

@@ -6,4 +6,10 @@ module Settlements
   def self.partner_name = AppSetting.get("settlement.partner_name").to_s
   def self.partner_first_name = partner_name.split.first.to_s
   def self.owner_name = AppSetting.get("settlement.owner_name").to_s
+
+  # Balances mean something only once payments have been loaded: before the
+  # first sync (or a payment entered by hand), every sold game would look unpaid.
+  def self.synced?
+    PartnerPayment.exists? || ImportRun.where(kind: "payment_sync", status: "completed").exists?
+  end
 end

@@ -96,6 +96,8 @@ module Attention
       found = []
       review = PartnerPayment.where(status: "needs_review").count
       found << global_item(2, :settlement_review, review) if review.positive?
+      return found unless Settlements.synced?
+
       overdue = Settlements::Ledger.new([ @season ]).balances.select do |b|
         b.outstanding_cents > b.tolerance && b.game.tickets.map(&:sold_at).compact.max.to_i < (@now - PAYOUT_OVERDUE).to_i
       end

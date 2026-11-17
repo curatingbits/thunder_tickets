@@ -3,9 +3,13 @@
 <% review = summary.review.count %>
 <div class="card" data-settlement-tile>
   <p class="section-label">Payouts</p>
-  <p class="text-2xl font-bold text-content-strong mt-1"><%= owes_sentence(totals[:outstanding_cents]) %></p>
+  <% if summary.synced? %>
+    <p class="text-2xl font-bold text-content-strong mt-1"><%= owes_sentence(totals[:outstanding_cents]) %></p>
+  <% else %>
+    <p class="text-lg font-semibold text-content-strong mt-1">Waiting for the first Venmo sync</p>
+  <% end %>
   <p class="text-sm text-content-dim mt-1">
-    <%= pluralize(totals[:unpaid_games], "game") %> not fully paid
+    <%= summary.synced? ? "#{pluralize(totals[:unpaid_games], "game")} not fully paid" : "#{cents(totals[:expected_cents], signed: true)} owed so far on sold games" %>
     <% if review.positive? %> · <%= link_to pluralize(review, "payment") + " to review", partner_payments_path(filter: "review"), class: "text-accent" %><% end %>
   </p>
   <p class="text-xs text-muted mt-2">

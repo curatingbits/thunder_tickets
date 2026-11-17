@@ -82,6 +82,14 @@ class SettlementsTest < ActiveSupport::TestCase
     assert_equal(-20_000, balance(g).expected_cents)
   end
 
+  test "the sync window starts 90 days before the first tracked game, at most 395 days back" do
+    game("ATL", "2026-10-07")
+    first = Game.joins(:season).where(seasons: { settlement_tracked: true }).minimum(:game_date)
+
+    travel_to(first + 30) { assert_equal first - 90, Settlements::Summary.new.window_from }
+    travel_to(first + 600) { assert_equal first + 600 - 395, Settlements::Summary.new.window_from }
+  end
+
   # --- matching ---------------------------------------------------------------
 
   test "an exact payment naming the game and date settles automatically" do

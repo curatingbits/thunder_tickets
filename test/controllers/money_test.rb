@@ -43,6 +43,17 @@ class MoneyTest < ActionDispatch::IntegrationTest
     assert_equal 30_000, body["outstanding_cents"]
     assert_equal (@season.games.minimum(:game_date) - 90).iso8601, body["window_from"]
     assert_equal [ "unpaid" ], body["games"].map { |g| g["status"] }
+    assert_equal false, body["synced"]
+  end
+
+  test "before the first sync, nothing is called overdue and the balance waits" do
+    sign_in
+    get root_path
+    assert_select "[data-settlement-tile]", text: /Waiting for the first Venmo sync/
+    assert_select "[data-attention-kind='payout_overdue']", count: 0
+
+    get money_path
+    assert_select "[data-money-not-synced]"
   end
 
   test "a market token can't import payments" do

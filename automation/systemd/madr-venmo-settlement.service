@@ -1,0 +1,13 @@
+# Weekly Venmo -> MADR Tickets settlement sync. No browser and no AI: the
+# script reads Mark's posted Venmo payments from financial.dar.haus
+# (read-only) and posts them to madrtickets.com, which matches them to sold
+# games. Anything unsure waits on the Money tab; a Telegram message says so.
+[Unit]
+Description=MADR Tickets - weekly Venmo settlement sync
+OnFailure=madr-automation-alert@%n.service
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=VENMO_SYNC_DIR=%h/.local/state/madrtickets/venmo-sync
+ExecStart=%h/.claude/skills/venmo-settlement/bin/venmo-sync

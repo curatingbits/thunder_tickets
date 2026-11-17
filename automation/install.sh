@@ -21,9 +21,16 @@ systemctl --user daemon-reload
 
 cat <<'NEXT'
 
-Timers are installed but NOT enabled. Before enabling:
+Timers are installed but NOT enabled. Before enabling each one:
+
+Ticketmaster pricing (/ticketmaster-pricing)
   1. ~/.config/madrtickets/research.env       MADR_RESEARCH_PROFILE="Profile N"
   2. ~/.config/madrtickets/market-research.header   (chmod 600; see the skill's Setup)
   3. Run /ticketmaster-pricing once while watching.
-Then: systemctl --user enable --now madr-ticketmaster-pricing.timer
+  Then: systemctl --user enable --now madr-ticketmaster-pricing.timer
+
+Venmo settlements (/venmo-settlement)
+  1. ~/.config/madrtickets/finance.header and settlements.header   (chmod 600; see the skill's Setup)
+  2. Run ~/.claude/skills/venmo-settlement/bin/venmo-sync once while watching.
+  Then: systemctl --user enable --now madr-venmo-settlement.timer
 NEXT

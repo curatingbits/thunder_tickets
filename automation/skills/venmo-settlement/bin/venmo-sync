@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Venmo -> MADR Tickets settlement sync.
+#
+# Reads the posted Venmo payments between Duggan and Mark from the finance app
+# (financial.dar.haus, read-only) and posts them to madrtickets.com, which
+# matches them to sold games. It never moves money and never settles anything
+# the app isn't sure of: those wait for Duggan on the Money tab.
+#
+#   venmo-sync     sync, print a summary, notify; files land in the work folder
+#
+# Tokens live only in chmod-600 header files passed to curl with -H @file:
+#   ~/.config/madrtickets/settlements.header   madrtickets.com (settlements:write)
+#   ~/.config/madrtickets/finance.header       financial.dar.haus partner feed
+# Overrides: MADR_API_BASE, FINANCE_API_BASE, MADR_SETTLEMENTS_HEADER,
+#            FINANCE_HEADER, VENMO_SYNC_DIR, VENMO_SYNC_QUIET=1 (no notifications)
+set -euo pipefail
+umask 077
+
+madr_base=${MADR_API_BASE:-https://madrtickets.com}
+finance_base=${FINANCE_API_BASE:-https://financial.dar.haus}
+madr_header=${MADR_SETTLEMENTS_HEADER:-$HOME/.config/madrtickets/settlements.header}
+finance_header=${FINANCE_HEADER:-$HOME/.config/madrtickets/finance.header}
+work=${VENMO_SYNC_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/madr-venmo-$(date +%F)-XXXX")}
+mkdir -p "$work"
+
+for header in "$madr_header" "$finance_header"; do
+  if [[ ! -r $header ]]; then
+    echo "venmo-sync: no token header at $header (see the venmo-settlement skill's Setup)" >&2
+    exit 2
+  fi
+  if [[ $(stat -c %a "$header") != 600 ]]; then
+    echo "venmo-sync: $header should be chmod 600" >&2
+    exit 2
+  fi
+done
+
+# call OUT_FILE HEADER_FILE METHOD URL [BODY_FILE]: the response goes to
+# OUT_FILE; on an HTTP error, print the body (never the token) and stop.
+call() {
+  local out=$1 header=$2 method=$3 url=$4 body=${5:-}
+  local args=(--silent --show-error --fail-with-body --max-time 90 -X "$method" -H @"$header" -H "Accept: application/json")
+  if [[ -n $body ]]; then
+    args+=(-H "Content-Type: application/json" --data-binary @"$body")
+  fi
+  if ! curl "${args[@]}" "$url" > "$out"; then
+    echo "venmo-sync: $method ${url%%\?*} failed: $(head -c 500 "$out")" >&2
+    exit 1
+  fi
+}
+
+call "$work/before.json" "$madr_header" GET "$madr_base/api/v1/settlement_summary"
+since=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["window_from"])' "$work/before.json")
+until=$(date +%F)
+call "$work/venmo.json" "$finance_header" GET "$finance_base/api/v1/partner_payments?since=$since&until=$until"
+
+# Same transactions on the same day -> same key, so a rerun is a harmless replay.
+python3 - "$work/venmo.json" "$work/import.json" "$since" "$until" <<'PY'
+import hashlib, json, sys
+feed_path, out_path, since, until = sys.argv[1:]
+txs = json.load(open(feed_path))["transactions"]
+digest = hashlib.sha256(json.dumps(txs, sort_keys=True).encode()).hexdigest()[:12]
+body = {"key": f"venmo-{until}-{digest}", "source": "finance_api", "complete": True,
+        "window": {"from": since, "to": until}, "transactions": txs}
+with open(out_path, "w") as f:
+    json.dump(body, f)
+PY
+call "$work/result.json" "$madr_header" POST "$madr_base/api/v1/payment_imports" "$work/import.json"
+
+python3 - "$work/result.json" "$madr_base" "$since" "$until" "$work/headline.txt" > "$work/summary.txt" <<'PY'
+import json, sys
+result_path, base, since, until, headline_path = sys.argv[1:]
+r = json.load(open(result_path))
+s, st = r["settlement"], r.get("stats") or {}
+partner, owner = s["partner"].split()[0], s["owner"]
+def money(cents): return f"${abs(cents) / 100:,.2f}"
+out = s["outstanding_cents"]
+if abs(out) <= 1: balance = "All square"
+elif out > 0: balance = f"{partner} owes {owner} {money(out)}"
+else: balance = f"{owner} owes {partner} {money(out)}"
+open_games = [g for g in s["games"] if g["status"] != "paid"]
+review = s["needs_review"]
+with open(headline_path, "w") as f:
+    f.write(f"{balance}" + (f" - {len(review)} to review" if review else "") + "\n")
+print(f"Venmo sync {until} (payments {since} to {until})")
+if r.get("replayed"):
+    print("  Same transactions as an earlier run today - nothing new to import.")
+else:
+    print(f"  From Venmo: {st.get('received', 0)} - {st.get('created', 0)} new, {st.get('unchanged', 0)} already in, {st.get('changed', 0)} changed")
+    print(f"  Settled automatically: {st.get('matched', 0)} - to review: {st.get('review', 0)} - set aside: {st.get('ignored', 0)} - waiting for a sale: {st.get('waiting', 0)}")
+print(f"  {balance}. Owed so far {money(s['owed_cents'])}, paid {money(s['paid_cents'])}.")
+for g in open_games:
+    print(f"  Not fully paid: {g['date']} {g['opponent']} - owed {money(g['owed_cents'])}, paid {money(g['paid_cents'])} ({g['status'].replace('_', ' ')})")
+for p in review:
+    print(f"  To review: {money(p['cents'])} on {p['date']} \"{p['memo']}\" - {base}/partner_payments/{p['id']}")
+print(f"  {base}/money")
+PY
+cat "$work/summary.txt"
+echo "  (files: $work)"
+
+if [[ ${VENMO_SYNC_QUIET:-0} != 1 ]]; then
+  headline=$(cat "$work/headline.txt")
+  review_count=$(python3 -c 'import json, sys; print(len(json.load(open(sys.argv[1]))["settlement"]["needs_review"]))' "$work/result.json")
+  if command -v notify-send > /dev/null; then
+    notify-send "MADR: Venmo synced" "$headline" 2> /dev/null || true
+  fi
+  if [[ $review_count != 0 ]] && command -v hermes > /dev/null; then
+    hermes send -t telegram "MADR Venmo sync: $headline. Review them: $madr_base/partner_payments?filter=review" > /dev/null 2>&1 || true
+  fi
+fi
