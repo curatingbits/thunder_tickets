@@ -9,9 +9,15 @@ class ApplicationController < ActionController::Base
   private
 
   # Re-checked on every request, so deactivating someone ends any session
-  # they already have open rather than waiting for them to log out.
+  # they already have open rather than waiting for them to log out. The
+  # token itself runs out a year after sign-in (User's :login token).
   def current_user
-    @current_user ||= User.active.find_by(id: session[:user_id]) if session[:user_id]
+    @current_user ||= User.active.find_by_token_for(:login, session[:login_token]) if session[:login_token]
+  end
+
+  def log_in(user)
+    reset_session
+    session[:login_token] = user.generate_token_for(:login)
   end
 
   def logged_in?
@@ -31,8 +37,10 @@ class ApplicationController < ActionController::Base
   helper_method :current_season
 
   # The season the user is currently looking at. Defaults to the current
-  # season, but a ?season_id= anywhere sticks for the rest of the session so
-  # switching on the dashboard carries over to Games and back.
+  # season, but a ?season_id= anywhere sticks until the browser or the
+  # home-screen app closes, so switching on the dashboard carries over to
+  # Games and back. It's kept in its own cookie because the session cookie
+  # lasts a year.
   #
   # Distinct from current_season, which is the is_current flag and stays the
   # anchor for "what season are we actually in".
@@ -41,12 +49,12 @@ class ApplicationController < ActionController::Base
 
     @viewed_season =
       if params[:season_id].present? && (season = Season.find_by(id: params[:season_id]))
-        session[:viewed_season_id] = season.id
+        cookies[:viewed_season_id] = { value: season.id, httponly: true }
         season
-      elsif session[:viewed_season_id] && (season = Season.find_by(id: session[:viewed_season_id]))
+      elsif cookies[:viewed_season_id] && (season = Season.find_by(id: cookies[:viewed_season_id]))
         season
       else
-        session.delete(:viewed_season_id)
+        cookies.delete(:viewed_season_id)
         current_season
       end
   end

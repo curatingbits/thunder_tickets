@@ -1,6 +1,12 @@
 class User < ApplicationRecord
   has_secure_password validations: false
 
+  # What the session keeps for a login. It ends a year after sign-in, and a
+  # password reset ends every login made with the old password.
+  generates_token_for :login, expires_in: Rails.configuration.x.login_lasts do
+    password_salt&.last(10)
+  end
+
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true
   validates :password, presence: true, length: { minimum: 6 }, if: -> { password_required? || validation_context == :password_reset }

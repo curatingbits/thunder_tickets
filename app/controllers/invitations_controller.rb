@@ -23,7 +23,7 @@ class InvitationsController < ApplicationController
       params[:user][:password],
       params[:user][:password_confirmation]
     )
-      session[:user_id] = @user.id
+      log_in(@user)
       redirect_to root_path, notice: "Welcome to MADR TICKETS! Your account has been activated."
     else
       render :show, status: :unprocessable_entity

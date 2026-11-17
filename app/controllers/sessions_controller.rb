@@ -10,7 +10,7 @@ class SessionsController < ApplicationController
     user = User.active.find_by(email: params[:email].to_s.strip.downcase)
 
     if user&.authenticate(params[:password])
-      session[:user_id] = user.id
+      log_in(user)
       redirect_to root_path, notice: "Welcome back, #{user.name}!"
     else
       flash.now[:alert] = "Invalid email or password"
@@ -19,7 +19,7 @@ class SessionsController < ApplicationController
   end
 
   def destroy
-    session[:user_id] = nil
+    reset_session
     redirect_to login_path, notice: "Logged out successfully"
   end
 end

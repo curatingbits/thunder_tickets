@@ -42,6 +42,14 @@ class SeasonSwitchingTest < ActionDispatch::IntegrationTest
     refute @past.reload.is_current?
   end
 
+  test "the chosen season lasts until the browser or app closes, not as long as the login" do
+    get dashboard_path(season_id: @past.id)
+
+    cookie = Array(response.headers["set-cookie"]).join("\n")[/^viewed_season_id=.*$/]
+    assert_match(/\Aviewed_season_id=#{@past.id};/, cookie)
+    assert_no_match(/expires=/i, cookie)
+  end
+
   test "the chosen season carries from the dashboard to the games list" do
     get dashboard_path(season_id: @past.id)
     get games_path
