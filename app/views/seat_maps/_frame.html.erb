@@ -1,0 +1,97 @@
+<%# One game on the seat map, swapped as a frame when another game is chosen.
+    The 3D stage survives the swap (data-turbo-permanent), so it isn't rebuilt.
+    The list is the real control: every listing is a button, and the 3D view
+    follows it (seat_map_controller.js). It works without the 3D view too. %>
+<%= turbo_frame_tag SeatMapsController::FRAME, data: { turbo_action: "advance" } do %>
+  <% if @seat_map %>
+    <% snap = @seat_map.snapshot %>
+    <% ours = @seat_map.ours %>
+    <% groups = @seat_map.groups %>
+    <div class="flex flex-col lg:flex-row lg:items-center gap-x-6 gap-y-2">
+      <%= form_with url: seat_map_path, method: :get, class: "flex items-center gap-2 shrink-0", data: { seat_map_target: "form" } do %>
+        <label for="seat-map-game" class="text-sm text-content-dim">Game</label>
+        <%= select_tag :game_id, options_for_select(@games.map { |g| [ seat_map_game_label(g), g.id ] }, @game.id),
+              id: "seat-map-game", data: { action: "seat-map#chooseGame" },
+              class: "min-w-0 max-w-[18rem] rounded-lg border border-subtle bg-surface-raised px-3 py-2 text-sm text-content-strong" %>
+        <noscript><button type="submit" class="btn-secondary">Show</button></noscript>
+      <% end %>
+      <p class="text-sm text-content-dim" data-seat-map-summary>
+        Market value <span class="figure font-semibold text-content-strong"><%= dollars(snap.market_value) %></span> all-in
+        · <%= pluralize(groups.fetch("comparable", []).size, "listing") %> set it
+        · scanned <%= time_ago_in_words(snap.captured_at) %> ago
+        · our seats: Sec <%= ours[:section] %> · Row <%= ours[:row] %> · <%= seat_range(ours[:seats]) %>,
+        <%= ours[:all_in] ? "listed at #{number_to_currency(ours[:all_in])} all-in" : "not listed" %>
+        · <%= link_to "game page →", game_path(@game), class: "text-accent hover:brightness-125" %>
+      </p>
+    </div>
+
+    <%# The 3D view and its list side by side on a wide screen, each the height of the window; stacked on a phone. %>
+    <div class="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div class="card p-0 overflow-hidden flex flex-col lg:h-[calc(100dvh-15rem)] lg:min-h-[32rem]">
+        <div id="seat-map-stage" class="relative h-[58vh] min-h-[20rem] lg:h-auto lg:min-h-0 lg:flex-1 bg-surface-raised/40 hidden"
+             data-turbo-permanent data-seat-map-target="stage" aria-hidden="true"></div>
+        <div class="hidden m-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-content" data-seat-map-target="note">
+          <span data-seat-map-target="noteText"></span>
+          <button type="button" class="ml-2 text-accent underline" data-action="seat-map#retry" data-seat-map-target="retry">Try 3D again</button>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 border-t border-subtle text-xs text-content-dim" data-seat-map-legend>
+          <% if (range = @seat_map.price_range) %>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="figure"><%= dollars(range.first) %></span>
+              <span class="inline-flex h-2.5 w-24 overflow-hidden rounded-full" aria-hidden="true">
+                <span class="h-full flex-1 bg-price-1"></span><span class="h-full flex-1 bg-price-2"></span><span class="h-full flex-1 bg-price-3"></span><span class="h-full flex-1 bg-price-4"></span><span class="h-full flex-1 bg-price-5"></span>
+              </span>
+              <span class="figure"><%= dollars(range.last) %>+</span> all-in per ticket
+            </span>
+          <% end %>
+          <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm ring-2 ring-content-strong bg-price-3" aria-hidden="true"></span>sets the market value</span>
+          <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-5 rounded-full bg-price-2 opacity-70" aria-hidden="true"></span>row only: seats not read</span>
+          <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-seat-ours" aria-hidden="true"></span>our seats</span>
+          <span>Corner sections 119* and 102* are approximate.</span>
+          <span class="hidden items-center gap-3 sm:ml-auto" data-seat-map-target="controls">
+            <span class="text-muted">Drag to turn · pinch or scroll to zoom · tap a seat</span>
+            <button type="button" class="text-accent hover:brightness-125" data-action="seat-map#resetView">Reset view</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="card p-0 overflow-hidden flex flex-col lg:h-[calc(100dvh-15rem)] lg:min-h-[32rem]">
+        <h2 class="px-4 pt-4 pb-2 text-base font-semibold text-content-strong border-b border-subtle">
+          Listings read · <%= @seat_map.entries.size %>
+        </h2>
+        <div class="max-h-[45vh] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto" data-seat-map-target="list">
+          <% Market::SeatMap::ROLES.each do |role, heading| %>
+            <% entries = groups[role] or next %>
+            <section aria-label="<%= heading %>" data-seat-map-group="<%= role %>">
+              <h3 class="section-label px-4 pt-3 pb-1"><%= heading %> · <%= entries.size %></h3>
+              <ul>
+                <% entries.each do |e| %>
+                  <li>
+                    <button type="button" aria-pressed="false" data-seat-map-target="item" data-listing-id="<%= e.id %>"
+                            data-role="<%= e.role %>" data-price="<%= e.price %>" data-action="seat-map#pickItem"
+                            class="w-full grid grid-cols-[auto_1fr_auto] items-start gap-3 px-4 py-2 text-left hover:bg-surface-raised aria-pressed:bg-accent/15 aria-pressed:shadow-[inset_3px_0_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-accent">
+                      <span class="mt-1 h-3 w-3 rounded-sm bg-strong <%= "ring-2 ring-content-strong" if e.role == "comparable" %>" data-seat-map-swatch aria-hidden="true"></span>
+                      <span class="min-w-0">
+                        <span class="font-medium text-content-strong">Sec <%= e.section %> · Row <%= e.row || "?" %></span>
+                        <span class="text-content-dim">· <%= e.seats ? seat_range(e.seats) : "row only" %></span>
+                        <% if e.note.present? %><span class="block text-xs text-muted"><%= e.note %></span><% end %>
+                      </span>
+                      <span class="figure font-semibold text-content-strong <%= "line-through text-muted" if e.role == "set_aside" %>"><%= number_to_currency(e.price) %></span>
+                    </button>
+                  </li>
+                <% end %>
+              </ul>
+            </section>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div hidden data-seat-map-target="data" data-json="<%= @seat_map.to_client.to_json %>"></div>
+    <p class="sr-only" role="status" data-seat-map-target="status"></p>
+  <% else %>
+    <div class="card text-center py-12">
+      <p class="text-content-dim text-lg">No market data for upcoming games yet. The research fills this in on its next run.</p>
+    </div>
+  <% end %>
+<% end %>

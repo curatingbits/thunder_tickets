@@ -1,7 +1,0 @@
-<%# The 3D seat map: sections 119, 120, 101 and 102 with every listing the
-    research read for one game. Choosing a game swaps the frame inside; the
-    3D stage survives the swap (data-turbo-permanent), so it isn't rebuilt. %>
-<section id="seat-map" class="card p-0 overflow-hidden scroll-mt-20" aria-labelledby="seat-map-title"
-         data-controller="seat-map" data-seat-map-venue-value="<%= Venue::Layout.paycom.to_client.to_json %>">
-  <%= render "pricing/seat_map_listings" %>
-</section>

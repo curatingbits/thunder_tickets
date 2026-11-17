@@ -45,13 +45,24 @@ class SeatMapTest < ApplicationSystemTestCase
 
   setup { build_games }
 
-  test "switched on, the map draws in 3D; a seat picks its listing and the list picks its seats" do
+  test "a game's 3D button opens its map; a seat picks its listing and the list picks its seats" do
     sign_in_via_form
     visit pricing_path
-    click_on "3D seat map"
+    page.execute_script("document.querySelector('tr[data-pricing-game]').scrollIntoView({ block: 'center' })")
+    screenshot("board")
+    within("tr[data-pricing-game='#{@game.id}']") { click_on "3D" }
+
+    assert_selector "h1", text: "Seat map"
+    assert_selector "#seat-map-game option[selected][value='#{@game.id}']"
     assert_map_ready
     assert_equal 1, page.evaluate_script("window.__seatMapCount")
     screenshot("desktop")
+
+    # The 3D view gets the room: as wide as the page allows beside the list, and nearly as tall as the window.
+    stage = page.evaluate_script("document.getElementById('seat-map-stage').getBoundingClientRect().toJSON()")
+    list = page.evaluate_script("document.querySelector('[data-seat-map-target=list]').getBoundingClientRect().toJSON()")
+    assert_operator list["left"], :>=, stage["right"], "the list sits beside the 3D view"
+    assert_operator stage["height"], :>=, 700
 
     # A tap on the seats of the listing near DD picks it in the list.
     point = page.evaluate_script("window.__seatMap.screenPoint('#{near_id}')")
@@ -72,8 +83,14 @@ class SeatMapTest < ApplicationSystemTestCase
     assert_selector "html[data-theme='light']"
     assert_map_ready
     screenshot("desktop_light")
+  end
 
-    # Another game swaps the list and the 3D view's data, without a new 3D view.
+  test "another game swaps the list and the 3D view's data; leaving the page lets go of the 3D view" do
+    sign_in_via_form
+    visit seat_map_path
+    assert_selector "#seat-map-game option[selected][value='#{@game.id}']", wait: 5
+    assert_map_ready
+
     select "Wed, Dec 16 · #{@other.opponent.name}", from: "seat-map-game"
     assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
     assert_current_path(/game_id=#{@other.id}/)
@@ -82,40 +99,23 @@ class SeatMapTest < ApplicationSystemTestCase
     assert_no_selector "turbo-frame[aria-busy]"
     assert_selector "[data-seat-map-target='item']", count: @other.market_snapshots.sole.observations.count
     assert_map_ready
-    assert_equal 1, page.evaluate_script("window.__seatMapCount")
+    assert_equal 1, page.evaluate_script("window.__seatMapCount"), "the same 3D view, not a second one"
     assert_equal [], page.evaluate_script("window.__seatMap.viewerSelected()")
 
-    # Leaving the page lets go of the WebGL context.
     within("[data-shell='sidebar']") { click_on "Games" }
     assert_selector "h1", text: "Games"
     assert_equal 0, page.evaluate_script("window.__seatMapCount")
   end
 
-  test "a game's 3D button switches the map on and opens it to that game" do
+  test "Pricing itself loads nothing 3D, and its header link opens the map on the soonest game" do
     sign_in_via_form
     visit pricing_path
-    page.execute_script("document.querySelector('tr[data-pricing-game]').scrollIntoView({ block: 'center' })")
-    screenshot("board")
-    within("tr[data-pricing-game='#{@other.id}']") { click_on "3D" }
-
-    assert_map_ready
-    assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
-    assert_selector "tr[data-pricing-game='#{@other.id}'] a[data-seat-map-game-link][aria-current='true']"
-
-    within("tr[data-pricing-game='#{@game.id}']") { click_on "3D" }
-    assert_selector "#seat-map-game option[selected][value='#{@game.id}']"
-    assert_selector "tr[data-pricing-game='#{@game.id}'] a[data-seat-map-game-link][aria-current='true']"
-    assert_selector "tr[data-pricing-game='#{@other.id}'] a[data-seat-map-game-link]:not([aria-current])"
-    assert_map_ready
-    assert_equal 1, page.evaluate_script("window.__seatMapCount"), "the same 3D view, not a second one"
-  end
-
-  test "without the switch nothing 3D loads" do
-    sign_in_via_form
-    visit pricing_path
-
     assert_no_selector "#seat-map"
     assert_nil page.evaluate_script("window.__seatMapCount")
+
+    click_on "3D seat map →"
+    assert_selector "#seat-map-game option[selected][value='#{@game.id}']"
+    assert_map_ready
   end
 end
 
@@ -124,29 +124,21 @@ class SeatMapMobileTest < MobileSystemTestCase
 
   setup { build_games }
 
-  test "on a phone a game card's 3D button opens that game on the map" do
+  test "on a phone a game card's 3D button opens its map, the 3D view on top and the list under it" do
     sign_in_via_form
     visit pricing_path
     page.execute_script("document.querySelector('li.relative').scrollIntoView({ block: 'center' })")
     screenshot("phone_cards")
     find("a[data-seat-map-game-link='#{@other.id}']").click
 
-    assert_map_ready
     assert_selector "#seat-map-game option[selected][value='#{@other.id}']"
-    screenshot("phone_button")
-  end
-
-  test "on a phone the 3D view fits under the page head and the list follows it" do
-    sign_in_via_form
-    visit pricing_path(map: "on")
     assert_map_ready
-
     stage = page.evaluate_script("document.getElementById('seat-map-stage').getBoundingClientRect().toJSON()")
     list = page.evaluate_script("document.querySelector('[data-seat-map-target=list]').getBoundingClientRect().toJSON()")
     assert_operator stage["width"], :<=, 390
-    assert_operator stage["height"], :<=, 844 * 0.56
+    assert_operator stage["height"], :>=, 844 * 0.5
     assert_operator list["top"], :>=, stage["bottom"]
-    page.execute_script("document.getElementById('seat-map-stage').scrollIntoView({ block: 'center' })")
+    page.execute_script("document.getElementById('seat-map-stage').scrollIntoView({ block: 'start' })")
     screenshot("phone")
   end
 end

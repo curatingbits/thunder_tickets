@@ -71,6 +71,7 @@ Rails.application.routes.draw do
 
   # Market value and recommended prices; research run log.
   get "pricing", to: "pricing#index", as: :pricing
+  get "pricing/map", to: "seat_maps#show", as: :seat_map
   resources :import_runs, only: [ :index, :show ]
 
   # Weekly checklist: confirm what's listed, and at what price.

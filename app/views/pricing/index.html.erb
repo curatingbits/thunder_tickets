@@ -1,8 +1,4 @@
 <% content_for :title, "Pricing · MADR TICKETS" %>
-<%# No hover prefetching here: the seat map's switch and 3D buttons save a
-    setting when followed, so they mustn't run just because the pointer
-    passed over them, and a prefetch racing the 3D view could drop a click. %>
-<% content_for :head, tag.meta(name: "turbo-prefetch", content: "false") %>
 
 <div class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -11,7 +7,7 @@
       <p class="text-content-dim mt-2">Market value and recommended list prices for <%= @season.year %>. Prices are per ticket.</p>
     </div>
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-      <%= render "pricing/map_toggle" %>
+      <%= link_to "3D seat map →", seat_map_path, class: "text-accent hover:brightness-125" %>
       <%= link_to "Insights →", insights_path, class: "text-accent hover:brightness-125" %>
       <% if (run = @board.last_run) %>
         <%= link_to import_runs_path, class: "text-accent hover:brightness-125" do %>
@@ -24,8 +20,6 @@
   </div>
 
   <%= render "pricing/value_tiles", value: @value, counts: @counts %>
-
-  <%= render "pricing/seat_map" if @map %>
 
   <%# Opens on Unsold; "All" adds the games already sold or transferred. %>
   <div class="flex flex-wrap gap-2">
@@ -65,7 +59,7 @@
               <td class="whitespace-nowrap">
                 <div class="flex items-center gap-2">
                   <%= link_to row.game.opponent.name, game_path(row.game), class: "text-content-strong font-medium hover:text-accent" %>
-                  <%= seat_map_button(row.game, map_on: @map, current: @map && @map_game == row.game, filter: map_filter) if snap %>
+                  <%= seat_map_button(row.game) if snap %>
                 </div>
                 <div class="text-xs text-muted"><%= game_when(row.game) %></div>
               </td>
@@ -131,7 +125,7 @@
           <% end %>
           <%# Beside the card's link, not in it: a link can't hold another. %>
           <% if snap %>
-            <div class="absolute bottom-4 right-4"><%= seat_map_button(row.game, map_on: @map, current: @map && @map_game == row.game, filter: map_filter) %></div>
+            <div class="absolute bottom-4 right-4"><%= seat_map_button(row.game) %></div>
           <% end %>
         </li>
       <% end %>

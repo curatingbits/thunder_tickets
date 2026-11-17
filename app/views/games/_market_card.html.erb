@@ -81,8 +81,8 @@
 
     <% if game.game_date >= Date.current %>
       <p class="text-sm">
-        <%= link_to "See where these sit on the 3D seat map →", pricing_path(map: "on", game_id: game.id, anchor: "seat-map"),
-              class: "text-accent hover:brightness-125", data: { seat_map_link: game.id, turbo_prefetch: false } %>
+        <%= link_to "See where these sit on the 3D seat map →", seat_map_path(game_id: game.id),
+              class: "text-accent hover:brightness-125", data: { seat_map_link: game.id } %>
       </p>
     <% end %>
 

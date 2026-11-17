@@ -19,6 +19,7 @@ const FOV = 38
 const TAP_SLOP = 8 // px a finger may wander and still tap
 const VIEW_FROM = new Vector3(0, 0.92, -1).normalize() // from the court, looking up into the stands
 const MAX_GLOW = 96
+const TAG_PX = 28 // the price tag's height on screen, whatever the view's size
 
 const count = (delta) => { window.__seatMapCount = (window.__seatMapCount || 0) + delta }
 
@@ -196,6 +197,7 @@ class ArenaViewer {
     this.renderer.setSize(width, height, false)
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
+    this.sizeTag()
     if (!this.interacted) this.home({ jump: true })
     this.requestRender()
   }
@@ -384,12 +386,12 @@ class ArenaViewer {
     }
     this.labels = []
     for (const section of this.plan.sections) {
-      const sprite = textSprite(section.estimated ? `${section.id}*` : section.id, { color: this.colors.label, size: 64, weight: 700, height: 5.5 })
+      const sprite = textSprite(section.estimated ? `${section.id}*` : section.id, { color: this.colors.label, shadow: this.colors.labelShadow, size: 64, weight: 700, height: 5.5 })
       sprite.position.set(section.label.x, section.label.y, section.label.z)
       this.labels.push(sprite)
     }
     for (const row of this.plan.rowLabels) {
-      const sprite = textSprite(row.text, { color: this.colors.labelDim, size: 40, weight: 600, height: 2.3 })
+      const sprite = textSprite(row.text, { color: this.colors.labelDim, shadow: this.colors.labelShadow, size: 40, weight: 600, height: 2.3 })
       sprite.position.set(row.x, row.y, row.z)
       this.labels.push(sprite)
     }
@@ -456,12 +458,21 @@ class ArenaViewer {
     const first = listings[0]
     const where = `${first.section} · ${first.row}`
     const text = listings.length === 1 ? `${money(prices[0])} · ${where}` : `${listings.length} listings · ${money(prices[0])}–${money(prices.at(-1))}`
-    // The same size on screen however far out the view is.
-    this.tag = textSprite(text, { color: this.colors.tagText, background: this.colors.tag, size: 44, weight: 700, height: 0.055, fixed: true })
+    // The same size on screen however far out the view is (sizeTag).
+    this.tag = textSprite(text, { color: this.colors.tagText, background: this.colors.tag, size: 44, weight: 700, height: 1, fixed: true })
+    this.tag.userData.aspect = this.tag.scale.x
+    this.sizeTag()
     this.tag.position.set(anchor.x, anchor.y + 5, anchor.z)
     this.tag.renderOrder = 3
     this.tag.material.depthTest = false
     this.scene.add(this.tag)
+  }
+
+  // A fixed-size sprite's scale is in view units at distance 1; TAG_PX of the stage's height is this much of that.
+  sizeTag() {
+    if (!this.tag || !this.size) return
+    const height = (TAG_PX / this.size.height) * 2 * Math.tan(MathUtils.degToRad(FOV) / 2)
+    this.tag.scale.set(height * this.tag.userData.aspect, height, 1)
   }
 
   // The middle of a selection: its seats, or its row's strip.
@@ -588,7 +599,7 @@ function push(map, key, value) {
 
 // Text on a canvas, as a sprite that always faces the camera; height is in feet, or with fixed, a share of the view's
 // height whatever the distance.
-function textSprite(text, { color, background = null, size = 48, weight = 600, height = 2, fixed = false }) {
+function textSprite(text, { color, background = null, shadow = "rgba(0, 0, 0, 0.55)", size = 48, weight = 600, height = 2, fixed = false }) {
   const font = `${weight} ${size}px system-ui, -apple-system, "Segoe UI", sans-serif`
   const pad = background ? size * 0.45 : size * 0.12
   const measure = document.createElement("canvas").getContext("2d")
@@ -606,7 +617,7 @@ function textSprite(text, { color, background = null, size = 48, weight = 600, h
     ctx.roundRect(0, 0, width, tall, r)
     ctx.fill()
   } else {
-    ctx.shadowColor = "rgba(0, 0, 0, 0.55)"
+    ctx.shadowColor = shadow // a halo that sets the text off from the seats behind it
     ctx.shadowBlur = size * 0.18
   }
   ctx.font = font

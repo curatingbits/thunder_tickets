@@ -1,0 +1,20 @@
+<% content_for :title, "Seat map · MADR TICKETS" %>
+<%# No hover prefetching here: a prefetch racing the 3D view could drop a
+    click (seen in the system tests). %>
+<% content_for :head, tag.meta(name: "turbo-prefetch", content: "false") %>
+
+<div class="space-y-4">
+  <div>
+    <%= link_to "← Pricing", pricing_path, class: "text-accent hover:brightness-125 text-sm" %>
+    <h1 class="text-3xl sm:text-4xl font-bold text-content-strong mt-1">Seat map</h1>
+    <p class="text-content-dim mt-1">
+      Sections 119, 120, 101 and 102 behind the Thunder bench basket: every listing the research read for a game,
+      colored by price.
+    </p>
+  </div>
+
+  <section id="seat-map" aria-label="Seat map" data-controller="seat-map"
+           data-seat-map-venue-value="<%= Venue::Layout.paycom.to_client.to_json %>">
+    <%= render "seat_maps/frame" %>
+  </section>
+</div>

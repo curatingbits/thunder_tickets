@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-// The seat map on Pricing (pricing/_seat_map). The list of listings is the real control and works on its own; the 3D
+// The seat map page (seat_maps/show, opened from a game's 3D button on Pricing). The list of listings is the real
+// control and works on its own; the 3D
 // view (arena3d/viewer, loaded here by a dynamic import so no other page pays for three.js) follows it, and a tap on a
 // seat picks the matching listings in the list. Choosing a game swaps a frame inside this element; the 3D stage is
 // data-turbo-permanent, so the same view takes the new game's data instead of being rebuilt.
@@ -34,7 +35,6 @@ export default class extends Controller {
     this.listen(window, "pageshow", (event) => { if (event.persisted) this.start() })
     this.listen(window, "theme:change", () => this.repaint())
     this.listen(this.scheme, "change", () => this.repaint())
-    this.listen(this.element, "turbo:frame-load", () => this.frameLoaded())
     window.__seatMap = this.hook()
 
     if (document.documentElement.hasAttribute("data-turbo-preview")) {
@@ -62,7 +62,6 @@ export default class extends Controller {
     this.selected = []
     if (this.hasStatusTarget) this.statusTarget.textContent = ""
     this.paintSwatches()
-    this.markGame()
     this.viewer?.setData(this.gameData)
     if (this.viewer) this.showControls(true)
     if (this.generation != null && !this.viewer) this.start()
@@ -172,21 +171,6 @@ export default class extends Controller {
     if (to != null) box.scrollTo({ top: to, behavior: this.reducedMotion.matches ? "auto" : "smooth" })
   }
 
-  // A game picked from the board below: bring the map into view.
-  frameLoaded() {
-    if (this.element.getBoundingClientRect().top < 0) {
-      this.element.scrollIntoView({ behavior: this.reducedMotion.matches ? "auto" : "smooth", block: "start" })
-    }
-  }
-
-  // The board's 3D buttons sit outside the frame: the one for the game on the map is current.
-  markGame() {
-    for (const link of document.querySelectorAll("[data-seat-map-game-link]")) {
-      if (link.dataset.seatMapGameLink === String(this.gameData.game)) link.setAttribute("aria-current", "true")
-      else link.removeAttribute("aria-current")
-    }
-  }
-
   repaint() {
     this.paintSwatches()
     this.viewer?.setColors(this.colors())
@@ -217,6 +201,7 @@ export default class extends Controller {
       price: [ 1, 2, 3, 4, 5 ].map((i) => token(`price-${i}`)),
       label: token("content-strong"),
       labelDim: token("content-dim"),
+      labelShadow: light ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.55)",
       selection: light ? token("content-strong") : "#ffffff",
       tag: token("content-strong"),
       tagText: token("surface"),
