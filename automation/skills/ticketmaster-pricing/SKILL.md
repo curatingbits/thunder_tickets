@@ -27,6 +27,7 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 - Files in this skill folder (`~/.claude/skills/ticketmaster-pricing/`):
   - `bin/madr-api METHOD PATH [BODY_FILE]` — the only way to talk to the app. It reads the token from `~/.config/madrtickets/market-research.header`.
   - `bin/research-browser-id DEVICE_ID...` — prints which connected browser is the research profile.
+  - `bin/research-window open|front` — opens the research profile on its marker page (`research-window.html`, titled "MADR Research") in a window hidden on the `special:madr` workspace, then closes that marker tab so your tab is in front. To watch a run: `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'`.
   - `extract_listings.js` — the page reader. Run it in the event tab with `javascript_tool`.
   - `bin/build-scan` — turns the reader's chunks into a game's scan file.
 - Work folder for this run: `W=$(mktemp -d /tmp/madr-research-$(date +%F)-XXXX)`. Save every body you POST there.
@@ -39,7 +40,7 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
    - in the rows near ours (`seat_rows`: our row Section 101 Row DD, and rows AA to GG in 101, 102 and 120), each listing's card, to read its seat numbers;
    - that panel's "Close Ticket Selection" button.
 
-   You don't click anything yourself.
+   You don't click anything yourself. The only other thing that touches the research browser is `bin/research-window`, which hides its window and closes the marker tab it opened.
 2. **Logged out, research profile only.** Use the connected browser named **MADR Research**. If Ticketmaster shows anyone signed in ("My Account", a first name in the header) instead of "Sign In/Register", stop and tell Duggan to sign out of Ticketmaster in that profile.
 3. **Never get past a block.** CAPTCHA, "Pardon the Interruption", "Your browsing activity has been paused", a queue or waiting room, access denied: stop the whole run. Don't retry, reload repeatedly, or switch profiles to get around it.
 4. **Never show the token.** Don't `cat` the header file, echo it, or put it anywhere but `bin/madr-api`.
@@ -49,11 +50,18 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 ## Before you start
 
 1. **Targets.** `bin/madr-api GET /api/v1/research_targets > $W/targets.json`. It holds `start_url`, `sections`, and `games` (`id`, `date`, `opponent`, `ticketmaster_url`, `seats_to_sell`, `last_scanned_at`). If it fails with 401 or "no token header", stop and tell Duggan (see Setup).
-2. **Browser.** `list_connected_browsers`, then pass every `deviceId` it lists to `bin/research-browser-id`, and `select_browser` the id it prints. The extension's display names ("Browser 1", "archdesktop") shuffle, so never choose by name. If it prints nothing, the research profile isn't connected:
-   - start it with `systemd-run --user --quiet --collect /usr/bin/chromium --profile-directory="$MADR_RESEARCH_PROFILE"`; the value is in `~/.config/madrtickets/research.env`
-   - wait ~10 seconds, list the browsers again and retry once
-   - if it's still missing, stop and notify (see Report).
-   Never fall back to another browser. Duggan's everyday profile is connected too.
+2. **Browser.** Chromium draws only the tab in front in each window, and Ticketmaster's list loads more listings only while its page is drawn. Your tab has to be in front; its window can stay hidden.
+   - `bin/research-window open`. It opens the **MADR Research** profile on its marker page, in a window hidden on the `special:madr` workspace, or finds it if the timer already did. It prints the window's address.
+   - `list_connected_browsers`, then pass every `deviceId` it lists to `bin/research-browser-id`, and `select_browser` the id it prints. The extension's display names ("Browser 1", "archdesktop") shuffle, so never choose by name. If it prints nothing, wait ~10 seconds, list the browsers again and retry once. If it's still missing, stop and notify (see Report). Never fall back to another browser. Duggan's everyday profile is connected too.
+   - `tabs_context_mcp` with `createIfEmpty: true`. Claude in Chrome puts its tab behind the marker page, so run `bin/research-window front`: it closes the marker tab, and yours is in front.
+   - Do the whole run in that one tab. Never add one with `tabs_create_mcp`: the extension opens new tabs behind the current one, where Chromium doesn't draw them.
+   - Navigate the tab to `start_url`, then check that it's drawn. This returns the frames drawn in a second, about 60 for a tab in front:
+
+     ```js
+     await new Promise((done) => { let n = 0; const t0 = performance.now(); const f = () => (performance.now() - t0 < 1000 ? (n++, requestAnimationFrame(f)) : done(n)); requestAnimationFrame(f); setTimeout(() => done(n), 3000) })
+     ```
+
+     Under 20 means the tab is behind another one. Run `bin/research-window front` and check again. If it's still under 20, stop before starting the run, and notify as in *When the tab isn't drawn*.
 3. **Start or resume the run.**
    - Make `$W/client_id` once with `echo "$(hostname)-$(date +%s)" > $W/client_id`. If you're resuming after a crash, reuse the old work folder's client id.
    - The key is the date: `tm-$(date +%F)`. Monday's and Wednesday's runs are separate, and a crashed run resumes the same day.
@@ -72,7 +80,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
 ## The routine
 
 ### 1. Find the games
-- Open `start_url` in a new tab. Let it load, and accept the policy dialog if it shows.
+- Your tab is on `start_url`. Let it load, and accept the policy dialog if it shows.
 - Confirm the header says **Sign In/Register** (rule 2).
 - Collect the event links with `javascript_tool`. Example:
 
@@ -91,7 +99,8 @@ If you were started with the argument `soon`, rescan only the games in the next 
 3. Poll `JSON.stringify({status: window.__madr?.status, read: window.__madr?.read})` every ~10 seconds, for up to 3 minutes. Each tool call must finish within 45 seconds.
 4. Act on the status:
    - **blocked**: go straight to *When Ticketmaster blocks you*.
-   - **stalled**: the list stopped loading well short of Ticketmaster's own results count (`read` of `event_total_listings`). That's Ticketmaster holding back. Post nothing for this game, and treat it as a block: go to *When Ticketmaster blocks you*.
+   - **not_drawing**: Chromium isn't drawing the tab (`fps` in `__madrMeta()` is under 20), so the list can't load past its first listings. That's this computer, not Ticketmaster. Post nothing for this game. Run `bin/research-window front`, navigate to the event again and rerun the reader once. If it's still not drawing, go to *When the tab isn't drawn*.
+   - **stalled**: the page was drawn, but the list stopped loading well short of Ticketmaster's own results count (`read` of `event_total_listings`). That's Ticketmaster holding back. Post nothing for this game, and treat it as a block: go to *When Ticketmaster blocks you*.
    - **no_list**: look at the page. Sold out, no listings, or an error page means note it for this game and move on. Anything else that looks like a block is rule 3.
    - **error**: note it and move on. If 3 games end in errors, finish the run as partial.
    - **done**: tool output is cut off at around a thousand characters, so read the result in pieces.
@@ -117,6 +126,13 @@ If you were started with the argument `soon`, rescan only the games in the next 
 4. `hermes send -t telegram "MADR Ticketmaster research was blocked after <n> of <m> games. Partial results are saved: madrtickets.com/import_runs"`
 5. Don't retry this session. The app shows a "research was blocked" item on Home.
 
+## When the tab isn't drawn
+
+1. Stop. Post nothing more.
+2. PATCH the run with `"status": "partial"` and a note of the game you were on, the time, and the reader's `fps`. Everything already posted is kept. Don't mark it blocked: nothing happened on Ticketmaster.
+3. `notify-send -u critical "MADR: research tab isn't being drawn" "<n> of <m> games saved. Chromium stopped drawing the research tab; run /ticketmaster-pricing again."`
+4. `hermes send -t telegram "MADR pricing research stopped after <n> of <m> games: Chromium wasn't drawing the research tab (a problem on the desktop, not Ticketmaster). Partial results are saved: madrtickets.com/import_runs"`
+
 ## Report
 
 - **Vault note:** `~/Documents/Obsidian Vault/10 Projects/madrtickets/MADR Pricing Research.md`.
@@ -127,7 +143,7 @@ If you were started with the argument `soon`, rescan only the games in the next 
   - **No secrets in notes.**
 - **Desktop:** `notify-send "MADR: Ticketmaster prices updated" "<n> games scanned · <k> need action"`.
 - **Terminal:** a short table of each game with market value (all-in), recommended list price and strategy, our seats on Ticketmaster (the `our_listing` outcome and price), and assessment, then the run link. Call out any `unclear` game: Duggan should check which Row DD listing is ours.
-- **Cleanup:** close the tabs you opened. Leave the research browser running.
+- **Cleanup:** close your tab with `tabs_close_mcp`. Its hidden window closes with it, and the next run opens a fresh one.
 
 ## Setup (one time, Duggan)
 

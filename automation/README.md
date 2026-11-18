@@ -26,7 +26,8 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 ## Run by hand
 
 - **From a Claude Code session in this repo:** type `/ticketmaster-pricing`.
-- **Exactly as the timer would:** `systemctl --user start madr-ticketmaster-pricing.service`. That opens the research browser and a Claude window.
+- **Exactly as the timer would:** `systemctl --user start madr-ticketmaster-pricing.service`. That opens the research browser (hidden on the `special:madr` workspace) and a Claude window.
+- **Watch the research browser:** `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'` shows or hides it. Its tab keeps being drawn while hidden.
 - **Venmo sync:** `~/.claude/skills/venmo-settlement/bin/venmo-sync` (or `/venmo-settlement` in Claude Code, which also explains the review queue). Running it twice is harmless: the same transactions on the same day replay instead of importing again.
 - **Rehearsal against a local server:** `MADR_API_BASE=http://localhost:3000 MADR_API_HEADER=<dev header file>` before running the skill.
 
@@ -50,7 +51,8 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 | Data goes stale (no run for 8+ days) | "Market data is over 8 days old" on Home | Run it by hand |
 | Our seats show "not listed" but Mark did list them | Check the run's report for that game. A listing that only sells all three together is read on the second look at 3 tickets, so this should only happen if that look failed (`unconfirmed`) or Ticketmaster changed its page | Record the listing on the game's page, and tell Claude which game |
 | The run reports `unclear` or `unconfirmed` for a game | Our seats at two prices, a Row DD listing whose seat numbers couldn't be read, or the look at our seat count couldn't be done. Nothing changed | Check that game on Ticketmaster and record our listing on its page |
-| The run stops with the list "stalled" | Ticketmaster stopped loading listings partway (seen after several visits in a row). Treated like a block: partial results kept, Telegram alert | Let it be; the next run usually works |
+| The run stops because the research tab "isn't being drawn" | Chromium draws only the tab in front in each window, and Ticketmaster's list loads more listings only while it's drawn. The run's tab was behind another one (both 81-listing stops, on 2026-11-16 and the 4am run on 2026-11-18, were this). Run marked **partial**, not blocked; Telegram alert | Run `/ticketmaster-pricing` again. `bin/research-window` keeps the run's tab in front, in a window hidden on the `special:madr` workspace |
+| The run stops with the list "stalled" | The page was drawn, but Ticketmaster stopped loading listings partway. Treated like a block: partial results kept, Telegram alert | Let it be; the next run usually works |
 | A Venmo payment doesn't clearly fit one game | "N Venmo payments to review" on Home, plus Telegram | Open it on the Money tab: apply the suggestion, apply it yourself, or ignore it with a note |
 | The Venmo sync fails with a 401 | Telegram: "MADR automation madr-venmo-settlement.service failed" | The finance or MADR token was rotated or revoked; see `/venmo-settlement` Setup |
 | A transaction changes or disappears in the finance app | The payment goes to review ("changed") or is marked "no longer in the finance app"; nothing is deleted | Check it on the Money tab |

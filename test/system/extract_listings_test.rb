@@ -10,12 +10,14 @@ class ExtractListingsTest < ApplicationSystemTestCase
 
   NEAR_DD = %w[AA BB CC DD EE FF GG].freeze
 
-  def read_page(query = "", our_quantity: 3, seat_reads_max: nil)
+  def read_page(query = "", our_quantity: 3, seat_reads_max: nil, drawn: true)
     visit "file://#{PAGE}#{query}"
     page.execute_script("window.__madrSections = ['101', '102', '120', '119']; " \
                         "window.__madrSeatRows = #{%w[101 102 120].index_with { NEAR_DD }.to_json}; " \
                         "window.__madrOurs = { section: '101', row: 'DD', quantity: #{our_quantity} };")
     page.execute_script("window.__madrSeatReadsMax = #{seat_reads_max}") if seat_reads_max
+    # A tab behind another tab: Chromium draws no frames for it.
+    page.execute_script("window.requestAnimationFrame = () => 0") unless drawn
     # Assigned, not returned: the file opens with comments, and "return" + a
     # comment line would return before the code.
     page.execute_script("window.__readerStarted = #{READER}")
@@ -92,6 +94,16 @@ class ExtractListingsTest < ApplicationSystemTestCase
     meta = read_page("?stall=4")
 
     assert_equal [ "stalled", 4, 15 ], meta.values_at("status", "read", "event_total_listings")
+    assert_operator meta["fps"], :>=, 20, "the page was being drawn, so the stall is Ticketmaster's"
     assert_nil meta["our_row"]
+  end
+
+  test "a tab Chromium isn't drawing stops before reading, as not drawing rather than a stall" do
+    meta = read_page("?stall=4", drawn: false)
+
+    assert_equal [ "not_drawing", 0 ], meta.values_at("status", "fps")
+    assert_nil meta["read"], "nothing read: the list would stop after the first listings"
+    assert_nil meta["our_row"]
+    assert_not page.evaluate_script("!!window.reserved")
   end
 end

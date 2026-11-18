@@ -21,7 +21,10 @@
 // Runs in the page via javascript_tool and returns "started" at once; the
 // result lands in window.__madr (tool calls time out at 45s, so poll it).
 // Stops at the first sign of a block page, or a list that stops loading
-// short of Ticketmaster's own count ("stalled"). The only things it clicks:
+// short of Ticketmaster's own count ("stalled"). The list loads more only
+// while Chromium draws the page, and Chromium doesn't draw a tab that's
+// behind another tab: then it stops with "not_drawing" instead, because
+// that's a local problem, not Ticketmaster. The only things it clicks:
 // "Accept & Continue", the quantity filter and one of its options, a listing
 // card in a row near ours, and that panel's "Close Ticket Selection" button.
 // Never "Reserve Tickets" or anything else.
@@ -40,6 +43,20 @@
     channel.port1.onmessage = () => (Date.now() >= end ? resolve() : channel.port2.postMessage(0))
     channel.port2.postMessage(0)
   })
+
+  // Frames Chromium draws in a second: about 60 for the tab in front, even
+  // with its window hidden, and 0-8 for a tab behind another one. (The page
+  // still says it's visible there, because Claude in Chrome is attached.)
+  const MIN_FRAMES = 20
+  const framesPerSecond = async () => {
+    let frames = 0
+    let counting = true
+    const tick = () => { if (counting) { frames += 1; requestAnimationFrame(tick) } }
+    requestAnimationFrame(tick)
+    await sleep(1000)
+    counting = false
+    return frames
+  }
 
   const BLOCK = /pardon the interruption|browsing activity has been paused|are you a robot|captcha|access denied|unusual (?:traffic|activity)|you'?re (?:now )?in (?:the )?(?:queue|waiting room)|queue-it/i
   const blocked = () => BLOCK.test(`${document.title} ${(document.body?.innerText || "").slice(0, 4000)}`)
@@ -87,8 +104,9 @@
   }
 
   // Scrolls the list until its count holds for four checks, or two minutes.
-  // A list that stops well short of Ticketmaster's count has stalled (seen
-  // 2026-11-16: 81 of 589 after several visits in a row).
+  // A list that stops well short of Ticketmaster's count has stalled. The
+  // two seen so far (81 of 589 on 2026-11-16, 81 of 244 on 2026-11-18) were
+  // tabs Chromium wasn't drawing, so a stall is checked for that first.
   const scrollAll = async () => {
     const list = listElement()
     let last = -1
@@ -150,6 +168,10 @@
 
   const seatLabel = (seats) => (seats ? ` [Seats ${seats[0]}-${seats.at(-1)}]` : "")
   const stop = (status, extra = {}) => Object.assign(state, { status, title: document.title, ...extra })
+  const stopStalled = async (result) => {
+    const fps = await framesPerSecond()
+    return stop(fps < MIN_FRAMES ? "not_drawing" : "stalled", { fps, read: result.items.length, event_total_listings: result.total })
+  }
 
   const run = async () => {
     for (let i = 0; i < 60 && !listElement(); i++) {
@@ -160,6 +182,10 @@
     }
     if (!listElement()) return stop("no_list", { text: (document.body?.innerText || "").replace(/\s+/g, " ").slice(0, 300) })
 
+    const fps = await framesPerSecond()
+    if (fps < MIN_FRAMES) return stop("not_drawing", { fps })
+    state.fps = fps
+
     // Prices are for a pair: make sure Ticketmaster is showing 2.
     const shown = currentQuantity()
     if (shown !== null && shown !== PRICED_QUANTITY && !(await setQuantity(PRICED_QUANTITY))) {
@@ -168,7 +194,7 @@
 
     const main = await scrollAll()
     if (main.blocked) return stop("blocked")
-    if (main.stalled) return stop("stalled", { read: main.items.length, event_total_listings: main.total })
+    if (main.stalled) return stopStalled(main)
 
     const listings = []
     main.items.forEach((li, index) => {
@@ -204,7 +230,7 @@
       if (await setQuantity(ours.quantity)) {
         const again = await scrollAll()
         if (again.blocked) return stop("blocked")
-        if (again.stalled) return stop("stalled", { read: again.items.length, event_total_listings: again.total })
+        if (again.stalled) return stopStalled(again)
         Object.assign(check, { read: again.items.length, total: again.total, complete: again.stable >= 4 })
         for (const li of again.items) {
           const l = describe(li)
@@ -240,7 +266,7 @@
   // ("S" = Standard Admission; the label keeps only "Sec X • Row Y ... $price";
   // seats are read only in rows near ours, else null).
   window.__madrMeta = () => JSON.stringify({
-    status: state.status, title: state.title, read: state.read, kept: state.listings?.length,
+    status: state.status, title: state.title, fps: state.fps, read: state.read, kept: state.listings?.length,
     event_total_listings: state.event_total_listings, scroll_complete: state.scroll_complete,
     seat_reads: state.seat_reads, seat_reads_capped: state.seat_reads_capped,
     our_row: state.our_row, quantity_check: state.quantity_check

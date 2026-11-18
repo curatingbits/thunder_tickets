@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Keeps the research tab where Chromium draws it.
+#
+#   research-window open    open the MADR Research profile on its marker page
+#                           ("MADR Research"), hide its window on the
+#                           special:madr workspace, and print the window's address
+#   research-window front   close the marker tab, so the Claude in Chrome tab
+#                           behind it is the one in front
+#
+# Chromium draws only the tab in front in each window, and Ticketmaster's list
+# loads more listings only while its page is drawn. Claude in Chrome adds its
+# tab behind the one the profile opens with, so on 2026-11-18 the 4am run's
+# list stopped after 80 of 244 listings. A tab in front keeps being drawn
+# while its window is hidden on a special workspace (checked 2026-11-18), and
+# there it stays off Duggan's screen. To watch a run:
+#   hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")/.." && pwd)
+source "$HOME/.config/madrtickets/research.env"
+: "${MADR_RESEARCH_PROFILE:?set MADR_RESEARCH_PROFILE in ~/.config/madrtickets/research.env}"
+MARKER="MADR Research - Chromium" # the marker page's title, as Chromium names the window
+
+# Units and agent shells can start without Hyprland's environment.
+if [[ -z ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+  socket=$(ls -t "${XDG_RUNTIME_DIR:-/run/user/$UID}"/hypr/*/.socket.sock 2>/dev/null | head -1 || true)
+  [[ -n $socket ]] || { echo "research-window: Hyprland isn't running" >&2; exit 2; }
+  HYPRLAND_INSTANCE_SIGNATURE=$(basename "$(dirname "$socket")")
+  export HYPRLAND_INSTANCE_SIGNATURE
+fi
+
+marker_window() {
+  hyprctl clients -j | jq -r --arg title "$MARKER" 'first(.[] | select(.title == $title) | .address) // empty'
+}
+
+dispatch() {
+  [[ $(hyprctl dispatch "$1") == ok ]] || { echo "research-window: Hyprland refused $1" >&2; exit 1; }
+}
+
+case ${1:-} in
+  open)
+    window=$(marker_window)
+    if [[ -z $window ]]; then
+      # An earlier run's window, left with only a blank tab: close it, so the
+      # marker tab and Claude's tab open together in one window. (A window
+      # showing a page could be a run in progress, so it stays.)
+      hyprctl clients -j | jq -r '.[] | select(.workspace.name == "special:madr" and .class == "chromium"
+          and .title == "New Tab - Chromium") | .address' | while read -r stale; do
+        dispatch "hl.dsp.window.close({ window = \"address:$stale\" })"
+      done
+      for _ in $(seq 20); do
+        [[ -z $(hyprctl clients -j | jq -r 'first(.[] | select(.workspace.name == "special:madr" and .title == "New Tab - Chromium")) | .address') ]] && break
+        sleep 0.25
+      done
+      systemd-run --user --quiet --collect /usr/bin/chromium --profile-directory="$MADR_RESEARCH_PROFILE" \
+        "file://$here/research-window.html"
+      for _ in $(seq 40); do
+        window=$(marker_window)
+        [[ -n $window ]] && break
+        sleep 0.5
+      done
+      [[ -n $window ]] || { echo "research-window: the research browser didn't open its marker page" >&2; exit 1; }
+    fi
+    dispatch "hl.dsp.window.move({ workspace = \"special:madr\", follow = false, window = \"address:$window\" })"
+    dispatch "hl.dsp.window.float({ action = \"on\", window = \"address:$window\" })"
+    dispatch "hl.dsp.window.resize({ x = 1600, y = 1100, window = \"address:$window\" })"
+    echo "$window"
+    ;;
+  front)
+    window=$(marker_window)
+    if [[ -z $window ]]; then
+      echo "research-window: no marker tab is open, so there's nothing in front of the research tab to close"
+      exit 0
+    fi
+    # Ctrl+W closes the window's front tab, which is the marker (its title says so).
+    dispatch "hl.dsp.send_shortcut({ mods = \"CTRL\", key = \"w\", window = \"address:$window\" })"
+    for _ in $(seq 20); do
+      [[ -z $(marker_window) ]] && break
+      sleep 0.25
+    done
+    [[ -z $(marker_window) ]] || { echo "research-window: the marker tab didn't close" >&2; exit 1; }
+    title=$(hyprctl clients -j | jq -r --arg a "$window" 'first(.[] | select(.address == $a) | .title) // empty')
+    if [[ -n $title ]]; then
+      # Claude's tab was added last; Ctrl+9 brings a window's last tab to the front.
+      dispatch "hl.dsp.send_shortcut({ mods = \"CTRL\", key = \"9\", window = \"address:$window\" })"
+      sleep 0.5
+      title=$(hyprctl clients -j | jq -r --arg a "$window" 'first(.[] | select(.address == $a) | .title) // empty')
+    fi
+    echo "research-window: closed the marker tab; in front now: ${title:-nothing (its window closed)}"
+    ;;
+  *)
+    echo "usage: research-window open|front" >&2
+    exit 2
+    ;;
+esac
