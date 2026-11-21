@@ -67,6 +67,16 @@ case ${1:-} in
         [[ -z $(hyprctl clients -j | jq -r 'first(.[] | select(.workspace.name == "special:madr" and .title == "New Tab - Chromium")) | .address') ]] && break
         sleep 0.25
       done
+      # Have Hyprland put the marker window straight onto special:madr as it
+      # opens, so a daytime run doesn't flash it on screen or take the
+      # keyboard. The window comes from Duggan's running Chromium, so an exec
+      # rule can't catch it; a window rule on its first title can. A rule added
+      # at runtime lasts until Hyprland restarts, and the flag adds it once.
+      rule_flag="${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr/$HYPRLAND_INSTANCE_SIGNATURE/madr-research-rule"
+      if [[ ! -e $rule_flag ]]; then
+        rule="hl.window_rule({ match = { class = \"^chromium\$\", initial_title = \"^$MARKER\$\" }, workspace = \"special:madr silent\" })"
+        if [[ $(hyprctl eval "$rule") == ok ]]; then touch "$rule_flag"; fi
+      fi
       systemd-run --user --quiet --collect /usr/bin/chromium --profile-directory="$MADR_RESEARCH_PROFILE" \
         "file://$here/research-window.html"
       for _ in $(seq 40); do
