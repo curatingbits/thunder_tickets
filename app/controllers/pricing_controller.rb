@@ -23,5 +23,6 @@ class PricingController < ApplicationController
     @counts = @board.rows.filter_map(&:assessment).tally
     @filter = FILTERS.key?(params[:filter]) ? params[:filter] : DEFAULT_FILTER
     @rows = @board.shown_rows.select(&FILTERS.fetch(@filter))
+    @research_panel = ResearchPanel.new(season: @season)
   end
 end

@@ -1,6 +1,6 @@
 ---
 name: ticketmaster-pricing
-description: Twice-weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102, 120 and 119 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats and records whether our own seats are listed. Trigger Monday and Wednesday at 4am (systemd timer) or whenever Duggan asks to refresh ticket prices.
+description: Twice-weekly Ticketmaster pricing research for MADR Tickets (Duggan and Mark's Thunder season seats, Section 101 Row DD) — read the resale listings in sections 101, 102, 120 and 119 for every upcoming Thunder home game in the logged-out "MADR Research" Chromium profile, the way Kate did on 2026-11-16, and post them to madrtickets.com, which prices our seats and records whether our own seats are listed. Trigger Monday and Wednesday at 4am (systemd timer), when someone presses Update prices on the Pricing page (`request <id>`, started by bin/research-requests), or whenever Duggan asks to refresh ticket prices.
 ---
 
 # Ticketmaster pricing research
@@ -27,7 +27,8 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 - Files in this skill folder (`~/.claude/skills/ticketmaster-pricing/`):
   - `bin/madr-api METHOD PATH [BODY_FILE]` — the only way to talk to the app. It reads the token from `~/.config/madrtickets/market-research.header`.
   - `bin/research-browser-id DEVICE_ID...` — prints which connected browser is the research profile.
-  - `bin/research-window open|front` — opens the research profile on its marker page (`research-window.html`, titled "MADR Research") in a window hidden on the `special:madr` workspace, then closes that marker tab so your tab is in front. To watch a run: `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'`.
+  - `bin/research-window open|front` — opens the research profile on its marker page (`research-window.html`, titled "MADR Research") in a window hidden on the `special:madr` workspace, then closes that marker tab so your tab is in front. To watch a run: `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'`. Its `terminal`, `terminals` and `close-terminal` commands manage the hidden Claude windows of Update prices runs.
+  - `bin/research-requests` — run every two minutes by `madr-research-requests.timer`. It claims an Update prices request from the app and starts `madr-ticketmaster-pricing-request@<id>.service`, which runs you with `request <id>`.
   - `extract_listings.js` — the page reader. Run it in the event tab with `javascript_tool`.
   - `bin/build-scan` — turns the reader's chunks into a game's scan file.
 - Work folder for this run: `W=$(mktemp -d /tmp/madr-research-$(date +%F)-XXXX)`. Save every body you POST there.
@@ -44,10 +45,12 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
 2. **Logged out, research profile only.** Use the connected browser named **MADR Research**. If Ticketmaster shows anyone signed in ("My Account", a first name in the header) instead of "Sign In/Register", stop and tell Duggan to sign out of Ticketmaster in that profile.
 3. **Never get past a block.** CAPTCHA, "Pardon the Interruption", "Your browsing activity has been paused", a queue or waiting room, access denied: stop the whole run. Don't retry, reload repeatedly, or switch profiles to get around it.
 4. **Never show the token.** Don't `cat` the header file, echo it, or put it anywhere but `bin/madr-api`.
-5. **One game at a time, about 30 seconds apart.** Scheduled runs: Monday and Wednesday at 4am. Anything else only when Duggan asks.
+5. **One game at a time, about 30 seconds apart.** Scheduled runs: Monday and Wednesday at 4am. Anything else only when Duggan asks, or when someone presses **Update prices** on the Pricing page (see *Asked for on the Pricing page*). The app allows two of those a day, and none for a day after a block.
 6. **Advisory only.** Never change a listing or price anywhere. MADR's recommendations are for Duggan and Mark to act on.
 
 ## Before you start
+
+Started with `request <id>`? Read *Asked for on the Pricing page* below first: it changes the targets and the run key.
 
 1. **Targets.** `bin/madr-api GET /api/v1/research_targets > $W/targets.json`. It holds `start_url`, `sections`, and `games` (`id`, `date`, `opponent`, `ticketmaster_url`, `seats_to_sell`, `last_scanned_at`). If it fails with 401 or "no token header", stop and tell Duggan (see Setup).
 2. **Browser.** Chromium draws only the tab in front in each window, and Ticketmaster's list loads more listings only while its page is drawn. Your tab has to be in front; its window can stay hidden.
@@ -66,6 +69,7 @@ Twice a week, read what Ticketmaster buyers can see for every upcoming Thunder h
    - Make `$W/client_id` once with `echo "$(hostname)-$(date +%s)" > $W/client_id`. If you're resuming after a crash, reuse the old work folder's client id.
    - The key is the date: `tm-$(date +%F)`. Monday's and Wednesday's runs are separate, and a crashed run resumes the same day.
    - If you were started with the argument `again`, this is a second full run the same day, which Duggan asked for. Use `tm-$(date +%F)-again`.
+   - If you were started with `request <id>`, use the request's `run_key` (see *Asked for on the Pricing page*).
    - POST `/api/v1/import_runs` with `{"kind":"market_research","source":"ticketmaster_browser","key":KEY,"client_id":ID,"agent_version":"ticketmaster-pricing/1"}`.
    - **201** is a new run. **200** is a resumed run: skip every game in `scanned_game_ids`. **409** means another run holds it, or today's run already completed: stop and report, don't start a second one.
 
@@ -75,6 +79,17 @@ If you were started with the argument `soon`, rescan only the games in the next 
 - **Targets:** `bin/madr-api GET "/api/v1/research_targets?within_days=7"`. If it lists no games, report "nothing in the next week" and stop.
 - **Run key:** `tm-$(date +%F)-soon`, so it doesn't collide with a full run the same day.
 - **Report:** in the vault Log line, write "mid-week rescan" in place of the seat value, because only some games were scanned.
+- Everything else is the same: the hard rules, the routine and block handling.
+
+## Asked for on the Pricing page (`/ticketmaster-pricing request <id>`)
+
+Someone pressed **Update prices** on the Pricing page, and `bin/research-requests` started you through `madr-ticketmaster-pricing-request@<id>.service`. Your window and the research browser are both hidden on the `special:madr` workspace. Nobody is watching this window: whoever asked follows along on the Pricing page.
+- **The request, first:** `bin/madr-api GET /api/v1/research_requests/<id> > $W/request.json`. It holds `scope_label`, `within_days` (7, or null for all games), `run_key`, `requested_by` and `state`. Carry on only if `state` is `starting`, or `running` when you're resuming after a crash. Anything else means it was settled without you: stop.
+- **Targets:** with `within_days` 7, `bin/madr-api GET "/api/v1/research_targets?within_days=7"`. With null, the full targets.
+- **Run key:** the request's `run_key`, exactly as given (`tm-req-<id>`). A 409 means it's already running or done: stop.
+- **No games** (a 7-day request when the week has none): start the run anyway and finish it at once as `completed` with `targeted: 0` and the note "no games in the next 7 days", so the Pricing page shows it ended.
+- **Report:** start the vault Log line with "Update prices (<scope_label>, asked for by <requested_by>)". For the next 7 days, write "next 7 days only" in place of the seat value, because only some games were scanned.
+- **Leave this window open** when you're done. `bin/research-requests` closes it ten minutes after the run ends.
 - Everything else is the same: the hard rules, the routine and block handling.
 
 ## The routine

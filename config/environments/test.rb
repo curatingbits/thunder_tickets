@@ -50,4 +50,7 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # System tests watch the research panel change without waiting 15 seconds.
+  config.x.research_panel_poll_ms = 300
 end

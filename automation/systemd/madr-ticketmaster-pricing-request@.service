@@ -1,0 +1,17 @@
+# Ticketmaster pricing research someone asked for with Update prices on the
+# Pricing page; %i is the request's number. bin/research-requests starts it.
+# The same research as madr-ticketmaster-pricing.service, but the Claude
+# window opens hidden on the special:madr workspace with the research browser
+# (bin/research-window terminal), so a daytime run never takes the keyboard.
+# To watch one: hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'
+[Unit]
+Description=MADR Tickets - Ticketmaster pricing research asked for on the Pricing page (request %i)
+OnFailure=madr-automation-alert@%n.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=2min
+WorkingDirectory=%h/Repositories/Agents/thunder_tickets
+EnvironmentFile=%h/.config/madrtickets/research.env
+ExecStartPre=%h/.claude/skills/ticketmaster-pricing/bin/research-window open
+ExecStart=%h/.claude/skills/ticketmaster-pricing/bin/research-window terminal %i

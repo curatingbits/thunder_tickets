@@ -15,7 +15,8 @@
             <div class="min-w-0">
               <p class="font-semibold text-content-strong truncate"><%= run.key %></p>
               <p class="text-sm text-content-dim">
-                <%= run.source.humanize %> · <%= run.started_at.strftime("%a %b %-d, %-l:%M %p") %>
+                <%= (asked = ResearchRequest.for_run(run)) ? "Update prices, asked for by #{asked.user.name}" : run.source.humanize %>
+                · <%= run.started_at.strftime("%a %b %-d, %-l:%M %p") %>
                 · <%= pluralize(@snapshot_counts[run.id].to_i, "game") %>
                 <%= " · #{pluralize(run.error_log.size, "note")}" if run.error_log.any? %>
               </p>

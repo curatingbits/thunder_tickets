@@ -1,0 +1,10 @@
+# Every two minutes: has anyone pressed Update prices on the Pricing page?
+[Unit]
+Description=MADR Tickets - check for Update prices requests every two minutes
+
+[Timer]
+OnCalendar=*:0/2
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

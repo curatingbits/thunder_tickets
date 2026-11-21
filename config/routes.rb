@@ -73,6 +73,10 @@ Rails.application.routes.draw do
   get "pricing", to: "pricing#index", as: :pricing
   get "pricing/map", to: "seat_maps#show", as: :seat_map
   resources :import_runs, only: [ :index, :show ]
+  # Update prices: ask Duggan's computer to run the research now.
+  resources :research_requests, only: [ :index, :create ] do
+    member { post :cancel }
+  end
 
   # Weekly checklist: confirm what's listed, and at what price.
   resource :listing_review, only: :show
@@ -92,6 +96,9 @@ Rails.application.routes.draw do
       get "research_targets", to: "research_targets#index"
       resources :import_runs, only: [ :create, :show, :update ] do
         resources :market_scans, only: [ :create ]
+      end
+      resources :research_requests, only: [ :show, :update ] do
+        collection { post :claim }
       end
       resources :payment_imports, only: [ :create ]
       resource :settlement_summary, only: [ :show ]

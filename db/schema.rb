@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_21_150000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -300,6 +300,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_160000) do
     t.check_constraint "status IN ('unmatched', 'partially_matched', 'matched', 'needs_review', 'ignored')", name: "partner_payments_status"
   end
 
+  create_table "research_requests", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "scope", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "claimed_at"
+    t.string "client_id"
+    t.string "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_research_requests_one_pending", unique: true, where: "status = 'pending'"
+    t.index ["user_id"], name: "index_research_requests_on_user_id"
+    t.check_constraint "scope IN ('soon', 'all')", name: "research_requests_scope"
+    t.check_constraint "status IN ('pending', 'claimed', 'cancelled', 'expired', 'failed')", name: "research_requests_status"
+  end
+
   create_table "seasons", force: :cascade do |t|
     t.string "year"
     t.decimal "total_season_cost"
@@ -410,6 +425,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_160000) do
   add_foreign_key "partner_payments", "import_runs"
   add_foreign_key "partner_payments", "partner_payments", column: "possible_duplicate_of_id"
   add_foreign_key "partner_payments", "users", column: "reviewed_by_id"
+  add_foreign_key "research_requests", "users"
   add_foreign_key "settlement_allocations", "games"
   add_foreign_key "settlement_allocations", "partner_payments"
   add_foreign_key "settlement_allocations", "settlement_allocations", column: "replaces_id"

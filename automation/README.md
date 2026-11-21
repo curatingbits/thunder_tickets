@@ -11,6 +11,7 @@ Ticketmaster listing, or moves money.
 |---|---|---|---|
 | `/ticketmaster-pricing` | Reads resale listings in sections 101, 102 and 120 for every upcoming home game (logged out, "MADR Research" profile) and posts them; the app prices our seats and records whether our own Row DD seats are listed, and at what price | Mondays and Wednesdays 4am Central | **Enabled** |
 | `/ticketmaster-pricing soon` | Rescans only the next seven days' games | By hand only | — |
+| **Update prices** (Pricing page) | Duggan or Mark presses it and picks Next 7 days or All games. `bin/research-requests` checks the app for a request, claims it, and runs the same research as `/ticketmaster-pricing request <n>`, with its Claude window and the research browser hidden on the `special:madr` workspace. The page shows the progress and reloads when it's done. Limits: one at a time, two a day, none for a day after a Ticketmaster block, and a request this computer doesn't pick up within an hour lapses | Checks every 2 minutes (`madr-research-requests.timer`) | **Enabled** |
 | Venmo settlement sync (`venmo-sync`, `/venmo-settlement`) | Reads Mark's posted Venmo payments from financial.dar.haus (read-only) and posts them; the app matches them to sold games. The timer runs the script directly (no browser, no AI); the skill runs it on request and explains anything to review | Daily 7:30am Central | **Enabled** |
 
 ## Install
@@ -27,7 +28,8 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 
 - **From a Claude Code session in this repo:** type `/ticketmaster-pricing`.
 - **Exactly as the timer would:** `systemctl --user start madr-ticketmaster-pricing.service`. That opens the research browser (hidden on the `special:madr` workspace) and a Claude window.
-- **Watch the research browser:** `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'` shows or hides it. Its tab keeps being drawn while hidden.
+- **Watch the research browser:** `hyprctl dispatch 'hl.dsp.workspace.toggle_special("madr")'` shows or hides it, along with an Update prices run's Claude window. Its tab keeps being drawn while hidden.
+- **Update prices requests:** `journalctl --user -u madr-research-requests` shows each request this computer started. `bin/research-requests` closes a request's Claude window ten minutes after its run ends.
 - **Venmo sync:** `~/.claude/skills/venmo-settlement/bin/venmo-sync` (or `/venmo-settlement` in Claude Code, which also explains the review queue). Running it twice is harmless: the same transactions on the same day replay instead of importing again.
 - **Rehearsal against a local server:** `MADR_API_BASE=http://localhost:3000 MADR_API_HEADER=<dev header file>` before running the skill.
 
@@ -53,6 +55,9 @@ skill (browser profile, token file) is in its `SKILL.md` under **Setup**.
 | The run reports `unclear` or `unconfirmed` for a game | Our seats at two prices, a Row DD listing whose seat numbers couldn't be read, or the look at our seat count couldn't be done. Nothing changed | Check that game on Ticketmaster and record our listing on its page |
 | The run stops because the research tab "isn't being drawn" | Chromium draws only the tab in front in each window, and Ticketmaster's list loads more listings only while it's drawn. The run's tab was behind another one (both 81-listing stops, on 2026-11-16 and the 4am run on 2026-11-18, were this). Run marked **partial**, not blocked; Telegram alert | Run `/ticketmaster-pricing` again. `bin/research-window` keeps the run's tab in front, in a window hidden on the `special:madr` workspace |
 | The run stops with the list "stalled" | The page was drawn, but Ticketmaster stopped loading listings partway. Treated like a block: partial results kept, Telegram alert | Let it be; the next run usually works |
+| Update prices says "Waiting for Duggan's computer", then the request lapses | This computer didn't check in for an hour: it's off or logged out, or the timer is off | `systemctl --user status madr-research-requests.timer`, then `journalctl --user -u madr-research-requests` |
+| "The last update couldn't start" on Pricing | The research unit failed to launch (the browser or Hyprland); Telegram says so too | `journalctl --user -u 'madr-ticketmaster-pricing-request@*'` |
+| Update prices is missing, with "paused until …" or "2 updates have already run today" | The limits: a day's pause after Ticketmaster blocks a run, and two requested runs a day | Wait, or run `/ticketmaster-pricing again` by hand if it can't |
 | A Venmo payment doesn't clearly fit one game | "N Venmo payments to review" on Home, plus Telegram | Open it on the Money tab: apply the suggestion, apply it yourself, or ignore it with a note |
 | The Venmo sync fails with a 401 | Telegram: "MADR automation madr-venmo-settlement.service failed" | The finance or MADR token was rotated or revoked; see `/venmo-settlement` Setup |
 | A transaction changes or disappears in the finance app | The payment goes to review ("changed") or is marked "no longer in the finance app"; nothing is deleted | Check it on the Money tab |
@@ -64,6 +69,7 @@ systemctl --user list-timers 'madr-*'                         # what's scheduled
 systemctl --user edit madr-ticketmaster-pricing.timer          # change OnCalendar
 systemctl --user disable --now madr-ticketmaster-pricing.timer # stop it
 systemctl --user disable --now madr-venmo-settlement.timer
+systemctl --user disable --now madr-research-requests.timer    # Update prices: requests lapse unstarted
 ```
 
 To revoke a job's access to the app, go to Settings → Workstation access →

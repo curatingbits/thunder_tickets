@@ -6,6 +6,11 @@
 #                           special:madr workspace, and print the window's address
 #   research-window front   close the marker tab, so the Claude in Chrome tab
 #                           behind it is the one in front
+#   research-window terminal ID       open the Claude window for Update prices
+#                           request ID on special:madr, without taking focus
+#                           (run from the repo; madr-ticketmaster-pricing-request@.service)
+#   research-window terminals         list the request IDs whose windows are open
+#   research-window close-terminal ID close request ID's window
 #
 # Chromium draws only the tab in front in each window, and Ticketmaster's list
 # loads more listings only while its page is drawn. Claude in Chrome adds its
@@ -35,6 +40,16 @@ marker_window() {
 
 dispatch() {
   [[ $(hyprctl dispatch "$1") == ok ]] || { echo "research-window: Hyprland refused $1" >&2; exit 1; }
+}
+
+# An Update prices window is told apart by its class, madr-request-<ID>:
+# Claude Code retitles its terminal, so the title can't be trusted.
+request_window() {
+  hyprctl clients -j | jq -r --arg class "madr-request-$1" 'first(.[] | select(.class == $class) | .address) // empty'
+}
+
+request_id() {
+  [[ ${1:-} =~ ^[0-9]+$ ]] || { echo "usage: research-window terminal|close-terminal REQUEST_ID" >&2; exit 2; }
 }
 
 case ${1:-} in
@@ -88,8 +103,41 @@ case ${1:-} in
     fi
     echo "research-window: closed the marker tab; in front now: ${title:-nothing (its window closed)}"
     ;;
+  terminal)
+    # A daytime run mustn't take the keyboard from whoever is at the desk, so
+    # Hyprland opens this window straight onto special:madr ("silent": no
+    # focus, the workspace stays hidden). The exec rule only applies to a
+    # process Hyprland starts itself, hence hyprctl eval, not systemd-run.
+    id=${2:-}
+    request_id "$id"
+    if [[ -n $(request_window "$id") ]]; then
+      echo "research-window: request $id's window is already open"
+      exit 0
+    fi
+    command="/usr/bin/alacritty --class madr-request-$id --title 'MADR - Ticketmaster pricing (request $id)'"
+    command+=" --working-directory '$PWD' -e '$HOME/.local/share/mise/shims/claude' '/ticketmaster-pricing request $id'"
+    [[ $(hyprctl eval "hl.exec_cmd([[$command]], { workspace = \"special:madr silent\" })") == ok ]] ||
+      { echo "research-window: Hyprland didn't start request $id's window" >&2; exit 1; }
+    for _ in $(seq 40); do
+      [[ -n $(request_window "$id") ]] && { echo "research-window: request $id's window is open on special:madr"; exit 0; }
+      sleep 0.5
+    done
+    echo "research-window: request $id's window didn't open" >&2
+    exit 1
+    ;;
+  terminals)
+    hyprctl clients -j | jq -r '.[].class | capture("^madr-request-(?<id>[0-9]+)$")? | .id'
+    ;;
+  close-terminal)
+    id=${2:-}
+    request_id "$id"
+    window=$(request_window "$id")
+    [[ -n $window ]] || exit 0
+    dispatch "hl.dsp.window.close({ window = \"address:$window\" })"
+    echo "research-window: closed request $id's window"
+    ;;
   *)
-    echo "usage: research-window open|front" >&2
+    echo "usage: research-window open|front|terminal ID|terminals|close-terminal ID" >&2
     exit 2
     ;;
 esac

@@ -29,6 +29,10 @@ Ticketmaster pricing (/ticketmaster-pricing)
   3. Run /ticketmaster-pricing once while watching.
   Then: systemctl --user enable --now madr-ticketmaster-pricing.timer   (Mondays and Wednesdays, 4am)
 
+Update prices on the Pricing page (bin/research-requests)
+  Needs the Ticketmaster pricing setup above.
+  Then: systemctl --user enable --now madr-research-requests.timer   (checks every two minutes)
+
 Venmo settlements (/venmo-settlement)
   1. ~/.config/madrtickets/finance.header and settlements.header   (chmod 600; see the skill's Setup)
   2. Run ~/.claude/skills/venmo-settlement/bin/venmo-sync once while watching.

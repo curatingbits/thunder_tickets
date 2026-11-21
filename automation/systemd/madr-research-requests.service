@@ -1,0 +1,9 @@
+# Checks madrtickets.com for Update prices requests and starts the research
+# for one (bin/research-requests). No OnFailure alert: a network blip every
+# two minutes isn't news, and the script reports a research it couldn't start.
+[Unit]
+Description=MADR Tickets - start research asked for on the Pricing page
+
+[Service]
+Type=oneshot
+ExecStart=%h/.claude/skills/ticketmaster-pricing/bin/research-requests

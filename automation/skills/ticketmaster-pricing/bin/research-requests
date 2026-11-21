@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Starts the research someone asked for with Update prices on the Pricing
+# page. madr-research-requests.timer runs this every two minutes: the website
+# can't reach this computer, so this asks it.
+#
+# It claims the oldest waiting request and starts
+# madr-ticketmaster-pricing-request@<number>.service, which opens the research
+# browser and a Claude window running "/ticketmaster-pricing request
+# <number>", both hidden on the special:madr workspace. It never runs anything
+# the website sends: it only starts that one unit, and passes on only the
+# request's number.
+#
+# It also closes a request's Claude window ten minutes after its run ends, so
+# finished sessions don't pile up out of sight.
+#
+# Not being able to reach madrtickets.com isn't an error: this notes it in the
+# journal and tries again next time. With no Hyprland session (logged out),
+# it leaves requests alone, and they lapse after an hour.
+#
+#   MADR_REQUESTS_DRY_RUN=1   claim, but start nothing (to rehearse against a
+#                             local server with MADR_API_BASE and MADR_API_HEADER)
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+api="$here/madr-api"
+window="$here/research-window"
+client="$(hostname)-requests"
+work=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/madr-requests.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+
+say() { echo "research-requests: $*"; }
+
+compgen -G "${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr/*/.socket.sock" > /dev/null || exit 0
+
+close_finished_windows() {
+  local id settled
+  for id in $("$window" terminals); do
+    "$api" GET "/api/v1/research_requests/$id" > "$work/request.json" 2> /dev/null || continue
+    settled=$(jq -r '.settled_at // empty' "$work/request.json")
+    [[ -n $settled ]] || continue
+    if (( $(date +%s) - $(date -d "$settled" +%s) >= 600 )); then
+      "$window" close-terminal "$id"
+    fi
+  done
+}
+close_finished_windows || say "couldn't tidy up finished request windows"
+
+jq -n --arg client "$client" '{client_id: $client}' > "$work/claim.json"
+if ! "$api" POST /api/v1/research_requests/claim "$work/claim.json" > "$work/claimed.json" 2> "$work/error"; then
+  say "couldn't ask madrtickets.com for requests: $(head -c 300 "$work/error") $(head -c 300 "$work/claimed.json")"
+  exit 0
+fi
+id=$(jq -r '.request.id // empty' "$work/claimed.json")
+[[ -n $id ]] || exit 0
+if [[ ! $id =~ ^[0-9]+$ ]]; then
+  say "ignoring a request whose number isn't a number"
+  exit 0
+fi
+say "request $id: $(jq -r '"\(.request.scope_label), asked for by \(.request.requested_by)"' "$work/claimed.json")"
+
+unit="madr-ticketmaster-pricing-request@$id.service"
+if [[ -n ${MADR_REQUESTS_DRY_RUN:-} ]]; then
+  say "dry run: would start $unit"
+  exit 0
+fi
+
+if systemctl --user start "$unit"; then
+  say "started $unit"
+else
+  error="The research couldn't start on Duggan's computer (journalctl --user -u $unit)."
+  jq -n --arg client "$client" --arg error "$error" '{client_id: $client, status: "failed", error: $error}' > "$work/failed.json"
+  "$api" PATCH "/api/v1/research_requests/$id" "$work/failed.json" > /dev/null || say "couldn't tell madrtickets.com that request $id failed"
+  say "$error"
+fi

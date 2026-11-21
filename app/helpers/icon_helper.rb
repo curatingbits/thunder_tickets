@@ -31,7 +31,8 @@ module IconHelper
     arrow_right: [ "M14 5l7 7m0 0l-7 7m7-7H3" ],
     arrow_up: [ "M5 10l7-7m0 0l7 7m-7-7v18" ],
     exclamation_circle: [ "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" ],
-    check_circle: [ "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" ]
+    check_circle: [ "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" ],
+    refresh: [ "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" ]
   }.freeze
 
   # Decorative by default (aria-hidden): pair it with visible text.

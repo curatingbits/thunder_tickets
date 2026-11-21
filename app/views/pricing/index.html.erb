@@ -9,15 +9,10 @@
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
       <%= link_to "3D seat map →", seat_map_path, class: "text-accent hover:brightness-125" %>
       <%= link_to "Insights →", insights_path, class: "text-accent hover:brightness-125" %>
-      <% if (run = @board.last_run) %>
-        <%= link_to import_runs_path, class: "text-accent hover:brightness-125" do %>
-          Last research: <%= run.status %>, <%= time_ago_in_words(run.started_at) %> ago →
-        <% end %>
-      <% else %>
-        <%= link_to "Research runs →", import_runs_path, class: "text-accent hover:brightness-125" %>
-      <% end %>
     </div>
   </div>
+
+  <%= render "research_requests/panel", panel: @research_panel %>
 
   <%= render "pricing/value_tiles", value: @value, counts: @counts %>
 

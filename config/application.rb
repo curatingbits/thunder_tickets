@@ -31,5 +31,8 @@ module ThunderTickets
     # Central on game day. Times are still stored in UTC.
     config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # How often Pricing re-reads its research panel while an update waits or runs.
+    config.x.research_panel_poll_ms = 15_000
   end
 end
